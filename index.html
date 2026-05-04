@@ -1,112 +1,236 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saga Twitte</title>
     <style>
-        :root { --primary: #00acee; --bg: #0f172a; --card: rgba(30, 41, 59, 0.8); --white: #ffffff; --star: #fbbf24; --red: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--white); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
-        
-        header { background: var(--card); backdrop-filter: blur(12px); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 22px; font-weight: 900; color: var(--primary); cursor: pointer; }
+        :root { 
+            --primary: #00e5ff; 
+            --bg: #030a1a; 
+            --card-bg: rgba(6, 17, 39, 0.7); 
+            --text-main: #ffffff; 
+            --text-muted: #8a99b3;
+            --star: #ffd700; 
+            --red: #ff4444; 
+            --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            --transition-speed: 0.3s;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding-bottom: 100px; 
+            overflow-x: hidden; 
+            scroll-behavior: smooth;
+        }
+
+        /* --- SAGA LOGO ELEMENT --- */
+        .saga-logo-element {
+            display: inline-block;
+            font-weight: 800;
+            color: var(--primary);
+            text-shadow: var(--neon-shadow);
+            position: relative;
+        }
+        .saga-logo-element::before, .saga-logo-element::after {
+            content: 'S';
+            position: absolute;
+            left: 0;
+            opacity: 0.7;
+        }
+        .saga-logo-element::before { color: var(--primary); animation: glitchS1 2.5s infinite; }
+        .saga-logo-element::after { color: #ff00ea; animation: glitchS2 2.5s infinite; }
+
+        @keyframes glitchS1 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+        @keyframes glitchS2 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(2px, -2px); }
+            40% { transform: translate(2px, 2px); }
+            60% { transform: translate(-2px, -2px); }
+            80% { transform: translate(-2px, 2px); }
+        }
+
+        /* --- UI COMPONENTS --- */
+        header { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(0, 229, 255, 0.15); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .logo { font-size: 24px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 800; }
 
         .container { width: 95%; max-width: 500px; margin: 15px auto; }
-        .card { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; position: relative; }
         
-        input, textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; outline: none; }
-        button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            border: 1px solid rgba(0, 229, 255, 0.1); 
+            margin-bottom: 20px; 
+            position: relative; 
+            transition: transform var(--transition-speed), border-color var(--transition-speed);
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .card:hover { transform: translateY(-3px); border-color: rgba(0, 229, 255, 0.3); }
 
-        .fab { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 65px; height: 65px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; box-shadow: 0 8px 25px rgba(0,172,238,0.5); z-index: 2000; cursor: pointer; }
+        input, textarea { 
+            width: 100%; 
+            background: rgba(0, 229, 255, 0.03); 
+            border: 1px solid rgba(0, 229, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 12px; 
+            color: white; 
+            box-sizing: border-box; 
+            outline: none; 
+            font-size: 14px;
+        }
         
-        .p-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        .post-time { font-size: 11px; color: #94a3b8; display: block; margin-top: -5px; margin-bottom: 10px; }
-        
-        .action-bar { display: flex; gap: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 12px; }
-        .action-btn { background: transparent; color: #94a3b8; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; transition: background var(--transition-speed), transform 0.1s; }
+        .btn-primary { background: var(--primary); color: #000; width: 100%; box-shadow: var(--neon-shadow); font-weight: 800; font-size: 15px; }
 
-        .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 12px; }
-        .comment-msg { margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .fab { 
+            position: fixed; bottom: 35px; right: 25px; 
+            width: 60px; height: 60px; 
+            background: var(--primary); 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #000; 
+            box-shadow: var(--neon-shadow); 
+            z-index: 2000; cursor: pointer; 
+            transition: transform 0.3s;
+        }
+        .fab:hover { transform: scale(1.1) rotate(90deg); }
+        .fab svg { width: 28px; height: 28px; fill: #000; }
         
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .stat-card { background: rgba(0, 172, 238, 0.1); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
-        .stat-val { display: block; font-size: 26px; font-weight: 800; color: var(--primary); }
+        .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
+        .post-time { font-size: 11px; color: var(--text-muted); display: block; margin-top: -5px; margin-bottom: 10px; }
         
-        .close-btn { cursor: pointer; font-size: 22px; opacity: 0.8; padding: 5px; }
-        #search-row { display: none; padding: 10px; background: var(--bg); border-bottom: 1px solid var(--primary); }
+        .action-bar { display: flex; justify-content: space-around; border-top: 1px solid rgba(0, 229, 255, 0.08); padding-top: 15px; margin-top: 15px; }
+        .action-btn { background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: color 0.3s; padding: 5px 10px; border-radius: 20px; }
+        .action-btn:hover { color: var(--primary); }
+        .action-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-        /* Naya Style Logo ke liye */
-        .footer-branding { position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; pointer-events: none; }
-        .footer-branding p { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0; letter-spacing: 1px; text-transform: uppercase; }
-        .footer-logo { font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.6); margin-top: 2px; }
-        <link rel="icon" href="logo.jpg">
+        .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 15px; border: 1px solid rgba(0, 229, 255, 0.05); animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .stat-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid rgba(0, 229, 255, 0.2); text-align: center; }
+        .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); text-shadow: var(--neon-shadow); }
+        
+        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid rgba(0, 229, 255, 0.15); animation: slideDown 0.3s ease-out; }
+        #post-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 3000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        #post-modal.open { display: flex; opacity: 1; }
+
+        .from-saga { text-align: center; font-size: 10px; color: var(--text-muted); opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+        .auth-saga-logo { width: 80px; filter: drop-shadow(var(--neon-shadow)); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
     </style>
 </head>
 <body>
 
     <div id="auth-section" style="display:none; text-align:center; padding-top:100px;">
-        <h1 class="logo" style="font-size:45px;">Saga Twitte</h1>
-        <button id="googleLogin" style="background:#fff; color:#000; padding:15px 30px; margin-top:20px;">Login with Google</button>
-           <div style="position: absolute; bottom: 30px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
-        <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" style="width: 80px; filter: grayscale(1) brightness(2);">
-    </div>
+        <div class="logo auth-logo" style="justify-content:center; font-size: 50px;">
+            <span class="saga-logo-element">S</span> Saga Twitte
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 40px;">Welcome to the future of social media.</p>
+        
+        <div style="width: 250px; margin: 0 auto;">
+            <button id="googleLogin" class="btn-primary" style="background:#fff; color:#000; display:flex; align-items:center; justify-content:center; gap: 10px;">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 8.2c.12.54.18 1.1.18 1.68a8.82 8.82 0 01-9 9C3.93 18.88 0 14.95 0 10.12 0 5.28 3.93 1.35 8.82 1.35c2.38 0 4.38.86 5.92 2.27L12.1 6.2C11.16 5.28 9.94 4.8 8.82 4.8c-2.9 0-5.28 2.38-5.28 5.28s2.38 5.28 5.28 5.28c1.62 0 3-.98 3.6-2.38h-3.6V8.2h8.82z"/></svg>
+                Sign in with Google
+            </button>
+        </div>
 
+        <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" class="auth-saga-logo">
+            <div class="from-saga">from ree</div>
+        </div>
     </div>
 
     <div id="main-app" style="display:none;">
         <header>
-            <div class="logo" onclick="navTo('home')">Saga Twitte</div>
-            <div style="display:flex; align-items:center; gap:15px;">
-                <span onclick="toggleSearch()" style="cursor:pointer; font-size:20px;">🔍</span>
-                <img id="head-pic" class="p-pic" onclick="navTo('profile', true)" style="cursor:pointer; border:2px solid var(--primary);">
+            <div class="logo" onclick="navTo('home')">
+                <span class="saga-logo-element">S</span> Saga Twitte
+            </div>
+            <div style="display:flex; align-items:center; gap:18px;">
+                <span onclick="toggleSearch()" style="cursor:pointer; display: flex; color: var(--text-muted);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21.71 20.29l-1.42 1.42a1 1 0 01-1.42 0l-4.52-4.52A7.89 7.89 0 019 19a8 8 0 118-8 7.89 7.89 0 01-1.81 4.35l4.52 4.52a1 1 0 010 1.42zM4 11a7 7 0 1014 0 7 7 0 00-14 0z"/></svg>
+                </span>
+                <img id="head-pic" class="p-pic" onclick="navTo('profile', true)" style="cursor:pointer; width: 36px; height: 36px;">
             </div>
         </header>
 
         <div id="search-row">
             <div style="display:flex; gap:10px;">
                 <input type="text" id="sq" placeholder="Search @username...">
-                <button onclick="findUser()" style="background:var(--primary); color:white;">Go</button>
+                <button onclick="findUser()" class="btn-primary" style="width: auto;">Search</button>
             </div>
         </div>
 
         <div class="container">
             <div id="home-view"><div id="feed"></div></div>
 
-            <div id="profile-view" style="display:none;" class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <span class="close-btn" onclick="navTo('home')">✕</span>
-                    <span style="font-weight:bold; color:var(--primary);">Profile</span>
-                    <div style="width:24px;"></div>
-                </div>
-                <div style="text-align:center;">
-                    <img id="u-img" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
-                    <h2 id="u-name" style="margin:10px 0;">@username</h2>
-                    <div class="stats-grid">
-                        <div class="stat-card"><span id="s-stars" class="stat-val">0</span><small>Stars</small></div>
-                        <div class="stat-card"><span id="s-posts" class="stat-val">0</span><small>Posts</small></div>
+            <div id="profile-view" style="display:none;">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <span onclick="navTo('home')" style="cursor:pointer; font-size: 24px; color: var(--text-muted);">✕</span>
+                        <span style="font-weight:800; color:var(--primary); text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Profile</span>
+                        <div style="width:24px;"></div>
                     </div>
-                    <div id="my-controls" style="display:none;">
-                        <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:white; width:100%; margin-bottom:10px;">Edit Username</button>
-                        <p id="lock-timer" style="font-size:10px; color:var(--red);"></p>
-                        <button onclick="logout()" style="background:var(--red); color:white; width:100%;">Logout Account</button>
+                    <div style="text-align:center;">
+                        <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover; box-shadow: var(--neon-shadow);">
+                        <h2 id="u-name" style="margin:15px 0 5px 0; font-weight: 800;">@username</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card"><span id="s-stars" class="stat-val">0</span><small style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Stars</small></div>
+                            <div class="stat-card"><span id="s-posts" class="stat-val">0</span><small style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Posts</small></div>
+                        </div>
+                        <div id="my-controls" style="display:none; margin-top: 20px;">
+                            <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.05); color:white; width:100%; margin-bottom:10px;">Change Username</button>
+                            <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
+                            <button onclick="logout()" style="background:rgba(255, 68, 68, 0.1); color:var(--red); width:100%; border: 1px solid rgba(255, 68, 68, 0.3);">Log Out</button>
+                        </div>
                     </div>
                 </div>
-                <hr style="opacity:0.1; margin:20px 0;">
                 <div id="u-feed"></div>
             </div>
         </div>
 
-        <div id="fab-btn" class="fab" onclick="setPostModal(true)">+</div>
+        <div id="fab-btn" class="fab" onclick="setPostModal(true)">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+
+        <div style="padding: 30px 0;">
+            <div class="from-saga">from Saga Corporation</div>
+        </div>
     </div>
 
-    <div id="post-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center;">
-        <div class="container"><div class="card">
-            <span onclick="setPostModal(false)" style="float:right; cursor:pointer;">✕</span>
-            <h3 style="margin:0 0 15px 0;">Create Post</h3>
-            <textarea id="postInput" rows="5" placeholder="Kya chal raha hai?"></textarea>
-            <button class="btn-primary" onclick="doPost()" style="margin-top:15px;">Post Now</button>
-        </div></div>
+    <div id="post-modal" onclick="if(event.target===this) setPostModal(false)">
+        <div class="card" style="width: 90%; max-width: 450px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin:0; font-weight: 800;">New Post</h3>
+                <span onclick="setPostModal(false)" style="cursor:pointer; font-size: 20px; color: var(--text-muted);">✕</span>
+            </div>
+            <textarea id="postInput" rows="6" placeholder="What's happening?"></textarea>
+            <button class="btn-primary" onclick="doPost()" style="margin-top:20px; padding: 15px;">Post Now</button>
+        </div>
     </div>
 
     <script type="module">
@@ -126,6 +250,11 @@
             if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
         };
 
+        const iconStar = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
+        const iconComment = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
+        const iconShare = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
+        const iconDelete = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
+
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -135,6 +264,7 @@
                     location.reload();
                 } else {
                     me = dSnap.data();
+                    document.getElementById('head-pic').src = me.pic;
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
@@ -148,7 +278,6 @@
         window.navTo = (v, isMe = true, other = null) => {
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
-            document.getElementById('head-pic').src = auth.currentUser.photoURL;
             if(v === 'home') loadFeed("feed", null);
             if(v === 'profile') {
                 const user = isMe ? me : other;
@@ -160,46 +289,56 @@
         };
 
         function loadFeed(divId, uid) {
+            const currentUid = auth.currentUser?.uid;
+            if(!currentUid) return;
             let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
-                        : query(collection(db, "posts"), where("time", ">=", Date.now()-(7*86400000)), orderBy("time", "desc"));
+                        : query(collection(db, "posts"), orderBy("time", "desc"));
 
             onSnapshot(q, (s) => {
                 const div = document.getElementById(divId); div.innerHTML = "";
-                let stars = 0, posts = 0;
+                let starsCount = 0, postsCount = 0;
                 s.forEach(d => {
                     const p = d.data();
-                    if(uid) { stars += (p.stars?.length || 0); posts++; }
-                    const isStarred = p.stars?.includes(auth.currentUser.uid);
+                    if(uid) { starsCount += (p.stars?.length || 0); postsCount++; }
+                    const isStarred = p.stars?.includes(currentUid);
                     const el = document.createElement('div');
                     el.className = 'card';
                     el.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                             <img src="${p.pic}" class="p-pic">
-                            <strong onclick="findUserByUname('${p.username}')" style="cursor:pointer;">@${p.username}</strong>
-                            ${auth.currentUser.uid === p.uid ? `<span onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">🗑️</span>` : ''}
+                            <div>
+                                <strong onclick="window.findUserByUname('${p.username}')" style="cursor:pointer;">@${p.username}</strong>
+                                <span class="post-time">${timeAgo(p.time)}</span>
+                            </div>
+                            ${currentUid === p.uid ? `<span onclick="window.delPost('${d.id}')" style="margin-left:auto; cursor:pointer; color:var(--red); opacity:0.6;">${iconDelete}</span>` : ''}
                         </div>
-                        <span class="post-time">${timeAgo(p.time)}</span>
-                        <p>${p.text}</p>
+                        <p style="margin: 0; line-height: 1.5; font-size: 14px;">${p.text}</p>
                         <div class="action-bar">
-                            <span class="action-btn" onclick="starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">⭐ ${p.stars?.length || 0}</span>
-                            <span class="action-btn" onclick="toggleComs('${d.id}')">💬 ${p.comments?.length || 0}</span>
-                            <span class="action-btn" onclick="sharePost('${p.text}')">🔗 Share</span>
+                            <span class="action-btn" onclick="window.starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
+                                ${iconStar} ${p.stars?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="window.toggleComs('${d.id}')">
+                                ${iconComment} ${p.comments?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="window.sharePost('${p.text.replace(/'/g, "\\'")}')">
+                                ${iconShare} Share
+                            </span>
                         </div>
                         <div id="drawer-${d.id}" class="comment-drawer">
                             <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
-                                <div class="comment-msg">
-                                    <span><b>@${c.user}</b>: ${c.msg}</span>
-                                    ${(auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid) ? `<small onclick="delCom('${d.id}', ${i})" style="color:var(--red); cursor:pointer; font-weight:bold; margin-left:10px;">Del</small>` : ''}
+                                <div style="margin-bottom:10px; font-size:13px; display:flex; justify-content:space-between;">
+                                    <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
+                                    ${(currentUid === c.uid || currentUid === p.uid) ? `<span onclick="window.delCom('${d.id}', ${i})" style="color:var(--red); cursor:pointer;">${iconDelete}</span>` : ''}
                                 </div>`).join('')}</div>
-                            <div style="display:flex; gap:5px; margin-top:10px;">
+                            <div style="display:flex; gap:8px; margin-top:15px;">
                                 <input id="in-${d.id}" placeholder="Reply...">
-                                <button onclick="addCom('${d.id}')" style="background:var(--primary); font-size:10px; color:white;">Send</button>
+                                <button onclick="window.addCom('${d.id}')" class="btn-primary" style="width:auto;">Send</button>
                             </div>
                         </div>
                     `;
                     div.appendChild(el);
                 });
-                if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
+                if(uid) { document.getElementById('s-stars').innerText = starsCount; document.getElementById('s-posts').innerText = postsCount; }
             });
         }
 
@@ -211,7 +350,7 @@
                 document.getElementById('lock-timer').innerText = `Wait ${daysLeft} more days!`;
                 return;
             }
-            const newU = prompt("Enter new username:").toLowerCase().replace(/\s+/g,'');
+            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
             if(newU) {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now });
                 location.reload();
@@ -221,7 +360,7 @@
         window.doPost = async () => {
             const t = document.getElementById('postInput').value;
             if(!t.trim()) return;
-            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
+            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: me.pic, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
             document.getElementById('postInput').value = ""; setPostModal(false);
         };
 
@@ -240,17 +379,20 @@
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
-            if(s.empty) alert("No user!"); else navTo('profile', false, s.docs[0].data());
+            if(s.empty) alert("User not found!"); else navTo('profile', false, s.docs[0].data());
         };
         window.findUserByUname = async (un) => {
             const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
-            navTo('profile', false, s.docs[0].data());
+            if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
         window.delPost = async (id) => { if(confirm("Delete post?")) await deleteDoc(doc(db, "posts", id)); };
         window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
-        window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
-        window.sharePost = (t) => navigator.share({ title: 'Saga Twitte', text: t, url: location.href });
+        window.setPostModal = (s) => { const m = document.getElementById('post-modal'); s ? m.classList.add('open') : m.classList.remove('open'); };
+        window.sharePost = (t) => {
+            if (navigator.share) navigator.share({ title: 'Saga Twitte', text: t, url: location.href });
+            else alert("Text copied to clipboard!");
+        };
         window.logout = () => signOut(auth);
         document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
     </script>
