@@ -326,7 +326,18 @@
                 document.getElementById('loader-screen').style.display = 'none';
             }, 3000);
         });
-
+// Line 311 ke upar ye paste karein
+window.pasteText = async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        const input = document.getElementById('postInput');
+        input.value += text; 
+        input.focus();
+    } catch (err) {
+        console.error("Clipboard access denied", err);
+    }
+};
+        
         // THEME LOGIC (Dark/Light Mode)
         window.toggleTheme = () => {
             document.body.classList.toggle('light-mode');
