@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Jaya</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
-<link rel="apple-touch-icon" href="logo.jpg?v=1.1">
-<link rel="shortcut icon" href="logo.jpg?v=1.1">
-
-<link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.jpg?v=1.1">
+    <link rel="shortcut icon" href="logo.jpg?v=1.1">
+    <link rel="manifest" href="manifest.json">
 
      <style>
         /* --- DESKTOP OPTIMIZATION --- */
@@ -224,262 +223,223 @@
             </div>
         </div></div>
     </div>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const conf = { 
-        apiKey: "AIzaSyC2DSzlGsl5y3NwgOpgIOC-1OUYyKEaZ5k", 
-        authDomain: "saga-social-a13a4.firebaseapp.com", 
-        projectId: "saga-social-a13a4", 
-        storageBucket: "saga-social-a13a4.appspot.com" 
-    };
-    
-    const app = initializeApp(conf);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const gProv = new GoogleAuthProvider();
-    let me = null;
-    let isGuest = false;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Loader logic
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            document.getElementById('loader-screen').style.display = 'none';
-        }, 3000);
-    });
-
-    // Theme logic
-    window.toggleTheme = () => {
-        document.body.classList.toggle('light-mode');
-        localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
-    };
-    if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
-
-    const timeAgo = (t) => {
-        const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
-        if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
-    };
-
-    const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
-    const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
-    const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
-    const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
-
-    // Auth Listener
-    onAuthStateChanged(auth, async (u) => {
-        if(u) {
-            isGuest = false;
-            const dSnap = await getDoc(doc(db, "users", u.uid));
-            if(!dSnap.exists()) {
-                const un = u.displayName.replace(/\s+/g,'').toLowerCase() + Math.floor(Math.random()*99);
-                await setDoc(doc(db, "users", u.uid), { username: un, uid: u.uid, pic: u.photoURL, lastChange: Date.now() });
-                location.reload();
-            } else {
-                me = dSnap.data();
-                showAppUI();
-                navTo('home');
-            }
-        } else if (!isGuest) {
-            document.getElementById('auth-section').style.display = 'block';
-            document.getElementById('main-app').style.display = 'none';
-        }
-    });
-
-    // Modified Guest Access
-    window.showGuestFeed = () => {
-        isGuest = true;
-        showAppUI();
-        navTo('home');
-    };
-    document.getElementById('guest-trigger').onclick = showGuestFeed;
-
-    function showAppUI() {
-        document.getElementById('main-app').style.display = 'block';
-        document.getElementById('auth-section').style.display = 'none';
-    }
-
-    // Login Check Wrapper (Strictly allows star for guest now)
-    window.requireLogin = (cb, feature = "") => {
-        if(!auth.currentUser && !isGuest) {
-            alert("Please login first!");
-            location.reload();
-            return;
-        }
-        // If guest tries to do anything except viewing or starring
-        if(isGuest && feature !== "star") {
-            alert("Login required to use this feature!");
-            return;
-        }
-        cb();
-    };
-
-    window.navTo = (v, isMe = true, other = null) => {
-        if(v === 'profile' && isGuest && isMe) {
-            alert("Login to see your profile!");
-            return;
-        }
-        document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
-        document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
+        // Firebase Configuration
+        const conf = { 
+            apiKey: "AIzaSyC2DSzlGsl5y3NwgOpgIOC-1OUYyKEaZ5k", 
+            authDomain: "saga-social-a13a4.firebaseapp.com", 
+            projectId: "saga-social-a13a4", 
+            storageBucket: "saga-social-a13a4.appspot.com" 
+        };
         
-        if(auth.currentUser) {
-            document.getElementById('head-pic').src = auth.currentUser.photoURL;
-        } else {
-            document.getElementById('head-pic').src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-        }
+        const app = initializeApp(conf);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const gProv = new GoogleAuthProvider();
+        let me = null;
 
-        if(v === 'home') loadFeed("feed", null);
-        if(v === 'profile') {
-            const user = isMe ? me : other;
-            document.getElementById('u-img').src = user.pic;
-            document.getElementById('u-name').innerText = "@" + user.username;
-            document.getElementById('my-controls').style.display = (isMe && !isGuest) ? 'block' : 'none';
-            loadFeed("u-feed", user.uid);
-        }
-    };
-
-    function loadFeed(divId, uid) {
-        let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
-                    : query(collection(db, "posts"), orderBy("time", "desc"));
-
-        onSnapshot(q, (s) => {
-            const div = document.getElementById(divId); div.innerHTML = "";
-            let stars = 0, posts = 0;
-            s.forEach(d => {
-                const p = d.data();
-                if(uid) { stars += (p.stars?.length || 0); posts++; }
-                
-                // Check if starred (Guest uses LocalStorage to persist likes temporarily)
-                let isStarred = false;
-                if(auth.currentUser) {
-                    isStarred = p.stars?.includes(auth.currentUser.uid);
-                } else {
-                    const guestLikes = JSON.parse(localStorage.getItem('guest_likes') || "[]");
-                    isStarred = guestLikes.includes(d.id);
-                }
-
-                const el = document.createElement('div');
-                el.className = 'card';
-                el.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
-                        <img src="${p.pic}" class="p-pic">
-                        <div class="user-info">
-                            <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username}</strong>
-                            <span class="post-time">${timeAgo(p.time)}</span>
-                        </div>
-                        ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">${iconDelete}</div>` : ''}
-                    </div>
-                    <p style="margin: 0; line-height:1.5;">${p.text}</p>
-                    <div class="action-bar">
-                        <span class="action-btn" onclick="starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
-                            ${iconStar} ${p.stars?.length || 0}
-                        </span>
-                        <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'), 'comment')">
-                            ${iconComment} ${p.comments?.length || 0}
-                        </span>
-                        <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}')">
-                            ${iconShare} Share
-                        </span>
-                    </div>
-                    <div id="drawer-${d.id}" class="comment-drawer">
-                        <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
-                            <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                                <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
-                                ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
-                            </div>`).join('')}</div>
-                        <div style="display:flex; gap:8px; margin-top:15px;">
-                            <input id="in-${d.id}" placeholder="Reply...">
-                            <button onclick="requireLogin(() => addCom('${d.id}'), 'comment')" class="btn-primary" style="width:auto;">Send</button>
-                        </div>
-                    </div>
-                `;
-                div.appendChild(el);
-            });
-            if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
+        // 3 SECONDS LOADER TIMER
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader-screen').style.display = 'none';
+            }, 3000);
         });
-    }
 
-    // Star Action: Functional for both Guest and Logged users
-    window.starIt = async (id, has) => { 
-        if(auth.currentUser) {
-            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
-        } else if(isGuest) {
-            // Guest Star Logic: Using a unique device ID stored in localStorage
-            let gId = localStorage.getItem('guest_id');
-            if(!gId) { gId = 'guest_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('guest_id', gId); }
-            
-            let guestLikes = JSON.parse(localStorage.getItem('guest_likes') || "[]");
-            if(has) {
-                guestLikes = guestLikes.filter(l => l !== id);
-                await updateDoc(doc(db, "posts", id), { stars: arrayRemove(gId) });
+        // THEME LOGIC (Dark/Light Mode)
+        window.toggleTheme = () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        };
+        if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+        // HELPER: Time Ago formatter
+        const timeAgo = (t) => {
+            const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
+            if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
+        };
+
+        // Icons
+        const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
+        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
+        const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
+        const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
+
+        // Auth Listener
+        onAuthStateChanged(auth, async (u) => {
+            if(u) {
+                const dSnap = await getDoc(doc(db, "users", u.uid));
+                if(!dSnap.exists()) {
+                    const un = u.displayName.replace(/\s+/g,'').toLowerCase() + Math.floor(Math.random()*99);
+                    await setDoc(doc(db, "users", u.uid), { username: un, uid: u.uid, pic: u.photoURL, lastChange: Date.now() });
+                    location.reload();
+                } else {
+                    me = dSnap.data();
+                    document.getElementById('main-app').style.display = 'block';
+                    document.getElementById('auth-section').style.display = 'none';
+                    navTo('home');
+                }
             } else {
-                guestLikes.push(id);
-                await updateDoc(doc(db, "posts", id), { stars: arrayUnion(gId) });
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('main-app').style.display = 'none';
             }
-            localStorage.setItem('guest_likes', JSON.stringify(guestLikes));
-        } else {
-            requireLogin(() => {}, "star");
+        });
+
+        // Guest Login Feature
+        window.showGuestFeed = () => {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            loadFeed("feed", null);
+        };
+        document.getElementById('guest-trigger').onclick = showGuestFeed;
+
+        // Login Check Wrapper
+        window.requireLogin = (cb) => {
+            if(!auth.currentUser) {
+                alert("Please login first!");
+                document.getElementById('main-app').style.display = 'none';
+                document.getElementById('auth-section').style.display = 'block';
+            } else cb();
+        };
+
+        // Navigation
+        window.navTo = (v, isMe = true, other = null) => {
+            document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
+            document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
+            if(auth.currentUser) document.getElementById('head-pic').src = auth.currentUser.photoURL;
+            if(v === 'home') loadFeed("feed", null);
+            if(v === 'profile') {
+                const user = isMe ? me : other;
+                document.getElementById('u-img').src = user.pic;
+                document.getElementById('u-name').innerText = "@" + user.username;
+                document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
+                loadFeed("u-feed", user.uid);
+            }
+        };
+
+        // Load Posts Feed
+        function loadFeed(divId, uid) {
+            let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
+                        : query(collection(db, "posts"), orderBy("time", "desc"));
+
+            onSnapshot(q, (s) => {
+                const div = document.getElementById(divId); div.innerHTML = "";
+                let stars = 0, posts = 0;
+                s.forEach(d => {
+                    const p = d.data();
+                    if(uid) { stars += (p.stars?.length || 0); posts++; }
+                    const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
+                            <img src="${p.pic}" class="p-pic">
+                            <div class="user-info">
+                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username}</strong>
+                                <span class="post-time">${timeAgo(p.time)}</span>
+                            </div>
+                            ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">${iconDelete}</div>` : ''}
+                        </div>
+                        <p style="margin: 0; line-height:1.5;">${p.text}</p>
+                        <div class="action-bar">
+                            <span class="action-btn" onclick="starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
+                                ${iconStar} ${p.stars?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
+                                ${iconComment} ${p.comments?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}')">
+                                ${iconShare} Share
+                            </span>
+                        </div>
+                        <div id="drawer-${d.id}" class="comment-drawer">
+                            <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
+                                <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
+                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                                </div>`).join('')}</div>
+                            <div style="display:flex; gap:8px; margin-top:15px;">
+                                <input id="in-${d.id}" placeholder="Reply...">
+                                <button onclick="addCom('${d.id}')" class="btn-primary" style="width:auto;">Send</button>
+                            </div>
+                        </div>
+                    `;
+                    div.appendChild(el);
+                });
+                if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
+            });
         }
-    };
 
-    // Remaining actions restricted via requireLogin in HTML or JS
-    window.checkEditUsername = async () => {
-        if(isGuest) return;
-        const now = Date.now();
-        if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
-        const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
-        if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
-    };
+        // Action: Like/Star
+        window.starIt = async (id, has) => { 
+            if(!auth.currentUser) {
+                alert("Please login first!");
+                document.getElementById('main-app').style.display = 'none';
+                document.getElementById('auth-section').style.display = 'block';
+                return;
+            }
+            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
+        };
 
-    window.doPost = async () => {
-        if(isGuest) return;
-        const t = document.getElementById('postInput').value;
-        if(!t.trim()) return;
-        await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
-        document.getElementById('postInput').value = ""; setPostModal(false);
-    };
+        // Action: Edit Username
+        window.checkEditUsername = async () => {
+            const now = Date.now();
+            const diff = now - me.lastChange;
+            if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
+            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
+            if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
+        };
 
-    window.addCom = async (id) => {
-        const i = document.getElementById('in-'+id);
-        if(!i.value.trim()) return;
-        await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
-        i.value = "";
-    };
+        // Action: Create Post
+        window.doPost = async () => {
+            const t = document.getElementById('postInput').value;
+            if(!t.trim()) return;
+            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
+            document.getElementById('postInput').value = ""; setPostModal(false);
+        };
 
-    window.delCom = async (pid, idx) => {
-        const r = doc(db, "posts", pid); const s = await getDoc(r);
-        let c = s.data().comments; c.splice(idx, 1);
-        await updateDoc(r, { comments: c });
-    };
+        // Action: Add Comment
+        window.addCom = async (id) => {
+            const i = document.getElementById('in-'+id);
+            if(!i.value.trim()) return;
+            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
+            i.value = "";
+        };
 
-    window.findUser = async () => {
-        const qStr = document.getElementById('sq').value.toLowerCase().trim();
-        const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
-        if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
-    };
+        // Action: Delete Comment
+        window.delCom = async (pid, idx) => {
+            const r = doc(db, "posts", pid); const s = await getDoc(r);
+            let c = s.data().comments; c.splice(idx, 1);
+            await updateDoc(r, { comments: c });
+        };
 
-    window.findUserByUname = async (un) => {
-        const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
-        if(!s.empty) navTo('profile', false, s.docs[0].data());
-    };
+        // Action: Search User
+        window.findUser = async () => {
+            const qStr = document.getElementById('sq').value.toLowerCase().trim();
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
+            if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
+        };
 
-    window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
-    window.toggleSearch = () => { 
-        const r = document.getElementById('search-row'); 
-        r.style.display = r.style.display === 'block' ? 'none' : 'block'; 
-    };
-    window.toggleComs = (id) => { 
-        const d = document.getElementById('drawer-'+id); 
-        d.style.display = d.style.display === 'block' ? 'none' : 'block'; 
-    };
-    window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
-    window.sharePost = (t) => navigator.share({ title: 'The Jaya', text: t, url: location.href });
-    window.logout = () => { signOut(auth); location.reload(); };
-    
-    document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
-</script>
+        window.findUserByUname = async (un) => {
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
+            if(!s.empty) navTo('profile', false, s.docs[0].data());
+        };
 
-    
+        // Utilities
+        window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
+        window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
+        window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
+        window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
+        window.sharePost = (t) => navigator.share({ title: 'Jaya', text: t, url: location.href });
+        window.logout = () => { signOut(auth); location.reload(); };
+        
+        // Auth Trigger
+        document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
+    </script>
 </body>
 </html>
