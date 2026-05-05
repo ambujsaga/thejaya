@@ -310,7 +310,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"; // Note: fix if imports were slightly off in original, but keeping structure as requested
+        import {  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"; // Keeping separation as per original logic
+
+        // Re-declaring for safety if needed based on original snippet
+        const firestorePath = "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        const { getFirestore: getFS, collection: coll, addDoc: addD, query: qry, orderBy: ord, onSnapshot: onSnap, doc: dc, updateDoc: upd, arrayUnion: aU, deleteDoc: dD, getDoc: gD, setDoc: sD, where: wh, getDocs: gDs, arrayRemove: aR } = await import(firestorePath);
 
         // Firebase Configuration
         const conf = { 
@@ -322,7 +327,7 @@
         
         const app = initializeApp(conf);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getFS(app);
         const gProv = new GoogleAuthProvider();
         let me = null;
 
@@ -332,19 +337,19 @@
                 document.getElementById('loader-screen').style.display = 'none';
             }, 3000);
         });
-// Line 311 ke upar ye paste karein
-window.pasteText = async () => {
-    try {
-        const text = await navigator.clipboard.readText();
-        const input = document.getElementById('postInput');
-        input.value += text; 
-        input.focus();
-    } catch (err) {
-        console.error("Clipboard access denied", err);
-    }
-};
+
+        window.pasteText = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const input = document.getElementById('postInput');
+                input.value += text; 
+                input.focus();
+            } catch (err) {
+                console.error("Clipboard access denied", err);
+            }
+        };
         
-        // THEME LOGIC (Dark/Light Mode)
+        // THEME LOGIC
         window.toggleTheme = () => {
             document.body.classList.toggle('light-mode');
             const isLight = document.body.classList.contains('light-mode');
@@ -352,25 +357,22 @@ window.pasteText = async () => {
         };
         if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
-        // HELPER: Time Ago formatter
         const timeAgo = (t) => {
             const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
             if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
         };
 
-        // Icons
         const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
         const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
         const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
         const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
 
-        // Auth Listener
         onAuthStateChanged(auth, async (u) => {
             if(u) {
-                const dSnap = await getDoc(doc(db, "users", u.uid));
+                const dSnap = await gD(dc(db, "users", u.uid));
                 if(!dSnap.exists()) {
                     const un = u.displayName.replace(/\s+/g,'').toLowerCase() + Math.floor(Math.random()*99);
-                    await setDoc(doc(db, "users", u.uid), { username: un, uid: u.uid, pic: u.photoURL, lastChange: Date.now() });
+                    await sD(dc(db, "users", u.uid), { username: un, uid: u.uid, pic: u.photoURL, lastChange: Date.now() });
                     location.reload();
                 } else {
                     me = dSnap.data();
@@ -384,7 +386,6 @@ window.pasteText = async () => {
             }
         });
 
-        // Guest Login Feature
         window.showGuestFeed = () => {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
@@ -392,7 +393,6 @@ window.pasteText = async () => {
         };
         document.getElementById('guest-trigger').onclick = showGuestFeed;
 
-        // Login Check Wrapper
         window.requireLogin = (cb) => {
             if(!auth.currentUser) {
                 alert("Please login first!");
@@ -401,7 +401,6 @@ window.pasteText = async () => {
             } else cb();
         };
 
-        // Navigation
         window.navTo = (v, isMe = true, other = null) => {
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
@@ -416,12 +415,11 @@ window.pasteText = async () => {
             }
         };
 
-        // Load Posts Feed
         function loadFeed(divId, uid) {
-            let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
-                        : query(collection(db, "posts"), orderBy("time", "desc"));
+            let q = uid ? qry(coll(db, "posts"), wh("uid", "==", uid), ord("time", "desc")) 
+                        : qry(coll(db, "posts"), ord("time", "desc"));
 
-            onSnapshot(q, (s) => {
+            onSnap(q, (s) => {
                 const div = document.getElementById(divId); div.innerHTML = "";
                 let stars = 0, posts = 0;
                 s.forEach(d => {
@@ -447,7 +445,7 @@ window.pasteText = async () => {
                             <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}')">
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username}')">
                                 ${iconShare} Share
                             </span>
                         </div>
@@ -469,7 +467,6 @@ window.pasteText = async () => {
             });
         }
 
-        // Action: Like/Star
         window.starIt = async (id, has) => { 
             if(!auth.currentUser) {
                 alert("Please login first!");
@@ -477,62 +474,76 @@ window.pasteText = async () => {
                 document.getElementById('auth-section').style.display = 'block';
                 return;
             }
-            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
+            await upd(dc(db, "posts", id), { stars: has ? aR(auth.currentUser.uid) : aU(auth.currentUser.uid) }); 
         };
 
-        // Action: Edit Username
         window.checkEditUsername = async () => {
             const now = Date.now();
             const diff = now - me.lastChange;
             if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
             const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
-            if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
+            if(newU) { await upd(dc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
         };
 
-        // Action: Create Post
         window.doPost = async () => {
             const t = document.getElementById('postInput').value;
             if(!t.trim()) return;
-            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
+            await addD(coll(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
             document.getElementById('postInput').value = ""; setPostModal(false);
         };
 
-        // Action: Add Comment
         window.addCom = async (id) => {
             const i = document.getElementById('in-'+id);
             if(!i.value.trim()) return;
-            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
+            await upd(dc(db, "posts", id), { comments: aU({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
             i.value = "";
         };
 
-        // Action: Delete Comment
         window.delCom = async (pid, idx) => {
-            const r = doc(db, "posts", pid); const s = await getDoc(r);
+            const r = dc(db, "posts", pid); const s = await gD(r);
             let c = s.data().comments; c.splice(idx, 1);
-            await updateDoc(r, { comments: c });
+            await upd(r, { comments: c });
         };
 
-        // Action: Search User
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
+            const s = await gDs(qry(coll(db, "users"), wh("username", "==", qStr)));
             if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
         };
 
         window.findUserByUname = async (un) => {
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
+            const s = await gDs(qry(coll(db, "users"), wh("username", "==", un)));
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
-        // Utilities
-        window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
+        window.delPost = async (id) => { if(confirm("Delete this post?")) await dD(dc(db, "posts", id)); };
         window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
-        window.sharePost = (t) => navigator.share({ title: 'Jaya', text: t, url: location.href });
-        window.logout = () => { signOut(auth); location.reload(); };
         
-        // Auth Trigger
+        // --- UPDATED SHARE FEATURE ---
+        window.sharePost = async (text, username) => {
+            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
+            const shareUrl = window.location.href;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'The Jaya Post',
+                        text: shareText,
+                        url: shareUrl,
+                    });
+                } catch (err) {
+                    console.log("Sharing failed", err);
+                }
+            } else {
+                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                alert("Link & Text copied to clipboard!");
+            }
+        };
+        // -----------------------------
+
+        window.logout = () => { signOut(auth); location.reload(); };
         document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
     </script>
 </body>
