@@ -1,48 +1,43 @@
-<div style="margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw; background-color: #0d061a; position: relative;">
+<div style="margin: 0; padding: 20px; min-height: 100vh; width: 100vw; background-color: #0d061a; color: white; font-family: sans-serif;">
     
-    <iframe 
-        src="https://quote-bot--ambujewns404.replit.app" 
-        style="border: none; width: 100%; height: 100%; background-color: #0d061a;"
-        allowfullscreen>
-    </iframe>
+    <h2 style="color: #ffcc33; text-align: center;">AI Notes Viewer</h2>
 
-    <a href="index.html" style="
-        position: absolute;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        text-decoration: none;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 12px 60px;
-        border-radius: 50px;
-        color: #ffcc33; 
-        font-family: sans-serif;
-        font-size: 16px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        transition: 0.3s;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-        z-index: 999; /* Isse button hamesha upar dikhega */
-    " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-       onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
-        BACK
-    </a>
-<button onclick="copySpecificText('Aapka Text')" style="position: absolute; top: 10px; right: 10px; z-index: 1000;">
-   Copy Row 1
-</button>
+    <div id="content-area" style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 80px;">
+        Loading notes...
+    </div>
+
+    <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px;">
+        <button onclick="loadNotes()" style="padding: 12px 30px; border-radius: 50px; background: #ffcc33; border: none; font-weight: bold; cursor: pointer;">
+            REFRESH NOTES
+        </button>
+        <a href="index.html" style="text-decoration: none; background: rgba(255, 255, 255, 0.1); padding: 12px 40px; border-radius: 50px; color: white; border: 1px solid rgba(255,255,255,0.2);">
+            BACK
+        </a>
+    </div>
+</div>
 
 <script>
-function copySpecificText(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        alert("Text Copied: " + text);
-    }).catch(err => {
-        console.error('Copy nahi ho paya', err);
-    });
-}
-</script>
+async function loadNotes() {
+    const contentArea = document.getElementById('content-area');
+    const targetUrl = 'https://quote-bot--ambujewns404.replit.app';
     
-</div>
+    // CORS bypass karne ke liye proxy ka use (agar zaroorat padi)
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+
+    try {
+        const response = await fetch(proxyUrl);
+        const data = await response.text();
+        
+        // Isse website ka text screen par aa jayega
+        contentArea.innerHTML = data;
+        
+        // Ab aap normal text ki tarah select aur copy kar payenge
+    } catch (error) {
+        contentArea.innerHTML = "Error: Data load nahi ho paya. Ek baar check karein ki Replit app 'Run' ho rahi hai ya nahi.";
+        console.error("Fetch error:", error);
+    }
+}
+
+// Page load hote hi function run ho jaye
+window.onload = loadNotes;
+</script>
