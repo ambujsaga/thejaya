@@ -10,6 +10,37 @@
     <link rel="icon" href="/logo.jpg" type="image/jpeg">
 
     <style>
+        /* Website ko Mobile mode me lock karne ke liye */
+body {
+    max-width: 450px; /* Mobile width lock */
+    margin: 0 auto !important; /* Center alignment */
+    border-left: 1px solid rgba(0, 229, 255, 0.1);
+    border-right: 1px solid rgba(0, 229, 255, 0.1);
+    min-height: 100vh;
+    position: relative;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Desktop par side shadows */
+}
+
+/* Header aur Footer (FAB) ko bhi center me rakhne ke liye */
+header, #search-row {
+    max-width: 450px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+}
+
+.fab {
+    /* FAB button ko frame ke andar rakhne ke liye */
+    right: calc(50% - 200px); 
+}
+
+/* Agar screen 450px se badi hai (Desktop), toh background dark rakhega */
+@media screen and (min-width: 451px) {
+    html {
+        background-color: #000; /* Desktop sides ka color */
+    }
+}
+
         :root { 
             --primary: #00e5ff; 
             --bg: #030a1a; 
