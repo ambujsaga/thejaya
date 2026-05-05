@@ -534,6 +534,27 @@ window.pasteText = async () => {
         
         // Auth Trigger
         document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
+   // --- UPDATED SHARE FEATURE ---
+        window.sharePost = async (text, username) => {
+            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
+            const shareUrl = window.location.href;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'The Jaya Post',
+                        text: shareText,
+                        url: shareUrl,
+                    });
+                } catch (err) {
+                    console.log("Sharing failed", err);
+                }
+            } else {
+                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                alert("Link & Text copied to clipboard!");
+            }
+        };
+        // -----------------------------
     </script>
 </body>
 </html>
