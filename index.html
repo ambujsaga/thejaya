@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Saga Twitte</title>
 
     <link rel="apple-touch-icon" href="logo.jpg">
@@ -10,37 +10,6 @@
     <link rel="icon" href="/logo.jpg" type="image/jpeg">
 
     <style>
-        /* Website ko Mobile mode me lock karne ke liye */
-body {
-    max-width: 450px; /* Mobile width lock */
-    margin: 0 auto !important; /* Center alignment */
-    border-left: 1px solid rgba(0, 229, 255, 0.1);
-    border-right: 1px solid rgba(0, 229, 255, 0.1);
-    min-height: 100vh;
-    position: relative;
-    box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Desktop par side shadows */
-}
-
-/* Header aur Footer (FAB) ko bhi center me rakhne ke liye */
-header, #search-row {
-    max-width: 450px;
-    margin: 0 auto;
-    left: 0;
-    right: 0;
-}
-
-.fab {
-    /* FAB button ko frame ke andar rakhne ke liye */
-    right: calc(50% - 200px); 
-}
-
-/* Agar screen 450px se badi hai (Desktop), toh background dark rakhega */
-@media screen and (min-width: 451px) {
-    html {
-        background-color: #000; /* Desktop sides ka color */
-    }
-}
-
         :root { 
             --primary: #00e5ff; 
             --bg: #030a1a; 
@@ -52,18 +21,32 @@ header, #search-row {
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
         }
 
+        /* Desktop Mode Block Logic */
+        html {
+            background-color: #000; /* Sides ka color desktop par black dikhega */
+            display: flex;
+            justify-content: center;
+        }
+
         body { 
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             background: var(--bg); 
             color: var(--text-main); 
             margin: 0; 
             padding-bottom: 100px; 
-            overflow-x: hidden; 
+            overflow-x: hidden;
+            /* MOBILE LOCK CODE */
+            width: 100%;
+            max-width: 450px; /* Desktop site on karne par bhi itna hi bada dikhega */
+            min-height: 100vh;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            position: relative;
         }
 
         #loader-screen {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+            max-width: 450px; margin: 0 auto;
         }
         .spinner {
             width: 50px; height: 50px; border: 5px solid rgba(0, 229, 255, 0.1);
@@ -84,10 +67,11 @@ header, #search-row {
             position: sticky; 
             top: 0; 
             z-index: 1000; 
+            max-width: 450px;
         }
 
         .logo { font-size: 24px; font-weight: 800; color: var(--primary); cursor: pointer; text-shadow: var(--neon-shadow); }
-        .container { width: 95%; max-width: 500px; margin: 15px auto; }
+        .container { width: 95%; margin: 15px auto; }
         
         .card { 
             background: var(--card-bg); 
@@ -95,7 +79,6 @@ header, #search-row {
             border-radius: 20px; 
             border: 1px solid rgba(0, 229, 255, 0.1); 
             margin-bottom: 20px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         input, textarea { 
@@ -113,7 +96,8 @@ header, #search-row {
         .btn-primary { background: var(--primary); color: #000; width: 100%; box-shadow: var(--neon-shadow); }
 
         .fab { 
-            position: fixed; bottom: 35px; right: 25px; 
+            position: fixed; bottom: 35px; 
+            left: 50%; transform: translateX(140px); /* Positioned relative to the 450px frame */
             width: 60px; height: 60px; 
             background: var(--primary); 
             border-radius: 50%; 
@@ -121,6 +105,11 @@ header, #search-row {
             color: #000; 
             box-shadow: var(--neon-shadow); 
             z-index: 2000; cursor: pointer; 
+        }
+
+        /* Adjustment for smaller screens */
+        @media screen and (max-width: 450px) {
+            .fab { left: auto; right: 25px; transform: none; }
         }
 
         .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
@@ -131,14 +120,13 @@ header, #search-row {
         .action-btn { background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         
         svg { width: 20px; height: 20px; fill: currentColor; }
-        .del-icon { width: 18px; height: 18px; fill: var(--red); opacity: 0.7; transition: 0.3s; }
-        .del-icon:hover { opacity: 1; }
+        .del-icon { width: 18px; height: 18px; fill: var(--red); }
 
         .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 15px; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stat-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
-        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); }
+        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); max-width: 450px; }
     </style>
 </head>
 <body>
@@ -152,9 +140,6 @@ header, #search-row {
         <h1 class="logo" style="font-size:45px;">Saga Twitte</h1>
         <button id="googleLogin" class="btn-primary" style="background:#fff; color:#000; width:auto; padding:15px 40px; margin-top:30px;">Login with Google</button>
         <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
-        <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
-            <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="logo" style="width: 80px; filter: brightness(2);">
-        </div>
     </div>
 
     <div id="main-app" style="display:none;">
@@ -170,7 +155,7 @@ header, #search-row {
 
         <div id="search-row">
             <div style="display:flex; gap:10px;">
-                <input type="text" id="sq" placeholder="Search @username...">
+                <input type="text" id="sq" placeholder="Search username...">
                 <button onclick="findUser()" class="btn-primary" style="width: auto;">Go</button>
             </div>
         </div>
@@ -192,7 +177,6 @@ header, #search-row {
                     </div>
                     <div id="my-controls" style="display:none;">
                         <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:white; width:100%; margin-bottom:10px;">Edit Username</button>
-                        <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
                         <button onclick="logout()" style="background:var(--red); color:white; width:100%;">Logout</button>
                     </div>
                 </div>
@@ -206,11 +190,11 @@ header, #search-row {
     </div>
 
     <div id="post-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center;">
-        <div class="container"><div class="card">
+        <div class="container" style="max-width: 400px;"><div class="card">
             <h3 style="margin:0 0 20px 0;">New Post</h3>
-            <textarea id="postInput" rows="5" placeholder="What's happening?"></textarea>
+            <textarea id="postInput" rows="5" placeholder="Write something..."></textarea>
             <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-primary" onclick="doPost()">Post Now</button>
+                <button class="btn-primary" onclick="doPost()">Post</button>
                 <button onclick="setPostModal(false)" style="background:rgba(255,255,255,0.1); color:white;">Cancel</button>
             </div>
         </div></div>
@@ -228,11 +212,7 @@ header, #search-row {
         const gProv = new GoogleAuthProvider();
         let me = null;
 
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader-screen').style.display = 'none';
-            }, 3000);
-        });
+        window.addEventListener('load', () => { setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000); });
 
         const timeAgo = (t) => {
             const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
@@ -281,11 +261,7 @@ header, #search-row {
         window.navTo = (v, isMe = true, other = null) => {
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
-            if(auth.currentUser) {
-                document.getElementById('head-pic').src = auth.currentUser.photoURL;
-            } else {
-                document.getElementById('head-pic').src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            }
+            if(auth.currentUser) document.getElementById('head-pic').src = auth.currentUser.photoURL;
             if(v === 'home') loadFeed("feed", null);
             if(v === 'profile') {
                 const user = isMe ? me : other;
@@ -306,10 +282,7 @@ header, #search-row {
                 s.forEach(d => {
                     const p = d.data();
                     if(uid) { stars += (p.stars?.length || 0); posts++; }
-                    
-                    const voterId = auth.currentUser ? auth.currentUser.uid : 'guest_user';
-                    const isStarred = p.stars?.includes(voterId);
-
+                    const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
                     const el = document.createElement('div');
                     el.className = 'card';
                     el.innerHTML = `
@@ -352,17 +325,14 @@ header, #search-row {
         }
 
         window.starIt = async (id, has) => { 
-            const voterId = auth.currentUser ? auth.currentUser.uid : 'guest_user';
-            await updateDoc(doc(db, "posts", id), { 
-                stars: has ? arrayRemove(voterId) : arrayUnion(voterId) 
-            }); 
+            const voter = auth.currentUser ? auth.currentUser.uid : "guest-voter";
+            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(voter) : arrayUnion(voter) }); 
         };
 
         window.checkEditUsername = async () => {
             const now = Date.now();
-            const diff = now - me.lastChange;
-            if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
-            const newU = prompt("Enter new username:").toLowerCase().replace(/\s+/g,'');
+            if(now - me.lastChange < 7*24*60*60*1000) { alert("Wait 7 days!"); return; }
+            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
             if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
         };
 
@@ -380,12 +350,6 @@ header, #search-row {
             i.value = "";
         };
 
-        window.delCom = async (pid, idx) => {
-            const r = doc(db, "posts", pid); const s = await getDoc(r);
-            let c = s.data().comments; c.splice(idx, 1);
-            await updateDoc(r, { comments: c });
-        };
-
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
@@ -397,7 +361,7 @@ header, #search-row {
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
-        window.delPost = async (id) => { if(confirm("Are you sure you want to delete this post?")) await deleteDoc(doc(db, "posts", id)); };
+        window.delPost = async (id) => { if(confirm("Delete post?")) await deleteDoc(doc(db, "posts", id)); };
         window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
