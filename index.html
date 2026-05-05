@@ -3,76 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saga Twitte</title>
-<link rel="manifest" href="/manifest.json">
+    <title>Jaya</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
-<link rel="apple-touch-icon" href="logo.jpg?v=1.1">
+    <link rel="apple-touch-icon" href="logo.jpg?v=1.1">
      <style>
         /* --- DESKTOP OPTIMIZATION --- */
-@media (min-width: 768px) {
-    .container {
-        max-width: 700px; /* Desktop par thoda wide layout */
-        margin: 30px auto;
-    }
+        @media (min-width: 768px) {
+            .container { max-width: 700px; margin: 30px auto; }
+            header { padding: 15px 10%; }
+            .logo { font-size: 28px; }
+            .card { padding: 25px; border-radius: 24px; transition: transform 0.2s ease; }
+            .card:hover { border-color: var(--primary); }
+            input, textarea { font-size: 16px; }
+            .fab { right: 50px; bottom: 50px; width: 70px; height: 70px; }
+            .p-pic { width: 50px; height: 50px; }
+            .stats-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+            #post-modal .container { max-width: 600px; }
+        }
 
-    header {
-        padding: 15px 10%; /* Header side se thoda gap lega */
-    }
-
-    .logo {
-        font-size: 28px;
-    }
-
-    .card {
-        padding: 25px;
-        border-radius: 24px;
-        transition: transform 0.2s ease;
-    }
-
-    /* Hover effect for desktop users */
-    .card:hover {
-        border-color: var(--primary);
-    }
-
-    input, textarea {
-        font-size: 16px; /* Browser zoom prevent karne ke liye standard size */
-    }
-
-    .fab {
-        right: 50px;
-        bottom: 50px;
-        width: 70px;
-        height: 70px;
-    }
-
-    .p-pic {
-        width: 50px;
-        height: 50px;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr; /* Desktop par stats ek line mein */
-        gap: 20px;
-    }
-
-    #post-modal .container {
-        max-width: 600px;
-    }
-}
-
-/* Scrollbar ko sundar banane ke liye (Optional) */
-::-webkit-scrollbar {
-    width: 8px;
-}
-::-webkit-scrollbar-track {
-    background: var(--bg);
-}
-::-webkit-scrollbar-thumb {
-    background: var(--card-bg);
-    border-radius: 10px;
-    border: 1px solid var(--primary);
-}
-
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--primary); }
 
         :root { 
             --primary: #00e5ff; 
@@ -85,6 +37,16 @@
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
         }
 
+        /* --- LIGHT MODE THEME --- */
+        body.light-mode {
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #1c1e21;
+            --text-muted: #65676b;
+            --primary: #008ad3;
+            --neon-shadow: 0 4px 12px rgba(0, 138, 211, 0.2);
+        }
+
         body { 
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             background: var(--bg); 
@@ -92,9 +54,9 @@
             margin: 0; 
             padding-bottom: 100px; 
             overflow-x: hidden; 
+            transition: background 0.3s ease;
         }
 
-        /* --- 3 SECONDS LOADER --- */
         #loader-screen {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
@@ -139,13 +101,13 @@
             border: 1px solid rgba(255, 255, 255, 0.1); 
             border-radius: 12px; 
             padding: 12px; 
-            color: white; 
+            color: var(--text-main); 
             box-sizing: border-box; 
             outline: none; 
         }
         
         button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
-        .btn-primary { background: var(--primary); color: #000; width: 100%; box-shadow: var(--neon-shadow); }
+        .btn-primary { background: var(--primary); color: #fff; width: 100%; box-shadow: var(--neon-shadow); }
 
         .fab { 
             position: fixed; bottom: 35px; right: 25px; 
@@ -153,7 +115,7 @@
             background: var(--primary); 
             border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; 
-            color: #000; 
+            color: #fff; 
             box-shadow: var(--neon-shadow); 
             z-index: 2000; cursor: pointer; 
         }
@@ -175,17 +137,12 @@
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); }
 
-        /* --- DESKTOP & PROFESSIONAL IMPROVEMENTS --- */
-        @media (min-width: 768px) {
-            .container { max-width: 600px; margin-top: 30px; }
-            header { padding: 15px 10%; }
-            .card { transition: transform 0.2s ease; }
-            .card:hover { transform: translateY(-3px); border-color: var(--primary); }
-            .fab { bottom: 50px; right: 50px; width: 70px; height: 70px; transition: 0.3s; }
-            .fab:hover { transform: scale(1.1) rotate(90deg); }
-            ::-webkit-scrollbar { width: 8px; }
-            ::-webkit-scrollbar-track { background: var(--bg); }
-            ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--primary); }
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid var(--primary);
         }
     </style>
 </head>
@@ -193,21 +150,21 @@
 
     <div id="loader-screen">
         <div class="spinner"></div>
-        <h1 class="logo">Saga Twitte</h1>
+        <h1 class="logo">Jaya</h1>
     </div>
 
     <div id="auth-section" style="display:none; text-align:center; padding-top:100px;">
-        <h1 class="logo" style="font-size:45px;">Saga Twitte</h1>
+        <h1 class="logo" style="font-size:45px;">Jaya</h1>
         <button id="googleLogin" class="btn-primary" style="background:#fff; color:#000; width:auto; padding:15px 40px; margin-top:30px;">Login with Google</button>
         <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
         <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
-            <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" style="width: 80px; filter: brightness(2);">
+            <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="logo" style="width: 80px; filter: brightness(2);">
         </div>
     </div>
 
     <div id="main-app" style="display:none;">
         <header>
-            <div class="logo" onclick="navTo('home')">Saga Twitte</div>
+            <div class="logo" onclick="navTo('home')">Jaya</div>
             <div style="display:flex; align-items:center; gap:18px;">
                 <span onclick="requireLogin(toggleSearch)" style="cursor:pointer; display: flex; color: var(--text-muted);">
                     <svg viewBox="0 0 24 24"><path d="M21.71 20.29l-1.42 1.42a1 1 0 01-1.42 0l-4.52-4.52A7.89 7.89 0 019 19a8 8 0 118-8 7.89 7.89 0 01-1.81 4.35l4.52 4.52a1 1 0 010 1.42zM4 11a7 7 0 1014 0 7 7 0 00-14 0z"/></svg>
@@ -239,7 +196,8 @@
                         <div class="stat-card"><span id="s-posts" class="stat-val">0</span><small>Posts</small></div>
                     </div>
                     <div id="my-controls" style="display:none;">
-                        <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:white; width:100%; margin-bottom:10px;">Edit Username</button>
+                        <button onclick="toggleTheme()" class="theme-toggle">Toggle Light/Dark Mode</button>
+                        <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:var(--text-main); width:100%; margin-bottom:10px; border:1px solid rgba(255,255,255,0.2);">Edit Username</button>
                         <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
                         <button onclick="logout()" style="background:var(--red); color:white; width:100%;">Logout</button>
                     </div>
@@ -259,7 +217,7 @@
             <textarea id="postInput" rows="5" placeholder="What's happening?"></textarea>
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-primary" onclick="doPost()">Post Now</button>
-                <button onclick="setPostModal(false)" style="background:rgba(255,255,255,0.1); color:white;">Cancel</button>
+                <button onclick="setPostModal(false)" style="background:rgba(255,255,255,0.1); color:var(--text-main);">Cancel</button>
             </div>
         </div></div>
     </div>
@@ -282,6 +240,14 @@
                 document.getElementById('loader-screen').style.display = 'none';
             }, 3000);
         });
+
+        // THEME LOGIC
+        window.toggleTheme = () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        };
+        if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
         const timeAgo = (t) => {
             const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
@@ -312,7 +278,6 @@
             }
         });
 
-        // GUEST MODE LOGIC
         window.showGuestFeed = () => {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
@@ -322,7 +287,7 @@
 
         window.requireLogin = (cb) => {
             if(!auth.currentUser) {
-                alert("Login karo pahle!");
+                alert("Please login first!");
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'block';
             } else cb();
@@ -396,7 +361,7 @@
 
         window.starIt = async (id, has) => { 
             if(!auth.currentUser) {
-                alert("Login karo pahle!");
+                alert("Please login first!");
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'block';
                 return;
@@ -407,7 +372,7 @@
         window.checkEditUsername = async () => {
             const now = Date.now();
             const diff = now - me.lastChange;
-            if(diff < 7*24*60*60*1000) { alert("7 din ruko!"); return; }
+            if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
             const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
             if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
         };
@@ -435,7 +400,7 @@
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
-            if(s.empty) alert("No user!"); else navTo('profile', false, s.docs[0].data());
+            if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
         };
 
         window.findUserByUname = async (un) => {
@@ -443,11 +408,11 @@
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
-        window.delPost = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "posts", id)); };
+        window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
         window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
-        window.sharePost = (t) => navigator.share({ title: 'Saga Twitte', text: t, url: location.href });
+        window.sharePost = (t) => navigator.share({ title: 'Jaya', text: t, url: location.href });
         window.logout = () => { signOut(auth); location.reload(); };
         document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
     </script>
