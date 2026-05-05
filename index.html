@@ -360,4 +360,18 @@
             if(s.empty) alert("No user!"); else navTo('profile', false, s.docs[0].data());
         };
 
-        window.fi
+        window.findUserByUname = async (un) => {
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
+            if(!s.empty) navTo('profile', false, s.docs[0].data());
+        };
+
+        window.delPost = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "posts", id)); };
+        window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
+        window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
+        window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
+        window.sharePost = (t) => navigator.share({ title: 'Saga Twitte', text: t, url: location.href });
+        window.logout = () => { signOut(auth); location.reload(); };
+        document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
+    </script>
+</body>
+</html>
