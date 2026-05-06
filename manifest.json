@@ -2,17 +2,21 @@
   "name": "The Jaya",
   "short_name": "The Jaya",
   "icons": [
-  {
-    "src": "logo.jpg?v=1.1",
-    "sizes": "192x192",
-    "type": "image/jpeg"
-  },
-  {
-    "src": "logo.jpg?v=1.1",
-    "sizes": "512x512",
-    "type": "image/jpeg"
-  }
-]
-    "start_url": "/index.html",
-  "display": "standalone"
+    {
+      "src": "logo.jpg?v=1.1",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.jpg?v=1.1",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#030a1a",
+  "theme_color": "#00e5ff"
 }
