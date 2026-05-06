@@ -250,67 +250,32 @@
 
     <div id="post-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center;">
         <div class="container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"><div class="card">
-            <h3 style="margin:0 0 20px 0;">New Post</h3>
+            <h3 style="margin:0 0 10px 0;">New Post</h3>
             <textarea id="postInput" rows="5" placeholder="What's happening?" oninput="limitWords(this)"></textarea>
-<div id="wordCount" style="font-size: 12px; color: var(--text-muted); text-align: right; margin-top: 5px;">
-    Words: 0 / 150
-</div>
-<div style="display:flex; gap:10px; margin-top:20px;">
+            <div id="wordCount" style="font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px;">Words: 0 / 90</div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn-primary" onclick="doPost()">Post Now</button>
                 <button onclick="setPostModal(false)" style="background:rgba(255,255,255,0.1); color:var(--text-main);">Cancel</button>
                 <button onclick="pasteText()" style="background:var(--card-bg); color:var(--primary); border:1px solid var(--primary); width: auto;">Paste</button>
-                <br>
-                <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" style="text-decoration: none; display: block; margin-top: 15px; text-align: center;">
-                    <button style="background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid var(--primary); width: 100%;">✨ AI Notes</button>
-                </a>
             </div>
+            <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" style="text-decoration: none; display: block; margin-top: 15px; text-align: center;">
+                <button style="background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid var(--primary); width: 100%;">✨ AI Notes</button>
+            </a>
         </div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"; // Note: Fixed redundant Firestore import logic in head
 
-        // --- PWA SERVICE WORKER REGISTRATION ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('SW Registered');
-                }).catch(err => console.log('SW Failed', err));
-            });
-        }
-
-        // --- INSTALL LOGIC ---
-        let deferredPrompt;
-        const installBtn = document.getElementById('custom-install-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-        });
-
-        // Firebase Configuration
+        // Firebase Configuration (Same as before)
         const conf = { 
             apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
-  authDomain: "the-jaya-by-ree.firebaseapp.com",
-  databaseURL: "https://the-jaya-by-ree-default-rtdb.firebaseio.com",
-  projectId: "the-jaya-by-ree",
-  storageBucket: "the-jaya-by-ree.firebasestorage.app", 
+            authDomain: "the-jaya-by-ree.firebaseapp.com",
+            databaseURL: "https://the-jaya-by-ree-default-rtdb.firebaseio.com",
+            projectId: "the-jaya-by-ree",
+            storageBucket: "the-jaya-by-ree.firebasestorage.app", 
         };
         
         const app = initializeApp(conf);
@@ -319,11 +284,30 @@
         const gProv = new GoogleAuthProvider();
         let me = null;
 
-        // 3 SECONDS LOADER TIMER
+        // --- WORD LIMIT LOGIC (90 WORDS) ---
+        window.limitWords = (element) => {
+            const maxWords = 90;
+            let value = element.value;
+            
+            // Words split and filter empty strings
+            let words = value.trim().split(/\s+/).filter(w => w.length > 0);
+            let count = words.length;
+
+            if (count > maxWords) {
+                // Keep only first 90 words
+                const trimmed = words.slice(0, maxWords).join(" ");
+                element.value = trimmed;
+                count = maxWords;
+            }
+
+            const counter = document.getElementById('wordCount');
+            counter.innerText = `Words: ${count} / ${maxWords}`;
+            counter.style.color = count >= maxWords ? 'var(--red)' : 'var(--text-muted)';
+        };
+
+        // --- REST OF THE SCRIPTS ---
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader-screen').style.display = 'none';
-            }, 3000);
+            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
         });
 
         window.pasteText = async () => {
@@ -331,17 +315,14 @@
                 const text = await navigator.clipboard.readText();
                 const input = document.getElementById('postInput');
                 input.value += text; 
+                limitWords(input); // Trigger limit on paste
                 input.focus();
-            } catch (err) {
-                console.error("Clipboard access denied", err);
-            }
+            } catch (err) {}
         };
-        
-        // THEME LOGIC
+
         window.toggleTheme = () => {
             document.body.classList.toggle('light-mode');
-            const isLight = document.body.classList.contains('light-mode');
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         };
         if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
@@ -456,26 +437,16 @@
         }
 
         window.starIt = async (id, has) => { 
-            if(!auth.currentUser) {
-                alert("Please login first!");
-                return;
-            }
+            if(!auth.currentUser) return alert("Please login!");
             await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
         };
 
-        window.checkEditUsername = async () => {
-            const now = Date.now();
-            const diff = now - me.lastChange;
-            if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
-            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
-            if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
-        };
-
         window.doPost = async () => {
-            const t = document.getElementById('postInput').value;
-            if(!t.trim()) return;
+            const el = document.getElementById('postInput');
+            const t = el.value.trim();
+            if(!t) return;
             await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
-            document.getElementById('postInput').value = ""; setPostModal(false);
+            el.value = ""; document.getElementById('wordCount').innerText = "Words: 0 / 90"; setPostModal(false);
         };
 
         window.addCom = async (id) => {
@@ -485,21 +456,10 @@
             i.value = "";
         };
 
-        window.delCom = async (pid, idx) => {
-            const r = doc(db, "posts", pid); const s = await getDoc(r);
-            let c = s.data().comments; c.splice(idx, 1);
-            await updateDoc(r, { comments: c });
-        };
-
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
             if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
-        };
-
-        window.findUserByUname = async (un) => {
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
-            if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
@@ -508,40 +468,13 @@
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
         
         window.sharePost = async (text, username) => {
-            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
-            const shareUrl = window.location.href;
-            if (navigator.share) {
-                try { await navigator.share({ title: 'The Jaya Post', text: shareText, url: shareUrl }); } catch (err) {}
-            } else {
-                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                alert("Link & Text copied!");
-            }
+            const shareText = `"${text}"\n\n~by @${username} on The Jaya`;
+            if (navigator.share) await navigator.share({ title: 'The Jaya', text: shareText, url: window.location.href });
+            else { navigator.clipboard.writeText(shareText); alert("Copied!"); }
         };
 
         window.logout = () => { signOut(auth); location.reload(); };
         document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
-        window.limitWords = (element) => {
-    const maxWords = 150;
-    let value = element.value;
-    
-    // Words ko split karke count karna (extra spaces ko hatakar)
-    let words = value.trim().split(/\s+/);
-    let wordCount = value.trim() === "" ? 0 : words.length;
-
-    if (wordCount > maxWords) {
-        // Agar 150 se zyada hain, toh pehle 150 words ko nikaal kar wapas set karna
-        const trimmedText = words.slice(0, maxWords).join(" ");
-        element.value = trimmedText;
-        wordCount = maxWords;
-    }
-
-    // Counter update karna
-    document.getElementById('wordCount').innerText = `Words: ${wordCount} / ${maxWords}`;
-    
-    // UI Feedback: Agar limit reach ho jaye toh red color dikhana
-    document.getElementById('wordCount').style.color = wordCount >= maxWords ? 'var(--red)' : 'var(--text-muted)';
-};
-        
     </script>
 </body>
 </html>
