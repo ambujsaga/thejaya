@@ -1,15 +1,15 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Jaya</title>
-      <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
+    <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
     <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
-    
     <link rel="manifest" href="manifest.json">
 
-     <style>
+    <button id="custom-install-btn" style="display:none; background:var(--primary); color:#000; border:none; padding:5px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">Install App</button>
+    <style>
         /* --- DESKTOP OPTIMIZATION --- */
         @media (min-width: 768px) {
             .container { max-width: 700px; margin: 30px auto; }
@@ -39,7 +39,6 @@
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
         }
 
-        /* --- LIGHT MODE THEME --- */
         body.light-mode {
             --bg: #f0f2f5;
             --card-bg: #ffffff;
@@ -60,180 +59,90 @@
         }
 
         #loader-screen {
-            position: fixed; inset: 0; background: var(--bg);
+            position: fixed; inset: 0; background: #030a1a; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid rgba(0, 229, 255, 0.1);
-            border-top: 5px solid var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 20px;
+
+        .loader-visual {
+            position: relative; width: 120px; height: 120px;
+            display: flex; align-items: center; justify-content: center; margin-bottom: 30px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .planet {
+            width: 40px; height: 40px; background: var(--primary);
+            border-radius: 50%; box-shadow: 0 0 40px var(--primary), inset 0 0 15px rgba(255,255,255,0.8);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .orbit {
+            position: absolute; width: 100px; height: 100px;
+            border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 50%;
+            animation: spin 3s linear infinite;
+        }
+
+        .loading-text { text-align: center; display: flex; flex-direction: column; align-items: center; }
+        
+        .loading-text .logo {
+            font-size: 32px; letter-spacing: 5px; margin: 0;
+            background: linear-gradient(90deg, #fff, var(--primary), #fff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-size: 200%; animation: shine 3s linear infinite;
+        }
+
+        .progress-bar { width: 150px; height: 2px; background: rgba(255,255,255,0.1); margin-top: 15px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 101%; background: var(--primary); animation: loadFill 2.5s ease-in-out forwards; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes shine { 100% { background-position: 200%; } }
+        @keyframes loadFill { 0% { width: 0%; } 100% { width: 100%; } }
 
         header { 
             background: var(--card-bg); 
-            backdrop-filter: blur(15px); 
-            -webkit-backdrop-filter: blur(15px);
-            padding: 15px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid rgba(0, 229, 255, 0.15); 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000; 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid rgba(0, 229, 255, 0.15); position: sticky; top: 0; z-index: 1000; 
         }
 
         .logo { font-size: 24px; font-weight: 800; color: var(--primary); cursor: pointer; text-shadow: var(--neon-shadow); }
         .container { width: 95%; max-width: 500px; margin: 15px auto; }
-        
-        .card { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 20px; 
-            border: 1px solid rgba(0, 229, 255, 0.1); 
-            margin-bottom: 20px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        input, textarea { 
-            width: 100%; 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 12px; 
-            padding: 12px; 
-            color: var(--text-main); 
-            box-sizing: border-box; 
-            outline: none; 
-        }
-        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.1); margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); backdrop-filter: blur(10px); }
+        input, textarea { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; color: var(--text-main); box-sizing: border-box; outline: none; }
         button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
         .btn-primary { background: var(--primary); color: #fff; width: 100%; box-shadow: var(--neon-shadow); }
-
-        .fab { 
-            position: fixed; bottom: 35px; right: 25px; 
-            width: 60px; height: 60px; 
-            background: var(--primary); 
-            border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            color: #fff; 
-            box-shadow: var(--neon-shadow); 
-            z-index: 2000; cursor: pointer; 
-        }
-
+        .fab { position: fixed; bottom: 35px; right: 25px; width: 60px; height: 60px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: var(--neon-shadow); z-index: 2000; cursor: pointer; }
         .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
         .user-info { display: flex; flex-direction: column; justify-content: center; }
         .post-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        
         .action-bar { display: flex; justify-content: space-around; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; margin-top: 15px; }
         .action-btn { background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        
         svg { width: 20px; height: 20px; fill: currentColor; }
         .del-icon { width: 18px; height: 18px; fill: var(--red); opacity: 0.7; transition: 0.3s; }
         .del-icon:hover { opacity: 1; }
-
         .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 15px; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stat-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); }
-
-        .theme-toggle {
-            background: rgba(255,255,255,0.1);
-            color: var(--text-main);
-            width: 100%;
-            margin-bottom: 10px;
-            border: 1px solid var(--primary);
-        }
+        .theme-toggle { background: rgba(255,255,255,0.1); color: var(--text-main); width: 100%; margin-bottom: 10px; border: 1px solid var(--primary); }
     </style>
 </head>
 <body>
 
     <div id="loader-screen">
-    <div class="loader-visual">
-        <div class="planet"></div>
-        <div class="orbit">
-            <div class="satellite"></div>
+        <div class="loader-visual">
+            <div class="planet"></div>
+            <div class="orbit"></div>
+        </div>
+        <div class="loading-text">
+            <h1 class="logo">The Jaya</h1>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
         </div>
     </div>
-    <div class="loading-text">
-        <h1 class="logo">The Jaya</h1>
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-    </div>
-</div>
-
-<style>
-    /* --- NEW WORLD-DIFFERENT LOADER CSS --- */
-    #loader-screen {
-        position: fixed; inset: 0; background: #030a1a; /* Darkest Space Blue */
-        display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
-    }
-
-    .loader-visual {
-        position: relative; width: 120px; height: 120px;
-        display: flex; align-items: center; justify-content: center; margin-bottom: 30px;
-    }
-
-    /* Central Glowing Planet */
-    .planet {
-        width: 40px; height: 40px; background: var(--primary);
-        border-radius: 50%; box-shadow: 0 0 40px var(--primary), inset 0 0 15px rgba(255,255,255,0.8);
-        animation: pulse 2s ease-in-out infinite;
-    }
-
-    /* Rotating Orbit Ring */
-    .orbit {
-        position: absolute; width: 100px; height: 100px;
-        border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 50%;
-        animation: spin 3s linear infinite;
-    }
-
-    /* Moving Satellite Point */
-    .satellite {
-           }
-
-        .loading-text { 
-        text-align: center; 
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    
-    .loading-text .logo {
-        font-size: 32px; letter-spacing: 5px; margin: 0;
-        background: linear-gradient(90deg, #fff, var(--primary), #fff);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        background-size: 200%; animation: shine 3s linear infinite;
-    }
-
-    /* Subtle Progress Bar */
-    .progress-bar {
-        width: 150px; height: 2px; background: rgba(255,255,255,0.1);
-        margin-top: 15px; border-radius: 10px; overflow: hidden;
-    }
-    .progress-fill {
-        width: 0%; height: 101%; background: var(--primary);
-        animation: loadFill 2.5s ease-in-out forwards;
-    }
-
-    /* ANIMATIONS */
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.1); opacity: 1; }
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    @keyframes shine { 100% { background-position: 200%; } }
-    @keyframes loadFill { 0% { width: 0%; } 100% { width: 100%; } }
-    
-</style>
-    
 
     <div id="auth-section" style="display:none; text-align:center; padding-top:100px;">
         <h1 class="logo" style="font-size:45px;">The Jaya</h1>
         <button id="googleLogin" class="btn-primary" style="background:#fff; color:#000; width:auto; padding:15px 40px; margin-top:30px;">Login with Google</button>
-        <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
         <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
             <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" style="width: 80px; filter: brightness(2);">
         </div>
@@ -275,7 +184,6 @@
                     <div id="my-controls" style="display:none;">
                         <button onclick="toggleTheme()" class="theme-toggle">Toggle Light/Dark Mode</button>
                         <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:var(--text-main); width:100%; margin-bottom:10px; border:1px solid rgba(255,255,255,0.2);">Edit Username</button>
-                        <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
                         <button onclick="logout()" style="background:var(--red); color:white; width:100%;">Logout</button>
                     </div>
                 </div>
@@ -296,13 +204,10 @@
                 <button class="btn-primary" onclick="doPost()">Post Now</button>
                 <button onclick="setPostModal(false)" style="background:rgba(255,255,255,0.1); color:var(--text-main);">Cancel</button>
                 <button onclick="pasteText()" style="background:var(--card-bg); color:var(--primary); border:1px solid var(--primary); width: auto;">Paste</button>
-                
-             <br>   <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" style="text-decoration: none; display: block; margin-top: 15px; text-align: center;">
-    <button style="background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid var(--primary); width: 100%;">
-        ✨ AI Notes
-    </button>
-</a>
-
+                <br>
+                <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" style="text-decoration: none; display: block; margin-top: 15px; text-align: center;">
+                    <button style="background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid var(--primary); width: 100%;">✨ AI Notes</button>
+                </a>
             </div>
         </div></div>
     </div>
@@ -312,7 +217,6 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Configuration
         const conf = { 
             apiKey: "AIzaSyC2DSzlGsl5y3NwgOpgIOC-1OUYyKEaZ5k", 
             authDomain: "saga-social-a13a4.firebaseapp.com", 
@@ -326,45 +230,34 @@
         const gProv = new GoogleAuthProvider();
         let me = null;
 
-        // 3 SECONDS LOADER TIMER
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader-screen').style.display = 'none';
-            }, 3000);
+            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
         });
-// Line 311 ke upar ye paste karein
-window.pasteText = async () => {
-    try {
-        const text = await navigator.clipboard.readText();
-        const input = document.getElementById('postInput');
-        input.value += text; 
-        input.focus();
-    } catch (err) {
-        console.error("Clipboard access denied", err);
-    }
-};
+
+        window.pasteText = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const input = document.getElementById('postInput');
+                input.value += text; input.focus();
+            } catch (err) { console.error("Clipboard access denied", err); }
+        };
         
-        // THEME LOGIC (Dark/Light Mode)
         window.toggleTheme = () => {
             document.body.classList.toggle('light-mode');
-            const isLight = document.body.classList.contains('light-mode');
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         };
         if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
-        // HELPER: Time Ago formatter
         const timeAgo = (t) => {
             const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
             if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
         };
 
-        // Icons
         const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
         const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
         const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
         const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
 
-        // Auth Listener
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -384,15 +277,6 @@ window.pasteText = async () => {
             }
         });
 
-        // Guest Login Feature
-        window.showGuestFeed = () => {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            loadFeed("feed", null);
-        };
-        document.getElementById('guest-trigger').onclick = showGuestFeed;
-
-        // Login Check Wrapper
         window.requireLogin = (cb) => {
             if(!auth.currentUser) {
                 alert("Please login first!");
@@ -401,7 +285,6 @@ window.pasteText = async () => {
             } else cb();
         };
 
-        // Navigation
         window.navTo = (v, isMe = true, other = null) => {
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
@@ -416,7 +299,6 @@ window.pasteText = async () => {
             }
         };
 
-        // Load Posts Feed
         function loadFeed(divId, uid) {
             let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
                         : query(collection(db, "posts"), orderBy("time", "desc"));
@@ -447,7 +329,7 @@ window.pasteText = async () => {
                             <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}')">
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username}')">
                                 ${iconShare} Share
                             </span>
                         </div>
@@ -469,27 +351,18 @@ window.pasteText = async () => {
             });
         }
 
-        // Action: Like/Star
         window.starIt = async (id, has) => { 
-            if(!auth.currentUser) {
-                alert("Please login first!");
-                document.getElementById('main-app').style.display = 'none';
-                document.getElementById('auth-section').style.display = 'block';
-                return;
-            }
+            if(!auth.currentUser) return;
             await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
         };
 
-        // Action: Edit Username
         window.checkEditUsername = async () => {
             const now = Date.now();
-            const diff = now - me.lastChange;
-            if(diff < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
+            if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days!"); return; }
             const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
             if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
         };
 
-        // Action: Create Post
         window.doPost = async () => {
             const t = document.getElementById('postInput').value;
             if(!t.trim()) return;
@@ -497,7 +370,6 @@ window.pasteText = async () => {
             document.getElementById('postInput').value = ""; setPostModal(false);
         };
 
-        // Action: Add Comment
         window.addCom = async (id) => {
             const i = document.getElementById('in-'+id);
             if(!i.value.trim()) return;
@@ -505,14 +377,12 @@ window.pasteText = async () => {
             i.value = "";
         };
 
-        // Action: Delete Comment
         window.delCom = async (pid, idx) => {
             const r = doc(db, "posts", pid); const s = await getDoc(r);
             let c = s.data().comments; c.splice(idx, 1);
             await updateDoc(r, { comments: c });
         };
 
-        // Action: Search User
         window.findUser = async () => {
             const qStr = document.getElementById('sq').value.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
@@ -524,37 +394,41 @@ window.pasteText = async () => {
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
-        // Utilities
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
         window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
-        window.sharePost = (t) => navigator.share({ title: 'Jaya', text: t, url: location.href });
-        window.logout = () => { signOut(auth); location.reload(); };
         
-        // Auth Trigger
-        document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
-   // --- UPDATED SHARE FEATURE ---
         window.sharePost = async (text, username) => {
             const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
             const shareUrl = window.location.href;
-
             if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'The Jaya Post',
-                        text: shareText,
-                        url: shareUrl,
-                    });
-                } catch (err) {
-                    console.log("Sharing failed", err);
-                }
+                try { await navigator.share({ title: 'The Jaya Post', text: shareText, url: shareUrl }); } catch (err) { console.log("Sharing failed", err); }
             } else {
                 navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
                 alert("Link & Text copied to clipboard!");
             }
         };
-        // -----------------------------
+
+        document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
+        window.logout = () => { signOut(auth); location.reload(); };
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('custom-install-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block';
+        });
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => console.log("Service Worker Registered!"));
+        }
     </script>
 </body>
 </html>
