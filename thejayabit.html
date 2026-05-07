@@ -62,6 +62,43 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             pointer-events: none;
         }
+        .back-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001; /* Isse button loader aur header ke upar rahega */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px); /* Glassmorphism effect */
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    text-decoration: none;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-3px);
+}
+
+.back-button svg {
+    display: block;
+}
+
+/* Mobile screen ke liye chota button */
+@media (max-width: 480px) {
+    .back-button span { display: none; } /* Mobile par sirf arrow dikhega */
+    .back-button { padding: 10px; border-radius: 50%; }
+            }
+    
 
         .reels-container {
             height: 100vh;
