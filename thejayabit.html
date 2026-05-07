@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Jaya Bits</title>
     <style>
+        /* Base Styling */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background-color: #000; font-family: 'Arial', sans-serif; color: white; overflow: hidden; }
 
+        /* Header Styling */
         .app-header {
             position: fixed;
             top: 0; width: 100%; text-align: center;
@@ -16,14 +18,16 @@
             pointer-events: none;
         }
 
+        /* Container for Reels */
         .reels-container {
             height: 100vh;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
-            scrollbar-width: none;
+            scrollbar-width: none; /* Firefox */
         }
-        .reels-container::-webkit-scrollbar { display: none; }
+        .reels-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
+        /* Individual Reel Card */
         .reel-card {
             position: relative;
             height: 100vh;
@@ -42,6 +46,7 @@
             pointer-events: auto;
         }
 
+        /* Iframe to fill the screen and zoom in for vertical look */
         iframe {
             width: 100%;
             height: 100%;
@@ -49,6 +54,7 @@
             border: none;
         }
 
+        /* Video Info Overlay */
         .overlay-info {
             position: absolute;
             bottom: 80px; left: 20px;
@@ -59,6 +65,7 @@
         .overlay-info h3 { font-size: 0.9rem; text-shadow: 2px 2px 4px rgba(0,0,0,1); margin-bottom: 5px; }
         .overlay-info span { color: #ff0050; font-weight: bold; }
 
+        /* Loading Indicator */
         #loader {
             position: fixed; bottom: 20px; width: 100%;
             text-align: center; display: none; z-index: 1000; font-size: 12px;
@@ -75,116 +82,112 @@
     <div id="loader">Loading more bits...</div>
 
     <script>
-    const API_KEY = 'AIzaSyDudljWyHUaPhUW1Ux3NeSHZQkRU1fVFcc'; 
-    const container = document.getElementById('reelsContainer');
-    const loader = document.getElementById('loader');
-    
-    let nextPageToken = '';
-    let isFetching = false;
-    let hasInteracted = false; // Track karne ke liye ki user ne tap kiya ya nahi
+        const API_KEY = 'AIzaSyDudljWyHUaPhUW1Ux3NeSHZQkRU1fVFcc'; 
+        const container = document.getElementById('reelsContainer');
+        const loader = document.getElementById('loader');
+        
+        let nextPageToken = '';
+        let isFetching = false;
 
-    const regions = ['IN', 'US', 'GB', 'JP', 'BR', 'KR', 'FR'];
-    const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+        // Random region selector for variety
+        const regions = ['IN', 'US', 'GB', 'JP', 'BR', 'KR', 'FR'];
+        const randomRegion = regions[Math.floor(Math.random() * regions.length)];
 
-    const observerOptions = {
-        root: container,
-        threshold: 0.8 
-    };
+        // --- Intersection Observer Setup ---
+        // Jab video screen par 80% dikhega tabhi play hoga
+        const observerOptions = {
+            root: container,
+            threshold: 0.8 
+        };
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const iframe = entry.target.querySelector('iframe');
-            if (iframe && iframe.contentWindow && hasInteracted) { // Sirf tabhi play hoga jab interaction ho chuka ho
-                if (entry.isIntersecting) {
-                    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                    iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                } else {
-                    iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-                    iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
-                }
-            }
-        });
-    }, observerOptions);
-
-    async function fetchVideos(pageToken = '') {
-        if (isFetching) return;
-        isFetching = true;
-        loader.style.display = 'block';
-
-        try {
-            const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&chart=mostPopular&maxResults=10&regionCode=${randomRegion}&key=${API_KEY}&pageToken=${pageToken}`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.items) {
-                nextPageToken = data.nextPageToken; 
-                const embeddableVideos = data.items.filter(v => v.status.embeddable !== false);
-                renderReels(embeddableVideos);
-            }
-        } catch (error) {
-            console.error("API Error:", error);
-        } finally {
-            isFetching = false;
-            loader.style.display = 'none';
-        }
-    }
-
-    function renderReels(videos) {
-        videos.forEach((video) => {
-            const id = video.id;
-            const title = video.snippet.title;
-            
-            const reel = document.createElement('div');
-            reel.classList.add('reel-card');
-            
-            // Yaha 'autoplay=1' ko hata kar 'autoplay=0' kar diya gaya hai
-            reel.innerHTML = `
-                <div class="video-wrapper">
-                    <iframe 
-                        src="https://www.youtube.com/embed/${id}?enablejsapi=1&autoplay=0&mute=1&controls=0&loop=1&playlist=${id}&modestbranding=1&rel=0" 
-                        allow="autoplay; encrypted-media"
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <div class="overlay-info">
-                    <h3>${title.substring(0, 60)}</h3>
-                    <span>@thejayabits</span>
-                </div>
-            `;
-            container.appendChild(reel);
-            observer.observe(reel);
-        });
-    }
-
-    container.addEventListener('scroll', () => {
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 200) {
-            if (nextPageToken) fetchVideos(nextPageToken);
-        }
-    });
-
-    fetchVideos();
-
-    // Jab user pehli baar screen par kahi bhi click/tap karega
-    document.body.addEventListener('click', function() {
-        if (!hasInteracted) {
-            hasInteracted = true; // Flag true set karein
-            
-            // Jo reel screen par dikh rahi hai use play karein
-            const allReels = document.querySelectorAll('.reel-card');
-            allReels.forEach(reel => {
-                const rect = reel.getBoundingClientRect();
-                // Check karein ki kaunsa reel viewport mein hai
-                if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
-                    const iframe = reel.querySelector('iframe');
-                    if (iframe) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const iframe = entry.target.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    if (entry.isIntersecting) {
+                        // Play and Unmute current video
                         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                         iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                    } else {
+                        // Pause and Mute hidden video
+                        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                        iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
                     }
                 }
             });
-        }
-    }, {once: true});
-</script>
+        }, observerOptions);
 
+        // Fetch Trending Videos from YouTube API
+        async function fetchVideos(pageToken = '') {
+            if (isFetching) return;
+            isFetching = true;
+            loader.style.display = 'block';
+
+            try {
+                const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&chart=mostPopular&maxResults=10&regionCode=${randomRegion}&key=${API_KEY}&pageToken=${pageToken}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.items) {
+                    nextPageToken = data.nextPageToken; 
+                    const embeddableVideos = data.items.filter(v => v.status.embeddable !== false);
+                    renderReels(embeddableVideos);
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+            } finally {
+                isFetching = false;
+                loader.style.display = 'none';
+            }
+        }
+
+        // Create HTML elements for each video
+        function renderReels(videos) {
+            videos.forEach((video) => {
+                const id = video.id;
+                const title = video.snippet.title;
+                
+                const reel = document.createElement('div');
+                reel.classList.add('reel-card');
+                
+                reel.innerHTML = `
+                    <div class="video-wrapper">
+                        <iframe 
+                            src="https://www.youtube.com/embed/${id}?enablejsapi=1&autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&modestbranding=1&rel=0" 
+                            allow="autoplay; encrypted-media"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="overlay-info">
+                        <h3>${title.substring(0, 60)}</h3>
+                        <span>@thejayabits</span>
+                    </div>
+                `;
+                container.appendChild(reel);
+                // Start observing the new reel
+                observer.observe(reel);
+            });
+        }
+
+        // Infinite Scroll Logic
+        container.addEventListener('scroll', () => {
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 200) {
+                if (nextPageToken) fetchVideos(nextPageToken);
+            }
+        });
+
+        // Initial Load
+        fetchVideos();
+
+        // Audio unlock after first user interaction (Browser policy)
+        document.body.addEventListener('click', function() {
+            const activeReel = document.querySelector('.reel-card'); 
+            if(activeReel) {
+                const iframe = activeReel.querySelector('iframe');
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+            }
+        }, {once: true});
+    </script>
 </body>
 </html>
