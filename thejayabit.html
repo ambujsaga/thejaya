@@ -39,6 +39,7 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
+            pointer-events: auto;
         }
 
         iframe {
@@ -46,7 +47,6 @@
             height: 100%;
             transform: scale(1.6); 
             border: none;
-            pointer-events: none; /* Disable interaction with iframe so container scroll works */
         }
 
         .overlay-info {
@@ -59,13 +59,6 @@
         .overlay-info h3 { font-size: 0.9rem; text-shadow: 2px 2px 4px rgba(0,0,0,1); margin-bottom: 5px; }
         .overlay-info span { color: #ff0050; font-weight: bold; }
 
-        /* Sound Prompt UI */
-        #sound-prompt {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.7); padding: 15px 30px; border-radius: 30px;
-            z-index: 200; cursor: pointer; border: 1px solid #fff;
-        }
-
         #loader {
             position: fixed; bottom: 20px; width: 100%;
             text-align: center; display: none; z-index: 1000; font-size: 12px;
@@ -73,8 +66,6 @@
     </style>
 </head>
 <body>
-
-    <div id="sound-prompt" onclick="unmuteAll()">Click to Play with Sound 🔊</div>
 
     <header class="app-header">
         <h1>The Jaya Bits</h1>
@@ -91,9 +82,9 @@
         let nextPageToken = '';
         let isFetching = false;
 
-        // Har bar naya content lane ke liye random keywords
-        const keywords = ['shorts', 'cinematic video', 'viral reels', 'aesthetic status', 'trending'];
-        const randomQuery = keywords[Math.floor(Math.random() * keywords.length)];
+        // Refresh par video badalne ke liye random region codes
+        const regions = ['IN', 'US', 'GB', 'JP', 'BR', 'KR', 'FR'];
+        const randomRegion = regions[Math.floor(Math.random() * regions.length)];
 
         async function fetchVideos(pageToken = '') {
             if (isFetching) return;
@@ -101,14 +92,15 @@
             loader.style.display = 'block';
 
             try {
-                // Refresh par random content lane ke liye 'search' endpoint ka use
-                const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&type=video&videoEmbeddable=true&q=${randomQuery}&key=${API_KEY}&pageToken=${pageToken}`;
+                // randomRegion variable add kiya gaya hai taaki har baar feed alag aaye
+                const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status&chart=mostPopular&maxResults=10&regionCode=${randomRegion}&key=${API_KEY}&pageToken=${pageToken}`;
                 const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.items) {
                     nextPageToken = data.nextPageToken; 
-                    renderReels(data.items);
+                    const embeddableVideos = data.items.filter(v => v.status.embeddable !== false);
+                    renderReels(embeddableVideos);
                 }
             } catch (error) {
                 console.error("API Error:", error);
@@ -120,19 +112,19 @@
 
         function renderReels(videos) {
             videos.forEach((video) => {
-                const id = video.id.videoId || video.id;
+                const id = video.id;
                 const title = video.snippet.title;
                 
                 const reel = document.createElement('div');
                 reel.classList.add('reel-card');
                 
-                // Mute=1 rakha hai initial load ke liye (Autoplay block na ho)
-                // Sound user interaction ke baad 'unmuteAll' function se chalu hoga
+                // Audio FIX: 'mute=0' kiya gaya hai
                 reel.innerHTML = `
                     <div class="video-wrapper">
                         <iframe 
-                            src="https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&enablejsapi=1" 
-                            allow="autoplay; encrypted-media">
+                            src="https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=0&loop=1&playlist=${id}&enablejsapi=1&modestbranding=1&rel=0" 
+                            allow="autoplay; encrypted-media"
+                            allowfullscreen>
                         </iframe>
                     </div>
                     <div class="overlay-info">
@@ -144,16 +136,6 @@
             });
         }
 
-        // Sabhi videos ko ek saath unmute karne ka function
-        function unmuteAll() {
-            const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(i => {
-                i.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                i.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-            });
-            document.getElementById('sound-prompt').style.display = 'none';
-        }
-
         container.addEventListener('scroll', () => {
             if (container.scrollTop + container.clientHeight >= container.scrollHeight - 200) {
                 if (nextPageToken) fetchVideos(nextPageToken);
@@ -161,6 +143,17 @@
         });
 
         fetchVideos();
+
+        // Audio Activation: Browser bina interaction ke sound play nahi karne deta
+        // Screen par kahin bhi ek baar click/touch karte hi saare videos unmute aur play ho jayenge
+        document.body.addEventListener('click', function() {
+            const iframes = document.querySelectorAll('iframe');
+            iframes.forEach(i => {
+                // 'unMute' command bheja gaya hai
+                i.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                i.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+            });
+        }, {once: true});
     </script>
 </body>
 </html>
