@@ -1,6 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>Auto Hide Alert</title>
+    <style>
+        /* Alert ki styling */
+        #customAlert {
+            display: none; /* Shuruat me hidden rahega */
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            background-color: #333;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-family: sans-serif;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="customAlert">Ye alert 5 second me gayeb ho jayega!</div>
+
+    <script>
+        // Page load hote hi function shuru hoga
+        window.onload = function() {
+            
+            // 1. 3 second (3000ms) baad alert dikhao
+            setTimeout(function() {
+                document.getElementById('customAlert').style.display = 'block';
+                console.log("Alert dikh raha hai...");
+                
+                // 2. Alert dikhne ke 5 second (5000ms) baad usse gayeb karo
+                setTimeout(function() {
+                    document.getElementById('customAlert').style.display = 'none';
+                    console.log("Alert gayeb ho gaya.");
+                }, 5000);
+
+            }, 3000);
+        };
+    </script>
+
+</body>
+</html>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Jaya Bits</title>
