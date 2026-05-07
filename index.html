@@ -118,6 +118,34 @@
             box-shadow: var(--neon-shadow); 
             z-index: 2000; cursor: pointer; 
         }
+         /* BITS Button Styling */
+.bits-btn {
+    position: fixed;
+    bottom: 110px; /* Plus button se upar rakhne ke liye */
+    right: 32px;  /* Align karne ke liye */
+    width: 45px;  /* Plus button se chhota */
+    height: 45px;
+    background: var(--card-bg);
+    border: 1px solid var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    box-shadow: var(--neon-shadow);
+    z-index: 2000;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.bits-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
+         
 
         .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
         .user-info { display: flex; flex-direction: column; justify-content: center; }
