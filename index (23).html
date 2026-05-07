@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Jaya Bits</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        .app-header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            pointer-events: none; /* Header ke piche click allow karne ke liye */
+        }
+
+        .app-header h1 {
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .reels-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+
+        .reels-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reel-card {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* Pointer events ko auto rakha hai taaki interaction ho sake */
+            pointer-events: auto; 
+        }
+
+        iframe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 100vh;
+            /* Zoom scale ko 1.5 rakha hai branding chhupane ke liye */
+            transform: translate(-50%, -50%) scale(1.5); 
+            border: none;
+        }
+
+        .overlay-info {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            z-index: 10;
+            max-width: 80%;
+            pointer-events: none; /* Text par click hone se video stop na ho */
+        }
+
+        .overlay-info h3 {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .overlay-info span {
+            font-weight: bold;
+            color: #ff0050;
+        }
+
+        #loader {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 1000;
+            background: rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <h1>The Jaya Bits</h1>
+    </header>
+
+    <div class="reels-container" id="reelsContainer"></div>
+    <div id="loader">Loading more bits...</div>
+
+    <script>
+        // Note: Security ke liye API Key server-side use karni chahiye
+        const API_KEY = 'AIzaSyDudljWyHUaPhUW1Ux3NeSHZQkRU1fVFcc'; 
+        const container = document.getElementById('reelsContainer');
+        const loader = document.getElementById('loader');
+        
+        let nextPageToken = '';
+        let isFetching = false;
+
+        async function fetchVideos(pageToken = '') {
+            if (isFetching) return;
+            isFetching = true;
+            loader.style.display = 'block';
+
+            try {
+                // Popular videos fetch karne ka logic
+                const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&maxResults=10&key=${API_KEY}&pageToken=${pageToken}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.items) {
+                    nextPageToken = data.nextPageToken; 
+                    renderReels(data.items);
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+            } finally {
+                isFetching = false;
+                loader.style.display = 'none';
+            }
+        }
+
+        function renderReels(videos) {
+            videos.forEach((video) => {
+                const id = video.id;
+                const title = video.snippet.title;
+                
+                const reel = document.createElement('div');
+                reel.classList.add('reel-card');
+                
+                // key changes: enablejsapi=1 aur mute=1 autoplay allow karne ke liye
+                reel.innerHTML = `
+                    <div class="video-wrapper">
+                        <iframe 
+                            src="https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1" 
+                            allow="autoplay; encrypted-media">
+                        </iframe>
+                    </div>
+                    <div class="overlay-info">
+                        <h3>${title.substring(0, 50)}...</h3>
+                        <span>@thejayabits</span>
+                    </div>
+                `;
+                container.appendChild(reel);
+            });
+        }
+
+        // Infinite Scroll
+        container.addEventListener('scroll', () => {
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                if (nextPageToken) {
+                    fetchVideos(nextPageToken);
+                }
+            }
+        });
+
+        // Initial Load
+        fetchVideos();
+    </script>
+</body>
+</html>
