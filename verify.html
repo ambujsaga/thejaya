@@ -3,47 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Jaya - Red Tick Edition</title>
+    <title>The Jaya - Realtime Red Tick</title>
     <style>
-        /* --- AAPKA EXISTING CSS --- */
+        /* Aapka Original CSS + Red Tick Styling */
         :root { 
-            --primary: #00e5ff; 
-            --bg: #030a1a; 
-            --card-bg: rgba(6, 17, 39, 0.7); 
-            --text-main: #ffffff; 
-            --text-muted: #8a99b3;
-            --red: #ff4444; 
+            --primary: #00e5ff; --bg: #030a1a; --card-bg: rgba(6, 17, 39, 0.7); 
+            --text-main: #ffffff; --text-muted: #8a99b3; --red: #ff4444; 
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
         }
-
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding-bottom: 100px; }
+        header { background: var(--card-bg); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 229, 255, 0.15); position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary); text-shadow: var(--neon-shadow); cursor: pointer; }
         .container { width: 95%; max-width: 500px; margin: 15px auto; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.1); margin-bottom: 20px; backdrop-filter: blur(10px); }
-        .btn-primary { background: var(--primary); color: #fff; width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.1); margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
         
-        /* --- NEW RED TICK & TOGGLE CSS --- */
-        .red-tick { color: var(--red); width: 16px; height: 16px; vertical-align: middle; margin-left: 4px; }
-        
-        .switch-container { display: flex; align-items: center; justify-content: space-between; background: rgba(255, 68, 68, 0.1); padding: 15px; border-radius: 15px; border: 1px solid var(--red); margin-top: 15px; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        /* Red Tick & Toggle Switch CSS */
+        .red-tick { width: 16px; height: 16px; fill: var(--red); margin-left: 5px; vertical-align: middle; filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.5)); }
+        .verify-box { border: 1px solid var(--red); padding: 15px; border-radius: 15px; background: rgba(255, 68, 68, 0.05); margin-top: 20px; }
+        .switch { position: relative; display: inline-block; width: 45px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--red); }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        /* Loader & Others (Previous Code) */
-        header { background: var(--card-bg); padding: 15px 20px; display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(0, 229, 255, 0.15); }
-        .logo { font-size: 24px; font-weight: 800; color: var(--primary); text-shadow: var(--neon-shadow); }
-        .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        input:checked + .slider:before { transform: translateX(23px); }
+        
+        input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 10px; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
+        .btn-red { background: var(--red); color: white; border: none; padding: 10px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">The Jaya</div>
-        <img id="head-pic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="p-pic" onclick="showProfile()">
+        <div class="logo" onclick="location.reload()">The Jaya</div>
+        <img id="head-pic" src="" class="p-pic" onclick="showProfile()" style="cursor:pointer;">
     </header>
 
     <div class="container">
@@ -52,78 +45,105 @@
         </div>
 
         <div id="profile-view" style="display:none;" class="card">
-            <button onclick="showHome()" style="background:none; border:none; color:#fff; cursor:pointer;">← Back</button>
             <div style="text-align:center;">
-                <img id="u-img" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary);">
-                <h2 id="u-display-name">@username</h2>
+                <img id="u-img" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
+                <h2 id="u-name-display">@username</h2>
                 
-                <div class="card" style="margin-top: 20px; text-align: left; border-color: var(--red);">
-                    <h4 style="margin: 0 0 10px 0; color: var(--red);">Red Tick Verification</h4>
-                    <input type="text" id="verify-uname" placeholder="Confirm Username">
-                    <input type="email" id="verify-email" placeholder="Verification Email">
-                    <div class="switch-container">
-                        <span>Activate Red Tick</span>
+                <div class="verify-box">
+                    <h4 style="color:var(--red); margin-top:0;">Red Tick Dashboard</h4>
+                    <input type="text" id="v-uname" placeholder="Verify Username">
+                    <input type="email" id="v-email" placeholder="Recovery Email">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <span>Show Red Tick on Profile</span>
                         <label class="switch">
-                            <input type="checkbox" id="tick-toggle" onchange="toggleRedTick()">
+                            <input type="checkbox" id="tick-switch" onchange="handleTickToggle()">
                             <span class="slider"></span>
                         </label>
                     </div>
                 </div>
-                
-                <button onclick="logout()" style="background:var(--red); color:#fff; width:100%; border:none; padding:10px; border-radius:10px; cursor:pointer;">Logout</button>
+                <br>
+                <button onclick="showHome()" class="btn-red" style="background:#444;">Back to Home</button>
+                <button onclick="logout()" class="btn-red" style="margin-top:10px;">Logout</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
+        const conf = { 
             apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
             authDomain: "the-jaya-by-ree.firebaseapp.com",
             projectId: "the-jaya-by-ree"
         };
-
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp(conf);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        let currentUserData = null;
 
-        // Red Tick SVG Icon
-        const redTickSVG = `<svg class="red-tick" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        let me = null;
+        const tickIcon = `<svg class="red-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userRef = doc(db, "users", user.uid);
-                const snap = await getDoc(userRef);
-                if (snap.exists()) {
-                    currentUserData = snap.data();
-                    updateUI();
-                    loadFeed();
-                }
+        // 1. Real-time User Listener (Profile & Header)
+        onAuthStateChanged(auth, (user) => {
+            if(user) {
+                onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    if(snap.exists()) {
+                        me = snap.data();
+                        document.getElementById('head-pic').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                        document.getElementById('u-img').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                        document.getElementById('u-name-display').innerHTML = `@${me.username} ${me.isVerified ? tickIcon : ''}`;
+                        document.getElementById('tick-switch').checked = me.isVerified || false;
+                    }
+                });
+                loadFeed();
             } else {
-                // Redirect to login logic
+                // Login logic...
             }
         });
 
-        function updateUI() {
-            document.getElementById('u-img').src = currentUserData.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            document.getElementById('u-display-name').innerHTML = `@${currentUserData.username} ${currentUserData.isVerified ? redTickSVG : ''}`;
-            document.getElementById('tick-toggle').checked = currentUserData.isVerified || false;
-            document.getElementById('verify-uname').value = currentUserData.username;
-            document.getElementById('verify-email').value = auth.currentUser.email;
+        // 2. Real-time Post Listener
+        function loadFeed() {
+            const q = query(collection(db, "posts"), orderBy("time", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const feed = document.getElementById('feed');
+                feed.innerHTML = "";
+                snapshot.forEach(async (postDoc) => {
+                    const p = postDoc.data();
+                    
+                    // Har post ke user ka verification status live check karne ke liye logic
+                    const postEl = document.createElement('div');
+                    postEl.className = 'card';
+                    postEl.id = `post-${postDoc.id}`;
+                    
+                    // Note: Ideally users ka data ek separate map mein rakhte hain performance ke liye
+                    // Par realtime ke liye hum yahan user reference use kar sakte hain
+                    onSnapshot(doc(db, "users", p.uid), (uSnap) => {
+                        const uData = uSnap.data();
+                        const isUserVerified = uData && uData.isVerified ? tickIcon : '';
+                        
+                        postEl.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                                <img src="${p.pic}" class="p-pic">
+                                <strong>@${p.username} ${isUserVerified}</strong>
+                            </div>
+                            <p style="margin:0;">${p.text}</p>
+                        `;
+                    });
+                    feed.appendChild(postEl);
+                });
+            });
         }
 
-        // Toggle Red Tick Function
-        window.toggleRedTick = async () => {
-            const isChecked = document.getElementById('tick-toggle').checked;
-            const confirmUname = document.getElementById('verify-uname').value;
+        // 3. Toggle Logic
+        window.handleTickToggle = async () => {
+            const isChecked = document.getElementById('tick-switch').checked;
+            const inputUname = document.getElementById('v-uname').value;
 
-            if(confirmUname !== currentUserData.username) {
-                alert("Username match nahi kar raha!");
-                document.getElementById('tick-toggle').checked = !isChecked;
+            if(inputUname !== me.username) {
+                alert("Please confirm your username first!");
+                document.getElementById('tick-switch').checked = !isChecked;
                 return;
             }
 
@@ -131,54 +151,14 @@
                 await updateDoc(doc(db, "users", auth.currentUser.uid), {
                     isVerified: isChecked
                 });
-                // Update local data for instant UI change
-                currentUserData.isVerified = isChecked;
-                updateUI();
-            } catch (e) {
-                alert("Error updating status");
+            } catch (err) {
+                console.error("Error updating tick:", err);
             }
         };
 
-        // Real-time Feed with Red Tick Check
-        function loadFeed() {
-            const q = query(collection(db, "posts"), orderBy("time", "desc"));
-            onSnapshot(q, async (snapshot) => {
-                const feedDiv = document.getElementById('feed');
-                feedDiv.innerHTML = "";
-                
-                for (const postDoc of snapshot.docs) {
-                    const post = postDoc.data();
-                    
-                    // Fetch real-time user info to check for Red Tick
-                    const userSnap = await getDoc(doc(db, "users", post.uid));
-                    const userData = userSnap.data();
-                    const hasTick = userData && userData.isVerified ? redTickSVG : '';
-
-                    const postEl = document.createElement('div');
-                    postEl.className = 'card';
-                    postEl.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                            <img src="${post.pic}" class="p-pic">
-                            <strong>@${post.username} ${hasTick}</strong>
-                        </div>
-                        <p>${post.text}</p>
-                    `;
-                    feedDiv.appendChild(postEl);
-                }
-            });
-        }
-
-        // Navigation Functions
-        window.showProfile = () => {
-            document.getElementById('home-view').style.display = 'none';
-            document.getElementById('profile-view').style.display = 'block';
-        };
-        window.showHome = () => {
-            document.getElementById('home-view').style.display = 'block';
-            document.getElementById('profile-view').style.display = 'none';
-        };
+        window.showProfile = () => { document.getElementById('home-view').style.display='none'; document.getElementById('profile-view').style.display='block'; };
+        window.showHome = () => { document.getElementById('home-view').style.display='block'; document.getElementById('profile-view').style.display='none'; };
         window.logout = () => signOut(auth).then(() => location.reload());
-
     </script>
 </body>
 </html>
