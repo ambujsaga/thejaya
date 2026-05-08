@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Jaya - Username Recovery & Update</title>
+    <style>
+        :root { --primary: #00acee; --bg: #0f172a; --card: rgba(30, 41, 59, 0.8); --white: #ffffff; --red: #ef4444; --green: #22c55e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--white); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        
+        .logo { font-size: 28px; font-weight: 900; color: var(--primary); text-align: center; margin-bottom: 20px; text-decoration: none; display: block; }
+        .container { width: 90%; max-width: 400px; }
+        .card { background: var(--card); backdrop-filter: blur(20px); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        h2 { margin-top: 0; font-size: 1.2rem; color: #cbd5e1; text-align: center; margin-bottom: 25px; }
+        label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 5px; margin-left: 5px; }
+        input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; color: white; box-sizing: border-box; margin-bottom: 20px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); background: rgba(255,255,255,0.1); }
+        
+        button { cursor: pointer; border: none; border-radius: 12px; padding: 14px; font-weight: bold; width: 100%; transition: 0.2s; font-size: 15px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-success { background: var(--green); color: white; }
+        
+        #step-2 { display: none; }
+        .status-msg { font-size: 12px; text-align: center; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="#" class="logo">The Jaya - Username Recovery </a>
+    
+    <div class="card">
+        <div id="step-1">
+            <h2>Identity Verification</h2>
+            <label>Registered Email</label>
+            <input type="email" id="email" placeholder="example@gmail.com">
+            
+            <label>Current Username</label>
+            <input type="text" id="old-user" placeholder="purana_username">
+            
+            <button class="btn-primary" onclick="verifyUser()">Verify Account</button>
+        </div>
+
+        <div id="step-2">
+            <h2 style="color:var(--green);">Verify Success!</h2>
+            <label>New Unique Username</label>
+            <input type="text" id="new-user" placeholder="@naya_username">
+            
+            <button class="btn-success" onclick="updateUsername()">Update Realtime</button>
+        </div>
+
+        <div id="msg" class="status-msg"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Wahi config jo aapke main app mein hai
+    const conf = { 
+        apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",  
+        authDomain: "the-jaya-by-ree.firebaseapp.com",  
+        projectId: "the-jaya-by-ree", 
+        storageBucket: "the-jaya-by-ree.firebasestorage.app"
+    };
+
+    const app = initializeApp(conf);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let targetUid = null;
+
+    // Status Message Function
+    const showMsg = (text, color) => {
+        const el = document.getElementById('msg');
+        el.innerText = text;
+        el.style.color = color;
+        el.style.display = 'block';
+    };
+
+    // Step 1: User ko Verify karna
+    window.verifyUser = async () => {
+        const email = document.getElementById('email').value.trim();
+        const oldUsername = document.getElementById('old-user').value.trim().toLowerCase();
+
+        if(!email || !oldUsername) return alert("Sari details bharein!");
+
+        showMsg("Checking database...", "var(--primary)");
+
+        try {
+            // Username se UID dhoondhna
+            const q = query(collection(db, "users"), where("username", "==", oldUsername));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                showMsg("Purana Username nahi mila!", "var(--red)");
+                return;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data();
+            targetUid = userDoc.id;
+
+            // Step 2 par bhejna
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+            showMsg("Account Verified! Enter new name.", "var(--green)");
+
+        } catch (e) {
+            showMsg("Error: " + e.message, "var(--red)");
+        }
+    };
+
+    // Step 2: Username Update karna
+    window.updateUsername = async () => {
+        const newUser = document.getElementById('new-user').value.trim().toLowerCase();
+        
+        if(newUser.length < 3) return alert("Username kam se kam 3 chars ka ho!");
+
+        showMsg("Updating...", "var(--primary)");
+
+        try {
+            // Check if new username is already taken
+            const checkQ = query(collection(db, "users"), where("username", "==", newUser));
+            const checkSnap = await getDocs(checkQ);
+
+            if(!checkSnap.empty) {
+                showMsg("Yeh username pehle se taken hai!", "var(--red)");
+                return;
+            }
+
+            // Realtime Update in Firestore
+            await updateDoc(doc(db, "users", targetUid), {
+                username: newUser,
+                lastChange: Date.now() // Lock timer reset karne ke liye
+            });
+
+            showMsg("Badhai ho! Username update ho gaya.", "var(--green)");
+            alert("Username Updated Successfully!");
+            
+            // Wapas main site par bhejne ke liye (optional)
+            // window.location.href = "your-main-app-link.html";
+
+        } catch (e) {
+            showMsg("Update Fail: " + e.message, "var(--red)");
+        }
+    };
+</script>
+
+</body>
+</html>
