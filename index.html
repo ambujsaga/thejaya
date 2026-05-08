@@ -559,6 +559,96 @@
         postInput.addEventListener('input', updateWordCount);
         postInput.addEventListener('keyup', updateWordCount);
         postInput.addEventListener('change', updateWordCount);
+        // --- CORE LOGIC START ---
+let userCache = {}; // Sabhi users ka data store karne ke liye
+
+// 1. Real-time Feed & User Status Sync
+function loadFeed() {
+    const q = query(collection(db, "posts"), orderBy("time", "desc"));
+    
+    // Listen to Posts
+    onSnapshot(q, (snapshot) => {
+        const feed = document.getElementById('feed');
+        feed.innerHTML = "";
+        
+        snapshot.forEach((postDoc) => {
+            const p = postDoc.data();
+            const postId = postDoc.id;
+            
+            // Create Post Element
+            const postEl = document.createElement('div');
+            postEl.className = 'card';
+            postEl.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <img src="${p.pic || defaultAvtr}" class="p-pic" id="pic-${postId}">
+                    <div class="user-info">
+                        <strong id="name-${postId}">@${p.username}</strong>
+                        <span class="post-time">${timeAgo(p.time)}</span>
+                    </div>
+                </div>
+                <p style="margin:0; line-height:1.5;">${p.text}</p>
+            `;
+            feed.appendChild(postEl);
+
+            // 2. Real-time User Status Listener (Specific for this post's author)
+            // Ye wala part sabse important hai Red Tick ko live dikhane ke liye
+            if (!userCache[p.uid]) {
+                onSnapshot(doc(db, "users", p.uid), (uSnap) => {
+                    const uData = uSnap.data();
+                    if (uData) {
+                        userCache[p.uid] = uData;
+                        refreshUserUI(p.uid); // Jab bhi user data badle, UI update karo
+                    }
+                });
+            } else {
+                refreshUserUI(p.uid);
+            }
+        });
+    });
+}
+
+// 3. UI Update Function (Real-time Tick Injector)
+function refreshUserUI(uid) {
+    const userData = userCache[uid];
+    const isVerified = userData.isVerified || false;
+    const tickHTML = `<svg class="red-tick" viewBox="0 0 24 24" style="width:16px; height:16px; fill:#ff4444; margin-left:5px; vertical-align:middle;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+
+    // Pure page par is user ki jitni posts hain, sabme tick update karo
+    document.querySelectorAll(`[id^="name-"]`).forEach(el => {
+        if (el.innerText.includes(`@${userData.username}`)) {
+            el.innerHTML = `@${userData.username} ${isVerified ? tickHTML : ''}`;
+        }
+    });
+
+    // Profile header update
+    if (auth.currentUser && uid === auth.currentUser.uid) {
+        const profileName = document.getElementById('u-name-display');
+        if (profileName) profileName.innerHTML = `@${userData.username} ${isVerified ? tickHTML : ''}`;
+    }
+}
+
+// 4. Toggle Handler (Database Update)
+window.handleTickToggle = async () => {
+    const isChecked = document.getElementById('tick-switch').checked;
+    const confirmUname = document.getElementById('v-uname').value.trim();
+
+    if (!confirmUname || confirmUname !== me.username) {
+        alert("Username sahi se bharein verification ke liye!");
+        document.getElementById('tick-switch').checked = !isChecked;
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+            isVerified: isChecked,
+            verifiedEmail: document.getElementById('v-email').value || ""
+        });
+        // Note: onSnapshot apne aap baki ka kaam kar lega (No refresh needed)
+    } catch (err) {
+        alert("Update failed: " + err.message);
+    }
+};
+
     </script>
 </body>
 </html>
