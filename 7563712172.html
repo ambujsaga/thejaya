@@ -127,7 +127,11 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const conf = { apiKey: "AIzaSyC2DSzlGsl5y3NwgOpgIOC-1OUYyKEaZ5k", authDomain: "saga-social-a13a4.firebaseapp.com", projectId: "saga-social-a13a4", storageBucket: "saga-social-a13a4.appspot.com" };
+        const conf = { apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
+  authDomain: "the-jaya-by-ree.firebaseapp.com",
+  databaseURL: "https://the-jaya-by-ree-default-rtdb.firebaseio.com",
+  projectId: "the-jaya-by-ree",
+  storageBucket: "the-jaya-by-ree.firebasestorage.app", };
         const app = initializeApp(conf);
         const auth = getAuth(app);
         const db = getFirestore(app);
