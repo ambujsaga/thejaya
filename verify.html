@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Jaya - Verified Edition</title>
+    <style>
+        /* Pehle wala saara CSS yahan rahega */
+        /* --- Naya Red Tick CSS --- */
+        .red-tick {
+            color: #ff4444;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 4px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        /* Toggle Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background-color: #333; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--red); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Modal specific */
+        .verify-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center; z-index: 4000;
+        }
+        
+        /* Baaki ka existing CSS jo aapne provide kiya tha... */
+        :root { 
+            --primary: #00e5ff; --bg: #030a1a; --card-bg: rgba(6, 17, 39, 0.7); 
+            --text-main: #ffffff; --text-muted: #8a99b3; --red: #ff4444; 
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(0,229,255,0.1); }
+        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <div id="main-app">
+        <header>
+            <div class="logo" onclick="location.reload()">The Jaya</div>
+            <img id="head-pic" class="p-pic" onclick="navTo('profile', true)" style="cursor:pointer; border:2px solid var(--primary);">
+        </header>
+
+        <div class="container">
+            <div id="home-view"><div id="feed"></div></div>
+
+            <div id="profile-view" style="display:none;" class="card">
+                <div style="text-align:center;">
+                    <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary);">
+                    <h2 id="u-name">@username <span id="u-verify-badge"></span></h2>
+                    <button onclick="openVerifyModal()" style="background:rgba(255,68,68,0.1); color:var(--red); border:1px solid var(--red); width:100%; padding:10px; border-radius:10px; margin-bottom:10px;">Get Red Tick</button>
+                    <button onclick="logout()" style="background:var(--red); color:white; width:100%; border:none; padding:10px; border-radius:10px;">Logout</button>
+                </div>
+                <div id="u-feed"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="verify-modal" class="verify-modal">
+        <div class="card" style="width:90%; max-width:400px;">
+            <h3>Verify Account</h3>
+            <p style="font-size:12px; color:var(--text-muted);">Apna username aur email confirm karein.</p>
+            <input type="text" id="v-username" placeholder="Username" style="margin-bottom:10px;" readonly>
+            <input type="email" id="v-email" placeholder="Email Address" style="margin-bottom:20px;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <span>Show Red Tick Badge</span>
+                <label class="switch">
+                    <input type="checkbox" id="v-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <button class="btn-primary" onclick="saveVerification()" style="background:var(--red);">Apply Changes</button>
+            <button onclick="closeVerifyModal()" style="background:transparent; color:var(--text-muted); width:100%; margin-top:10px; border:none;">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, updateDoc, onSnapshot, collection, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Config (Aapki apni replace karein)
+        const conf = { /* ...aapka config... */ };
+        const app = initializeApp(conf);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let me = null;
+        const redTickHTML = `<span class="red-tick">●</span>`; // Chhota red circle ya SVG use kar sakte hain
+
+        // --- Core Logic ---
+
+        // 1. Check Verification & Render Tick
+        function getUsernameHTML(username, isVerified) {
+            return `<span>@${username}${isVerified ? redTickHTML : ''}</span>`;
+        }
+
+        // 2. Open Modal
+        window.openVerifyModal = () => {
+            document.getElementById('v-username').value = me.username;
+            document.getElementById('v-email').value = auth.currentUser.email;
+            document.getElementById('v-toggle').checked = me.isVerified || false;
+            document.getElementById('verify-modal').style.display = 'flex';
+        };
+
+        window.closeVerifyModal = () => {
+            document.getElementById('verify-modal').style.display = 'none';
+        };
+
+        // 3. Save to Firebase (Realtime)
+        window.saveVerification = async () => {
+            const isChecked = document.getElementById('v-toggle').checked;
+            try {
+                await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    isVerified: isChecked
+                });
+                alert("Settings updated successfully!");
+                closeVerifyModal();
+            } catch (e) {
+                alert("Error updating data");
+            }
+        };
+
+        // 4. Realtime Profile Update
+        onAuthStateChanged(auth, (u) => {
+            if(u) {
+                onSnapshot(doc(db, "users", u.uid), (doc) => {
+                    me = doc.data();
+                    document.getElementById('u-name').innerHTML = `@${me.username} ${me.isVerified ? redTickHTML : ''}`;
+                    document.getElementById('head-pic').src = u.photoURL;
+                });
+                loadGlobalFeed();
+            }
+        });
+
+        // 5. Global Feed with Realtime Ticks
+        function loadGlobalFeed() {
+            const q = query(collection(db, "posts"), orderBy("time", "desc"));
+            onSnapshot(q, async (snapshot) => {
+                const feed = document.getElementById('feed');
+                feed.innerHTML = "";
+                
+                for (const d of snapshot.docs) {
+                    const p = d.data();
+                    // Har post ke user ka verification status check karna
+                    const userRef = await getDoc(doc(db, "users", p.uid));
+                    const userData = userRef.data();
+                    const isUserVerified = userData?.isVerified || false;
+
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <img src="${p.pic || 'default.png'}" class="p-pic">
+                            <div>
+                                <strong>${getUsernameHTML(p.username, isUserVerified)}</strong>
+                                <div style="font-size:10px; color:gray;">Just now</div>
+                            </div>
+                        </div>
+                        <p>${p.text}</p>
+                    `;
+                    feed.appendChild(el);
+                }
+            });
+        }
+        
+        // Baaki functions (navTo, logout, etc.) wahi rahenge jo aapke purane code mein the.
+    </script>
+</body>
+</html>
