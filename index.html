@@ -584,7 +584,65 @@ postInput.addEventListener('input', updateWordCount);
 postInput.addEventListener('keyup', updateWordCount);
 postInput.addEventListener('change', updateWordCount);
 
-            
+               function loadFeed(divId, uid) {
+            // Default avatar URL
+            const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+            let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
+                        : query(collection(db, "posts"), orderBy("time", "desc"));
+
+            onSnapshot(q, (s) => {
+                const div = document.getElementById(divId); div.innerHTML = "";
+                let stars = 0, posts = 0;
+                s.forEach(d => {
+                    const p = d.data();
+                    if(uid) { stars += (p.stars?.length || 0); posts++; }
+                    
+                    // Logic to use p.pic if it exists, otherwise use defaultAvtr
+                    const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
+                    
+                    const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
+                            <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
+                            <div class="user-info">
+                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username}</strong>
+                                <span class="post-time">${timeAgo(p.time)}</span>
+                            </div>
+                            ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">${iconDelete}</div>` : ''}
+                        </div>
+                        <p style="margin: 0; line-height:1.5;">${p.text}</p>
+                        <div class="action-bar">
+                            <span class="action-btn" onclick="starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
+                                ${iconStar} ${p.stars?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
+                                ${iconComment} ${p.comments?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username}')">
+                                ${iconShare} Share
+                            </span>
+                        </div>
+                        <div id="drawer-${d.id}" class="comment-drawer">
+                            <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
+                                <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
+                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                                </div>`).join('')}</div>
+                            <div style="display:flex; gap:8px; margin-top:15px;">
+                                <input id="in-${d.id}" placeholder="Reply...">
+                                <button onclick="addCom('${d.id}')" class="btn-primary" style="width:auto;">Send</button>
+                            </div>
+                        </div>
+                    `;
+                    div.appendChild(el);
+                });
+                if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
+            });
+        }
+     
     </script>
 </body>
 </html>
