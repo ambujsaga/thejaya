@@ -116,46 +116,43 @@
     };
 
     // Step 2: Username Update karna
-    window.updateUsername = async () => {
-        const newUser = document.getElementById('new-user').value.trim().toLowerCase();
-        
-        if(newUser.length < 3) return alert("Username kam se kam 3 chars ka ho!");
+window.updateUsername = async () => {
+    const newUser = document.getElementById('new-user').value.trim().toLowerCase();
+    
+    if(newUser.length < 3) return alert("Username kam se kam 3 chars ka ho!");
 
-        showMsg("Updating...", "var(--primary)");
+    showMsg("Updating...", "var(--primary)");
 
-        try {
-            // Check if new username is already taken
-            const checkQ = query(collection(db, "users"), where("username", "==", newUser));
-            const checkSnap = await getDocs(checkQ);
+    try {
+        // Check if new username is already taken
+        const checkQ = query(collection(db, "users"), where("username", "==", newUser));
+        const checkSnap = await getDocs(checkQ);
 
-            if(!checkSnap.empty) {
-                showMsg("Yeh username pehle se taken hai!", "var(--red)");
-                return;
-            }
-
-            // Realtime Update in Firestore
-            await updateDoc(doc(db, "users", targetUid), {
-                username: newUser,
-                lastChange: Date.now() // Lock timer reset karne ke liye
-            });
-
-            showMsg("Badhai ho! Username update ho gaya.", "var(--green)");
-            alert("Username Updated Successfully!");
-            
-            // Wapas main site par bhejne ke liye (optional)
-            // window.location.href = "your-main-app-link.html";
-
-        } catch (e) {
-            showMsg("Update Fail: " + e.message, "var(--red)");
+        if(!checkSnap.empty) {
+            showMsg("Yeh username pehle se taken hai!", "var(--red)");
+            return;
         }
-window.location.reload(); 
+
+        // Realtime Update in Firestore
+        await updateDoc(doc(db, "users", targetUid), {
+            username: newUser,
+            lastChange: Date.now() // Lock timer reset karne ke liye
+        });
+
+        showMsg("Badhai ho! Username update ho gaya.", "var(--green)");
+        
+        // Alert dikhane ke baad page refresh hoga
+        alert("Username Updated Successfully!");
+        
+        // --- Naya badlav yahan hai ---
+        window.location.reload(); 
         // -----------------------------
 
     } catch (e) {
         showMsg("Update Fail: " + e.message, "var(--red)");
     }
 };
-    };
+
 </script>
 
 </body>
