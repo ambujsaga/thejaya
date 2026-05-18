@@ -404,6 +404,7 @@
 
             <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
                 <input type="text" id="signup-username" name="username" placeholder="Choose Username" autocomplete="username" required>
+                <input type="email" id="signup-email" name="email" placeholder="Enter Gmail / Email" autocomplete="email" required>
                 <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
                 <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
             </form>
@@ -807,33 +808,44 @@
         window.handleAuthSubmit = async (event, mode) => {
             event.preventDefault();
             
-            let uname = "", pass = "";
+            let uname = "", pass = "", email = "";
             if(mode === 'login') {
                 uname = document.getElementById('login-username').value;
                 pass = document.getElementById('login-pass').value.trim();
             } else {
                 uname = document.getElementById('signup-username').value;
+                email = document.getElementById('signup-email').value.trim();
                 pass = document.getElementById('signup-pass').value.trim();
             }
 
-            if(!uname || !pass || uname.trim() === "") {
-                alert("Please fill all fields!");
-                return;
-            }
-
-            // CLEANSE: Remove spaces, special characters except basic alpha-numeric for bulletproof emails
-            uname = uname.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-            
-            if(uname.length < 3) {
-                alert("Username must be at least 3 valid alphanumeric characters!");
-                return;
-            }
-
-            const pseudoEmail = uname + "@thejaya.com";
-
             if(mode === 'login') {
+                if(!uname || !pass || uname.trim() === "") {
+                    alert("Please fill all fields!");
+                    return;
+                }
+                uname = uname.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+                if(uname.length < 3) {
+                    alert("Username must be at least 3 valid alphanumeric characters!");
+                    return;
+                }
+
+                // Custom username support fallback routing system
+                let targetEmail = uname + "@thejaya.com";
+                if(uname.includes('@')) {
+                    targetEmail = uname; 
+                } else {
+                    const uSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
+                    if(!uSnap.empty) {
+                        const foundUid = uSnap.docs[0].id;
+                        const uAuthSnap = await getDoc(doc(db, "users", foundUid));
+                        if(uAuthSnap.exists() && uAuthSnap.data().email) {
+                            targetEmail = uAuthSnap.data().email;
+                        }
+                    }
+                }
+
                 try {
-                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                    await signInWithEmailAndPassword(auth, targetEmail, pass);
                 } catch (err) {
                     if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
                         alert("Invalid Username or Password!");
@@ -842,17 +854,27 @@
                     }
                 }
             } else {
+                if(!uname || !pass || !email || uname.trim() === "") {
+                    alert("Please fill all fields!");
+                    return;
+                }
+                uname = uname.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+                if(uname.length < 3) {
+                    alert("Username must be at least 3 valid alphanumeric characters!");
+                    return;
+                }
+
                 try {
-                    // Unique check to avoid duplication before auth triggers
                     const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
                     if(!checkSnap.empty) {
                         alert("Username already taken! Please choose a unique one.");
                         return;
                     }
 
-                    const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pass);
+                    const cred = await createUserWithEmailAndPassword(auth, email, pass);
                     await setDoc(doc(db, "users", cred.user.uid), {
                         username: uname,
+                        email: email,
                         uid: cred.user.uid,
                         pic: defaultAvtr,
                         lastChange: Date.now()
@@ -861,7 +883,7 @@
                     location.reload();
                 } catch (err) {
                     if(err.code === "auth/email-already-in-use") {
-                        alert("Username already registered!");
+                        alert("Email/Username already registered!");
                     } else {
                         alert("Signup Error: " + err.message);
                     }
