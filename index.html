@@ -345,7 +345,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -431,7 +431,15 @@
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
                 } else {
-                    await signOut(auth);
+                    // Safety check: Create document in firestore if auth exists but firestore user missing
+                    const generatedUsername = u.email.split('@')[0];
+                    await setDoc(doc(db, "users", u.uid), { 
+                        username: generatedUsername, 
+                        uid: u.uid, 
+                        pic: defaultAvtr, 
+                        lastChange: Date.now() 
+                    });
+                    location.reload();
                 }
             } else {
                 document.getElementById('auth-section').style.display = 'block';
@@ -439,7 +447,7 @@
             }
         });
 
-        // FIXED SMART FRAMEWORK: Handles automatically if user is existing (Login) or new (Signup)
+        // 100% FIXED ULTIMATE SMART AUTHENTICATION ENGINE
         document.getElementById('customRegisterBtn').onclick = async () => {
             const usernameInput = document.getElementById('reg-username').value.toLowerCase().replace(/\s+/g,'').trim();
             const passInput = document.getElementById('reg-pass').value.trim();
@@ -452,31 +460,50 @@
             const generatedEmail = usernameInput + "@thejaya.com";
 
             try {
-                // First check if user is already saved in Firestore
-                const q = query(collection(db, "users"), where("username", "==", usernameInput));
-                const querySnapshot = await getDocs(q);
+                // Step 1: Direct attempt to Log In
+                await signInWithEmailAndPassword(auth, generatedEmail, passInput);
                 
-                if(!querySnapshot.empty) {
-                    // USER EXISTS -> Process as automatic Login sequence
-                    await signInWithEmailAndPassword(auth, generatedEmail, passInput);
-                } else {
-                    // USER IS NEW -> Process as naya registration sequence
-                    const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, passInput);
-                    const u = userCredential.user;
+            } catch (loginError) {
+                // Step 2: Handle cases when Auth fails
+                if (loginError.code === "auth/user-not-found" || loginError.code === "auth/invalid-credential") {
                     
-                    await setDoc(doc(db, "users", u.uid), { 
-                        username: usernameInput, 
-                        uid: u.uid, 
-                        pic: defaultAvtr, 
-                        lastChange: Date.now() 
-                    });
+                    // Let's verify if username is blocked or taken in Firestore just to be bulletproof
+                    const firestoreCheck = await getDocs(query(collection(db, "users"), where("username", "==", usernameInput)));
                     
-                    alert("Welcome! Account created successfully.");
-                    location.reload();
-                }
+                    if(!firestoreCheck.empty) {
+                        // Means username is taken but password typed was wrong
+                        alert("Incorrect password for this username!");
+                        return;
+                    }
 
-            } catch (error) {
-                alert("Auth Failure: " + error.message);
+                    try {
+                        // Safe to proceed as Naya Registration Sequence
+                        const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, passInput);
+                        const u = userCredential.user;
+                        
+                        await setDoc(doc(db, "users", u.uid), { 
+                            username: usernameInput, 
+                            uid: u.uid, 
+                            pic: defaultAvtr, 
+                            lastChange: Date.now() 
+                        });
+                        
+                        alert("Welcome! Account created successfully.");
+                        location.reload();
+                        
+                    } catch (signupError) {
+                        // Ultimate Fallback if Auth is stubborn about email existing
+                        if(signupError.code === "auth/email-already-in-use") {
+                            alert("This account exists in system! Please type correct password.");
+                        } else {
+                            alert("Registration Error: " + signupError.message);
+                        }
+                    }
+                } else if(loginError.code === "auth/wrong-password") {
+                    alert("Wrong password! Please try again.");
+                } else {
+                    alert("Auth Exception: " + loginError.message);
+                }
             }
         };
 
