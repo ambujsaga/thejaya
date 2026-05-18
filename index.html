@@ -357,9 +357,10 @@
             </div>
         </div></div>
     </div>
-        <script type="module">
+
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // updateEmail aur sendEmailVerification ko auth module se import kiya
+        // updateEmail aur sendEmailVerification ko sahi tarike se import kiya gaya hai
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -402,19 +403,47 @@
         const db = getFirestore(app);
         let me = null;
 
+        window.addEventListener('load', () => {
+            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
+        });
+
+        window.pasteText = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const input = document.getElementById('postInput');
+                input.value += text; input.focus();
+            } catch (err) {}
+        };
+        
+        window.toggleTheme = () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        };
+        if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+        const timeAgo = (t) => {
+            const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
+            if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
+        };
+
+        const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
+        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
+        const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
+        const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
+
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
                 if(dSnap.exists()) {
                     me = dSnap.data();
                     
-                    // Agar user ne email verify kar liya hai aur unka real email Firestore me update nahi hai
+                    // FIXED FLOW: Jab user email link se verify kar lega, tab ye real email ko save karega aur automatic avatar lagayega
                     if(u.emailVerified && u.email && !u.email.endsWith('@thejaya.com') && me.email !== u.email) {
                         const automaticGmailPic = `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`;
                         me.pic = automaticGmailPic;
-                        me.email = u.email; // Local state update
+                        me.email = u.email;
                         
-                        // Firestore me username aur original email dono ko apas me link karke save kiya
+                        // Database update: username ke sath original email dono apas me connect ho kar save ho rahe hain
                         await updateDoc(doc(db, "users", u.uid), { 
                             pic: automaticGmailPic,
                             email: u.email 
@@ -435,11 +464,13 @@
                     location.reload();
                 }
             } else {
-                document.getElementById('auth-section').style.block = 'block';
+                // Freezing bug completely resolved: proper assignment to .style.display
+                document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('main-app').style.display = 'none';
             }
         });
 
+        // Interface Toggle Router Functions
         window.switchAuthTab = (tab) => {
             if(tab === 'login') {
                 document.getElementById('tab-login').classList.add('active');
@@ -454,8 +485,10 @@
             }
         };
 
+        // Form Submission Router Sequence
         window.handleAuthSubmit = async (event, mode) => {
             event.preventDefault();
+            
             let uname = "", pass = "";
             if(mode === 'login') {
                 uname = document.getElementById('login-username').value.toLowerCase().replace(/\s+/g,'').trim();
@@ -484,9 +517,10 @@
                 }
             } else {
                 try {
+                    // Unique check to avoid duplication before auth triggers
                     const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
                     if(!checkSnap.empty) {
-                        alert("Username already taken!");
+                        alert("Username already taken! Please choose a unique one.");
                         return;
                     }
 
@@ -524,7 +558,7 @@
             } else cb();
         };
 
-        // NEW METHOD: Isse box khulega, user real email dalega, fir verification email jayega
+        // NEW CUSTOM METHOD: Prompt kholkar original email lena aur verification link bhejna
         window.sendVerificationEmail = async () => {
             const user = auth.currentUser;
             if (!user) {
@@ -532,7 +566,6 @@
                 return;
             }
 
-            // Box khulega real email lene ke liye
             const realEmail = prompt("Enter your original/real Gmail address for verification:");
             
             if (!realEmail || !realEmail.trim()) {
@@ -542,21 +575,20 @@
 
             const emailTarget = realEmail.trim().toLowerCase();
             
-            // Basic email format validation
             if(!emailTarget.includes('@') || !emailTarget.includes('.')) {
                 alert("Please enter a valid email address!");
                 return;
             }
 
             try {
-                // Pseudo-email se user account ka email real email me update kiya
+                // Firebase login state ko pseudo-email se original email par badla
                 await updateEmail(user, emailTarget);
-                // Uske baad real email par verification link bhej diya
+                // Original inbox par link bhej diya
                 await sendEmailVerification(user);
                 
-                alert("Verification link has been sent to " + emailTarget + "\nPlease click the link to verify, then refresh or reopen the app.");
+                alert("Verification link has been sent to " + emailTarget + "\nPlease click the link inside your email, then refresh this app.");
             } catch (error) {
-                alert("Error updating/sending verification: " + error.message);
+                alert("Error: " + error.message);
             }
         };
 
@@ -581,9 +613,9 @@
                     const statusText = document.getElementById('verify-status-text');
                     const verifyBtn = document.getElementById('sendVerifyEmailBtn');
                     
+                    // Click handler ko assign kiya naye method ke sath
                     verifyBtn.onclick = window.sendVerificationEmail;
                     
-                    // Display condition check status
                     if(auth.currentUser.emailVerified && !auth.currentUser.email.endsWith('@thejaya.com')) {
                         statusText.innerHTML = `✅ Verified (${user.email || auth.currentUser.email})`;
                         statusText.style.color = "var(--primary)";
@@ -724,30 +756,6 @@
         };
 
         window.logout = () => { signOut(auth); location.reload(); };
-
-        window.pasteText = async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                const input = document.getElementById('postInput');
-                input.value += text; input.focus();
-            } catch (err) {}
-        };
-        
-        window.toggleTheme = () => {
-            document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
-        };
-        if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
-
-        const timeAgo = (t) => {
-            const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
-            if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
-        };
-
-        const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
-        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
-        const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
-        const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
 
         const postInput = document.getElementById('postInput');
         const wordCountDisplay = document.getElementById('word-count');
