@@ -195,7 +195,7 @@
 
         .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 15px; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
-        .stat-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
+        .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); }
 
@@ -248,7 +248,9 @@
 </head>
 <body>
     
-                <div class="planet"></div>
+    <div id="loader-screen">
+        <div class="loader-visual">
+            <div class="planet"></div>
             <div class="orbit"></div>
         </div>
         <div class="loading-text">
@@ -403,11 +405,11 @@
 
         const conf = { 
             apiKey: "AIzaSyCtedhm7TlywjRg3CNxk6Cq-lDm1Sm0Vak",
-  authDomain: "thejaya-ree.firebaseapp.com",
-  databaseURL: "https://thejaya-ree-default-rtdb.firebaseio.com",
-  projectId: "thejaya-ree",
-  storageBucket: "thejaya-ree.firebasestorage.app",
-       };
+            authDomain: "thejaya-ree.firebaseapp.com",
+            databaseURL: "https://thejaya-ree-default-rtdb.firebaseio.com",
+            projectId: "thejaya-ree",
+            storageBucket: "thejaya-ree.firebasestorage.app",
+        };
         
         const app = initializeApp(conf);
         const auth = getAuth(app);
