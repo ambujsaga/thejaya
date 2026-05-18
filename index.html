@@ -109,6 +109,19 @@
         
         button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
         .btn-primary { background: var(--primary); color: #fff; width: 100%; box-shadow: var(--neon-shadow); }
+        
+        .btn-google {
+            background: #ffffff;
+            color: #000000;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
         .fab { 
             position: fixed; bottom: 35px; right: 25px; 
@@ -268,6 +281,10 @@
                 <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
                 <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
             </form>
+
+            <button onclick="loginWithGoogle()" class="btn-google">
+                <img src="https://cdns.iconmonstr.com/wp-content/releases/preview/2012/240/iconmonstr-google-1.png" style="width:18px; height:18px;"> Sign in with Google
+            </button>
         </div>
 
         <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
@@ -311,8 +328,7 @@
                     
                     <div id="verification-section" style="margin-bottom: 15px; display: none;">
                         <div class="verify-box">
-                            <span id="verify-status-text">Email Verification Status</span>
-                            <button id="sendVerifyEmailBtn" style="background: var(--primary); color: #030a1a; padding: 4px 10px; font-size: 11px; margin-left: 8px; display: none;">Verify Now</button>
+                            <span id="verify-status-text">Account Connected Via Google</span>
                         </div>
                     </div>
 
@@ -358,11 +374,9 @@
         </div></div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -402,6 +416,7 @@
         const app = initializeApp(conf);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
         let me = null;
 
         window.addEventListener('load', () => {
@@ -438,19 +453,9 @@
                 if(dSnap.exists()) {
                     me = dSnap.data();
                     
-                    // Dynamic automated mapping when user successfully logs in with verified custom email
-                    if(u.emailVerified && u.email && !u.email.endsWith('@thejaya.com') && me.email !== u.email) {
-                        const emailHash = CryptoJS.MD5(u.email.trim().toLowerCase()).toString();
-                        // Dynamic Gravatar mapping linking directly to actual user's real platform uploaded global avatar identifier
-                        const dynamicVerifiedPic = `https://www.gravatar.com/avatar/${emailHash}?d=identicon&s=150`;
-                        
-                        me.pic = dynamicVerifiedPic;
-                        me.email = u.email;
-                        
-                        await updateDoc(doc(db, "users", u.uid), { 
-                            pic: dynamicVerifiedPic,
-                            email: u.email 
-                        });
+                    if(u.photoURL && me.pic !== u.photoURL) {
+                        me.pic = u.photoURL;
+                        await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
                     }
 
                     document.getElementById('main-app').style.display = 'block';
@@ -458,10 +463,12 @@
                     navTo('home');
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    const finalPhoto = u.photoURL || defaultAvtr;
                     await setDoc(doc(db, "users", u.uid), { 
-                        username: generatedUsername.toLowerCase(), 
+                        username: generatedUsername.toLowerCase().replace(/\s+/g,'').trim(), 
                         uid: u.uid, 
-                        pic: defaultAvtr, 
+                        pic: finalPhoto, 
+                        email: u.email || "",
                         lastChange: Date.now() 
                     });
                     location.reload();
@@ -528,6 +535,7 @@
                         username: uname,
                         uid: cred.user.uid,
                         pic: defaultAvtr,
+                        email: pseudoEmail,
                         lastChange: Date.now()
                     });
                     alert("Account Created successfully!");
@@ -539,6 +547,39 @@
                         alert("Signup Error: " + err.message);
                     }
                 }
+            }
+        };
+
+        window.loginWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                const dSnap = await getDoc(doc(db, "users", user.uid));
+                
+                if(!dSnap.exists()) {
+                    let baseUsername = user.email ? user.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    baseUsername = baseUsername.toLowerCase().replace(/\s+/g,'').trim();
+                    
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", baseUsername)));
+                    if(!checkSnap.empty) {
+                        baseUsername = baseUsername + Math.floor(Math.random() * 100);
+                    }
+
+                    await setDoc(doc(db, "users", user.uid), {
+                        username: baseUsername,
+                        uid: user.uid,
+                        pic: user.photoURL || defaultAvtr,
+                        email: user.email,
+                        lastChange: Date.now()
+                    });
+                } else {
+                    await updateDoc(doc(db, "users", user.uid), {
+                        pic: user.photoURL || defaultAvtr,
+                        email: user.email
+                    });
+                }
+            } catch (err) {
+                alert("Google Sign-In Error: " + err.message);
             }
         };
 
@@ -555,36 +596,6 @@
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'block';
             } else cb();
-        };
-
-        window.sendVerificationEmail = async () => {
-            const user = auth.currentUser;
-            if (!user) {
-                alert("No logged in user found.");
-                return;
-            }
-
-            const realEmail = prompt("Enter your original/real Gmail address for verification:");
-            
-            if (!realEmail || !realEmail.trim()) {
-                alert("Email is required!");
-                return;
-            }
-
-            const emailTarget = realEmail.trim().toLowerCase();
-            
-            if(!emailTarget.includes('@') || !emailTarget.includes('.')) {
-                alert("Please enter a valid email address!");
-                return;
-            }
-
-            try {
-                await updateEmail(user, emailTarget);
-                await sendEmailVerification(user);
-                alert("Verification link has been sent to " + emailTarget + "\nPlease click the link inside your email, then refresh this app.");
-            } catch (error) {
-                alert("Error: " + error.message);
-            }
         };
 
         window.navTo = (v, isMe = true, other = null) => {
@@ -606,18 +617,13 @@
                 if(isMe && auth.currentUser) {
                     verifySection.style.display = 'block';
                     const statusText = document.getElementById('verify-status-text');
-                    const verifyBtn = document.getElementById('sendVerifyEmailBtn');
                     
-                    verifyBtn.onclick = window.sendVerificationEmail;
-                    
-                    if(auth.currentUser.emailVerified && !auth.currentUser.email.endsWith('@thejaya.com')) {
-                        statusText.innerHTML = `✅ Verified (${user.email || auth.currentUser.email})`;
+                    if(auth.currentUser.providerData.some(p => p.providerId === 'google.com')) {
+                        statusText.innerHTML = `✅ Google Connected (${user.email || auth.currentUser.email})`;
                         statusText.style.color = "var(--primary)";
-                        verifyBtn.style.display = 'none';
                     } else {
-                        statusText.innerHTML = "❌ Email Unverified";
-                        statusText.style.color = "var(--red)";
-                        verifyBtn.style.display = 'inline-block';
+                        statusText.innerHTML = "🔗 Traditional Password Account";
+                        statusText.style.color = "var(--text-muted)";
                     }
                 } else {
                     verifySection.style.display = 'none';
