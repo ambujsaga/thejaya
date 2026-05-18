@@ -431,7 +431,6 @@
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
                 } else {
-                    // Safety check: Create document in firestore if auth exists but firestore user missing
                     const generatedUsername = u.email.split('@')[0];
                     await setDoc(doc(db, "users", u.uid), { 
                         username: generatedUsername, 
@@ -447,7 +446,7 @@
             }
         });
 
-        // 100% FIXED ULTIMATE SMART AUTHENTICATION ENGINE
+        // ULTIMATE 100% BULLETPROOF FIRESTORE-FIRST ROUTING LOGIC
         document.getElementById('customRegisterBtn').onclick = async () => {
             const usernameInput = document.getElementById('reg-username').value.toLowerCase().replace(/\s+/g,'').trim();
             const passInput = document.getElementById('reg-pass').value.trim();
@@ -460,24 +459,23 @@
             const generatedEmail = usernameInput + "@thejaya.com";
 
             try {
-                // Step 1: Direct attempt to Log In
-                await signInWithEmailAndPassword(auth, generatedEmail, passInput);
+                // Step 1: Check if username document exists anywhere in Firestore
+                const firestoreCheck = await getDocs(query(collection(db, "users"), where("username", "==", usernameInput)));
                 
-            } catch (loginError) {
-                // Step 2: Handle cases when Auth fails
-                if (loginError.code === "auth/user-not-found" || loginError.code === "auth/invalid-credential") {
-                    
-                    // Let's verify if username is blocked or taken in Firestore just to be bulletproof
-                    const firestoreCheck = await getDocs(query(collection(db, "users"), where("username", "==", usernameInput)));
-                    
-                    if(!firestoreCheck.empty) {
-                        // Means username is taken but password typed was wrong
-                        alert("Incorrect password for this username!");
-                        return;
-                    }
-
+                if(!firestoreCheck.empty) {
+                    // USER EXISTS -> Process as Login Sequence
                     try {
-                        // Safe to proceed as Naya Registration Sequence
+                        await signInWithEmailAndPassword(auth, generatedEmail, passInput);
+                    } catch (loginErr) {
+                        if(loginErr.code === "auth/wrong-password" || loginErr.code === "auth/invalid-credential") {
+                            alert("Incorrect password for this username!");
+                        } else {
+                            alert("Login Error: " + loginErr.message);
+                        }
+                    }
+                } else {
+                    // USER IS NEW -> Process direct Signup sequence
+                    try {
                         const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, passInput);
                         const u = userCredential.user;
                         
@@ -490,20 +488,21 @@
                         
                         alert("Welcome! Account created successfully.");
                         location.reload();
-                        
-                    } catch (signupError) {
-                        // Ultimate Fallback if Auth is stubborn about email existing
-                        if(signupError.code === "auth/email-already-in-use") {
-                            alert("This account exists in system! Please type correct password.");
+                    } catch (signupErr) {
+                        if(signupErr.code === "auth/email-already-in-use") {
+                            // Backup fallback: Username exists in Auth but not Firestore
+                            try {
+                                await signInWithEmailAndPassword(auth, generatedEmail, passInput);
+                            } catch(innerErr) {
+                                alert("Account exists! Please enter the correct password.");
+                            }
                         } else {
-                            alert("Registration Error: " + signupError.message);
+                            alert("Signup Error: " + signupErr.message);
                         }
                     }
-                } else if(loginError.code === "auth/wrong-password") {
-                    alert("Wrong password! Please try again.");
-                } else {
-                    alert("Auth Exception: " + loginError.message);
                 }
+            } catch (globalError) {
+                alert("System Exception: " + globalError.message);
             }
         };
 
