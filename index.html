@@ -226,8 +226,11 @@
             box-shadow: var(--neon-shadow);
         }
 
-        /* Unique Auth Design */
+        /* Tabs UI Style */
         .auth-card { max-width: 360px; margin: auto; padding: 20px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(0, 229, 255, 0.2); }
+        .auth-tabs { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .auth-tab { padding: 10px; color: var(--text-muted); cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); text-shadow: var(--neon-shadow); }
         .verify-box { margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--primary); font-size: 13px; }
     </style>
 </head>
@@ -245,14 +248,26 @@
         </div>
     </div>
 
-    <div id="auth-section" style="display:none; text-align:center; padding-top:60px;">
-        <h1 class="logo" style="font-size:45px; margin-bottom: 20px;">The Jaya</h1>
+    <div id="auth-section" style="display:none; text-align:center; padding-top:40px;">
+        <h1 class="logo" style="font-size:45px; margin-bottom: 15px;">The Jaya</h1>
         
-        <div id="register-form-div" class="auth-card">
-            <h3 style="margin-top: 5px; margin-bottom: 15px;">Enter Username & Password</h3>
-            <input type="text" id="reg-username" placeholder="Username" autocomplete="off">
-            <input type="password" id="reg-pass" placeholder="Password">
-            <button id="customRegisterBtn" class="btn-primary" style="margin-top: 10px;">Continue</button>
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Signup</div>
+            </div>
+
+            <form id="login-form" onsubmit="handleAuthSubmit(event, 'login')">
+                <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required>
+                <input type="password" id="login-pass" name="password" placeholder="Password" autocomplete="current-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Login Account</button>
+            </form>
+
+            <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                <input type="text" id="signup-username" name="username" placeholder="Choose Username" autocomplete="username" required>
+                <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
+            </form>
         </div>
 
         <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
@@ -431,9 +446,9 @@
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
                 } else {
-                    const generatedUsername = u.email.split('@')[0];
+                    const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
                     await setDoc(doc(db, "users", u.uid), { 
-                        username: generatedUsername, 
+                        username: generatedUsername.toLowerCase(), 
                         uid: u.uid, 
                         pic: defaultAvtr, 
                         lastChange: Date.now() 
@@ -446,63 +461,76 @@
             }
         });
 
-        // ULTIMATE 100% BULLETPROOF FIRESTORE-FIRST ROUTING LOGIC
-        document.getElementById('customRegisterBtn').onclick = async () => {
-            const usernameInput = document.getElementById('reg-username').value.toLowerCase().replace(/\s+/g,'').trim();
-            const passInput = document.getElementById('reg-pass').value.trim();
+        // Interface Toggle Router Functions
+        window.switchAuthTab = (tab) => {
+            if(tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-signup').classList.remove('active');
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('signup-form').style.display = 'none';
+            } else {
+                document.getElementById('tab-signup').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('signup-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            }
+        };
 
-            if(!usernameInput || !passInput) {
+        // Form Submission Router Sequence
+        window.handleAuthSubmit = async (event, mode) => {
+            event.preventDefault();
+            
+            let uname = "", pass = "";
+            if(mode === 'login') {
+                uname = document.getElementById('login-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('login-pass').value.trim();
+            } else {
+                uname = document.getElementById('signup-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('signup-pass').value.trim();
+            }
+
+            if(!uname || !pass) {
                 alert("Please fill all fields!");
                 return;
             }
 
-            const generatedEmail = usernameInput + "@thejaya.com";
+            const pseudoEmail = uname + "@thejaya.com";
 
-            try {
-                // Step 1: Check if username document exists anywhere in Firestore
-                const firestoreCheck = await getDocs(query(collection(db, "users"), where("username", "==", usernameInput)));
-                
-                if(!firestoreCheck.empty) {
-                    // USER EXISTS -> Process as Login Sequence
-                    try {
-                        await signInWithEmailAndPassword(auth, generatedEmail, passInput);
-                    } catch (loginErr) {
-                        if(loginErr.code === "auth/wrong-password" || loginErr.code === "auth/invalid-credential") {
-                            alert("Incorrect password for this username!");
-                        } else {
-                            alert("Login Error: " + loginErr.message);
-                        }
-                    }
-                } else {
-                    // USER IS NEW -> Process direct Signup sequence
-                    try {
-                        const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, passInput);
-                        const u = userCredential.user;
-                        
-                        await setDoc(doc(db, "users", u.uid), { 
-                            username: usernameInput, 
-                            uid: u.uid, 
-                            pic: defaultAvtr, 
-                            lastChange: Date.now() 
-                        });
-                        
-                        alert("Welcome! Account created successfully.");
-                        location.reload();
-                    } catch (signupErr) {
-                        if(signupErr.code === "auth/email-already-in-use") {
-                            // Backup fallback: Username exists in Auth but not Firestore
-                            try {
-                                await signInWithEmailAndPassword(auth, generatedEmail, passInput);
-                            } catch(innerErr) {
-                                alert("Account exists! Please enter the correct password.");
-                            }
-                        } else {
-                            alert("Signup Error: " + signupErr.message);
-                        }
+            if(mode === 'login') {
+                try {
+                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                } catch (err) {
+                    if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
+                        alert("Invalid Username or Password!");
+                    } else {
+                        alert("Error: " + err.message);
                     }
                 }
-            } catch (globalError) {
-                alert("System Exception: " + globalError.message);
+            } else {
+                try {
+                    // Unique check to avoid duplication before auth triggers
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
+                    if(!checkSnap.empty) {
+                        alert("Username already taken! Please choose a unique one.");
+                        return;
+                    }
+
+                    const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pass);
+                    await setDoc(doc(db, "users", cred.user.uid), {
+                        username: uname,
+                        uid: cred.user.uid,
+                        pic: defaultAvtr,
+                        lastChange: Date.now()
+                    });
+                    alert("Account Created successfully!");
+                    location.reload();
+                } catch (err) {
+                    if(err.code === "auth/email-already-in-use") {
+                        alert("Username already registered!");
+                    } else {
+                        alert("Signup Error: " + err.message);
+                    }
+                }
             }
         };
 
@@ -533,7 +561,7 @@
             if(v === 'profile') {
                 const user = isMe ? me : other;
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
-                document.getElementById('u-name').innerText = "@" + user.username;
+                document.getElementById('u-name').innerText = "@" + (user.username || "user");
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
                 
                 const verifySection = document.getElementById('verification-section');
@@ -578,7 +606,7 @@
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
-                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username}</strong>
+                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'}</strong>
                                 <span class="post-time">${timeAgo(p.time)}</span>
                             </div>
                             ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">${iconDelete}</div>` : ''}
@@ -591,14 +619,14 @@
                             <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username}')">
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
                                 ${iconShare} Share
                             </span>
                         </div>
                         <div id="drawer-${d.id}" class="comment-drawer">
                             <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
                                 <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
+                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${c.msg}</span>
                                     ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
                                 </div>`).join('')}</div>
                             <div style="display:flex; gap:8px; margin-top:15px;">
@@ -621,8 +649,9 @@
         window.checkEditUsername = async () => {
             const now = Date.now();
             if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days! or Use this link to make the change immediately.    https://thejaya.vercel.app/username.html"); return; }
-            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
+            let newU = prompt("New username:");
             if(newU) { 
+                newU = newU.toLowerCase().replace(/\s+/g,'');
                 const q = query(collection(db, "users"), where("username", "==", newU));
                 const querySnapshot = await getDocs(q);
                 if(!querySnapshot.empty) { alert("Username already taken!"); return; }
@@ -633,14 +662,14 @@
         window.doPost = async () => {
             const t = document.getElementById('postInput').value;
             if(!t.trim()) return;
-            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: me.pic || defaultAvtr, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
+            await addDoc(collection(db, "posts"), { text: t, username: me.username || 'user', pic: me.pic || defaultAvtr, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
             document.getElementById('postInput').value = ""; setPostModal(false);
         };
 
         window.addCom = async (id) => {
             const i = document.getElementById('in-'+id);
             if(!i.value.trim()) return;
-            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
+            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username || 'user', msg: i.value }) });
             i.value = "";
         };
 
@@ -651,13 +680,16 @@
         };
 
         window.findUser = async () => {
-            const qStr = document.getElementById('sq').value.toLowerCase().trim();
+            let qStr = document.getElementById('sq').value;
+            if(!qStr || !qStr.trim()) return;
+            qStr = qStr.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
             if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
         };
 
         window.findUserByUname = async (un) => {
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
+            if(!un) return;
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", un.toLowerCase().trim())));
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
