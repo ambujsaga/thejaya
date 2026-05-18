@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
+    <meta name="monetag" content="e9687fa1235d28319aeb2bc563d6cd9e">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Jaya</title>
@@ -104,10 +104,24 @@
             color: var(--text-main); 
             box-sizing: border-box; 
             outline: none; 
+            margin-bottom: 10px;
         }
         
         button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
         .btn-primary { background: var(--primary); color: #fff; width: 100%; box-shadow: var(--neon-shadow); }
+        
+        .btn-google {
+            background: #ffffff;
+            color: #000000;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
         .fab { 
             position: fixed; bottom: 35px; right: 25px; 
@@ -144,33 +158,30 @@
 
         .bits-btn:hover { background: var(--primary); color: #fff; }
 
-        /* --- NEW: LEFT SIDE DOTS MENU --- */
+        /* --- LEFT SIDE DOTS MENU --- */
         .more-btn {
-    position: fixed;
-    bottom: 35px;
-    left: 25px;
-    width: 50px;
-    height: 50px;
-    background: transparent; /* Circle ka color hat gaya */
-    border: none;             /* Border hat gaya */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary);
-    z-index: 2000;
-    cursor: pointer;
-    text-decoration: none;
-    transition: 0.3s;
-    box-shadow: none;         /* Glow (shadow) bhi hat gaya */
-}
+            position: fixed;
+            bottom: 35px;
+            left: 25px;
+            width: 50px;
+            height: 50px;
+            background: transparent; 
+            border: none;             
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            z-index: 2000;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.3s;
+            box-shadow: none;         
+        }
 
-/* Hover karne par bhi circle na dikhe, bas color change ho */
-.more-btn:hover { 
-    background: transparent; 
-    color: #fff; 
-}
-
-        .more-btn:hover { background: var(--primary); color: #fff; }
+        .more-btn:hover { 
+            background: transparent; 
+            color: #fff; 
+        }
 
         .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #1c1e21; }
         .user-info { display: flex; flex-direction: column; justify-content: center; }
@@ -227,11 +238,51 @@
             margin-right: 10px;
             box-shadow: var(--neon-shadow);
         }
+
+        /* Tabs UI Style */
+        .auth-card { max-width: 360px; margin: auto; padding: 20px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(0, 229, 255, 0.2); }
+        .auth-tabs { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .auth-tab { padding: 10px; color: var(--text-muted); cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); text-shadow: var(--neon-shadow); }
+        .verify-box { margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--primary); font-size: 13px; }
+        
+        /* Ad Toggle Switch Style */
+        .ad-control-container {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 68, 68, 0.05);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 68, 68, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px;
+            left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
     </style>
 </head>
 <body>
     
- <div id="loader-screen">
+    <div id="monetag-ad-wrapper">
+        <script id="monetag-script">(function(s){s.dataset.zone='11021735',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+    </div>
+    <div id="loader-screen">
         <div class="loader-visual">
             <div class="planet"></div>
             <div class="orbit"></div>
@@ -242,9 +293,32 @@
         </div>
     </div>
 
-    <div id="auth-section" style="display:none; text-align:center; padding-top:100px;">
-        <h1 class="logo" style="font-size:45px;">The Jaya</h1>
-        <button id="googleLogin" class="btn-primary" style="background:#fff; color:#000; width:auto; padding:12px 30px; margin-top:30px; display:flex; align-items:center; gap:10px; margin-left:auto; margin-right:auto;"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"> Login with Google</button>
+    <div id="auth-section" style="display:none; text-align:center; padding-top:40px;">
+        <h1 class="logo" style="font-size:45px; margin-bottom: 15px;">The Jaya</h1>
+        
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Signup</div>
+            </div>
+
+            <form id="login-form" onsubmit="handleAuthSubmit(event, 'login')">
+                <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required>
+                <input type="password" id="login-pass" name="password" placeholder="Password" autocomplete="current-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Login Account</button>
+            </form>
+
+            <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                <input type="text" id="signup-username" name="username" placeholder="Choose Username" autocomplete="username" required>
+                <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
+            </form>
+
+            <button onclick="loginWithGoogle()" class="btn-google">
+                <img src="https://i.ibb.co/60NscvDM/vecteezy-google-lens-icon-logo-symbol-22484503.png" style="width:18px; height:18px;"> Sign in with Google
+            </button>
+        </div>
+
         <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
         <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
             <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" style="width: 80px; filter: brightness(2);">
@@ -283,11 +357,26 @@
                 <div style="text-align:center;">
                     <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
                     <h2 id="u-name" style="margin:15px 0;">@username</h2>
+                    
+                    <div id="verification-section" style="margin-bottom: 15px; display: none;">
+                        <div class="verify-box">
+                            <span id="verify-status-text">Account Connected Via Google</span>
+                        </div>
+                    </div>
+
                     <div class="stats-grid">
                         <div class="stat-card"><span id="s-stars" class="stat-val">0</span><small>Stars</small></div>
                         <div class="stat-card"><span id="s-posts" class="stat-val">0</span><small>Posts</small></div>
                     </div>
                     <div id="my-controls" style="display:none;">
+                        <div class="ad-control-container">
+                            <span style="font-size: 14px; font-weight: bold; color: var(--text-main);">Block Account Feed Ads</span>
+                            <label class="switch">
+                                <input type="checkbox" id="adToggleCheckbox" onclick="handleAdToggleClick(event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
                         <button onclick="toggleTheme()" class="theme-toggle">Toggle Light/Dark Mode</button>
                         <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:var(--text-main); width:100%; margin-bottom:10px; border:1px solid rgba(255,255,255,0.2);">Edit Username</button>
                         <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
@@ -327,11 +416,13 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Global Default Avatar
         const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        // Owner Ad Panel Password
+        const OWNER_AD_PASSWORD = "JayaAdBlockAdmin";
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -368,7 +459,7 @@
         const app = initializeApp(conf);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const gProv = new GoogleAuthProvider();
+        const googleProvider = new GoogleAuthProvider();
         let me = null;
 
         window.addEventListener('load', () => {
@@ -402,21 +493,184 @@
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
-                if(!dSnap.exists()) {
-                    const un = u.displayName.replace(/\s+/g,'').toLowerCase() + Math.floor(Math.random()*99);
-                    await setDoc(doc(db, "users", u.uid), { username: un, uid: u.uid, pic: u.photoURL, lastChange: Date.now() });
-                    location.reload();
-                } else {
+                if(dSnap.exists()) {
                     me = dSnap.data();
+                    
+                    if(u.photoURL && me.pic !== u.photoURL) {
+                        me.pic = u.photoURL;
+                        await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
+                    }
+
+                    // Setup system wide handling of monetization script
+                    applyAdPreferences(me.adsEnabled);
+
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
+                } else {
+                    const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    const finalPhoto = u.photoURL || defaultAvtr;
+                    await setDoc(doc(db, "users", u.uid), { 
+                        username: generatedUsername.toLowerCase().replace(/\s+/g,'').trim(), 
+                        uid: u.uid, 
+                        pic: finalPhoto, 
+                        email: u.email || "",
+                        lastChange: Date.now(),
+                        adsEnabled: true
+                    });
+                    location.reload();
                 }
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('main-app').style.display = 'none';
             }
         });
+
+        // Function to Inject or Block Ads Script
+        function applyAdPreferences(adsEnabled) {
+            const wrapper = document.getElementById('monetag-ad-wrapper');
+            if (adsEnabled === false) {
+                if(wrapper) wrapper.innerHTML = ""; 
+                console.log("Ads fully blocked via Admin preferences.");
+            } else {
+                if(wrapper && !document.getElementById('monetag-script')) {
+                    const script = document.createElement('script');
+                    script.id = 'monetag-script';
+                    script.dataset.zone = '11021735';
+                    script.src = 'https://al5sm.com/tag.min.js';
+                    wrapper.appendChild(script);
+                }
+            }
+        }
+
+        // Handle Ad Checkbox authentication mechanism
+        window.handleAdToggleClick = async (event) => {
+            event.preventDefault(); 
+            const checkbox = document.getElementById('adToggleCheckbox');
+            const targetState = !checkbox.checked; // inverse state verification
+            
+            const enteredPassword = prompt("Enter Owner Admin Password to change Ad-Block configuration:");
+            if (enteredPassword === OWNER_AD_PASSWORD) {
+                try {
+                    checkbox.checked = targetState;
+                    // update fields dynamically inside Firestore context
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { adsEnabled: !targetState });
+                    me.adsEnabled = !targetState;
+                    applyAdPreferences(me.adsEnabled);
+                    alert("Ad control successfully updated!");
+                } catch(err) {
+                    alert("Error saving preferences: " + err.message);
+                }
+            } else {
+                alert("Incorrect Owner Password! Configuration locked.");
+            }
+        };
+
+        window.switchAuthTab = (tab) => {
+            if(tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-signup').classList.remove('active');
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('signup-form').style.display = 'none';
+            } else {
+                document.getElementById('tab-signup').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('signup-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            }
+        };
+
+        window.handleAuthSubmit = async (event, mode) => {
+            event.preventDefault();
+            
+            let uname = "", pass = "";
+            if(mode === 'login') {
+                uname = document.getElementById('login-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('login-pass').value.trim();
+            } else {
+                uname = document.getElementById('signup-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('signup-pass').value.trim();
+            }
+
+            if(!uname || !pass) {
+                alert("Please fill all fields!");
+                return;
+            }
+
+            const pseudoEmail = uname + "@thejaya.com";
+
+            if(mode === 'login') {
+                try {
+                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                } catch (err) {
+                    if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
+                        alert("Invalid Username or Password!");
+                    } else {
+                        alert("Error: " + err.message);
+                    }
+                }
+            } else {
+                try {
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
+                    if(!checkSnap.empty) {
+                        alert("Username already taken! Please choose a unique one.");
+                        return;
+                    }
+
+                    const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pass);
+                    await setDoc(doc(db, "users", cred.user.uid), {
+                        username: uname,
+                        uid: cred.user.uid,
+                        pic: defaultAvtr,
+                        email: pseudoEmail,
+                        lastChange: Date.now(),
+                        adsEnabled: true
+                    });
+                    alert("Account Created successfully!");
+                    location.reload();
+                } catch (err) {
+                    if(err.code === "auth/email-already-in-use") {
+                        alert("Username already registered!");
+                    } else {
+                        alert("Signup Error: " + err.message);
+                    }
+                }
+            }
+        };
+
+        window.loginWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                const dSnap = await getDoc(doc(db, "users", user.uid));
+                
+                if(!dSnap.exists()) {
+                    let baseUsername = user.email ? user.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    baseUsername = baseUsername.toLowerCase().replace(/\s+/g,'').trim();
+                    
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", baseUsername)));
+                    if(!checkSnap.empty) {
+                        baseUsername = baseUsername + Math.floor(Math.random() * 100);
+                    }
+
+                    await setDoc(doc(db, "users", user.uid), {
+                        username: baseUsername,
+                        uid: user.uid,
+                        pic: user.photoURL || defaultAvtr,
+                        email: user.email,
+                        lastChange: Date.now(),
+                        adsEnabled: true
+                    });
+                } else {
+                    await updateDoc(doc(db, "users", user.uid), {
+                        pic: user.photoURL || defaultAvtr,
+                        email: user.email
+                    });
+                }
+            } catch (err) {
+                alert("Google Sign-In Error: " + err.message);
+            }
+        };
 
         window.showGuestFeed = () => {
             document.getElementById('auth-section').style.display = 'none';
@@ -427,7 +681,7 @@
 
         window.requireLogin = (cb) => {
             if(!auth.currentUser) {
-                alert("Please login first!");
+                alert("Authentication required!");
                 document.getElementById('main-app').style.display = 'none';
                 document.getElementById('auth-section').style.display = 'block';
             } else cb();
@@ -437,18 +691,39 @@
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
             
-            // Header pic fix
             if(auth.currentUser) {
-                document.getElementById('head-pic').src = auth.currentUser.photoURL || defaultAvtr;
+                document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
             }
 
             if(v === 'home') loadFeed("feed", null);
             if(v === 'profile') {
                 const user = isMe ? me : other;
-                // Profile pic fix
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
-                document.getElementById('u-name').innerText = "@" + user.username;
+                document.getElementById('u-name').innerText = "@" + (user.username || "user");
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
+                
+                const verifySection = document.getElementById('verification-section');
+                if(isMe && auth.currentUser) {
+                    verifySection.style.display = 'block';
+                    const statusText = document.getElementById('verify-status-text');
+                    
+                    if(auth.currentUser.providerData.some(p => p.providerId === 'google.com')) {
+                        statusText.innerHTML = `✅ Google Connected (${user.email || auth.currentUser.email})`;
+                        statusText.style.color = "var(--primary)";
+                    } else {
+                        statusText.innerHTML = "🔗 Traditional Password Account";
+                        statusText.style.color = "var(--text-muted)";
+                    }
+
+                    // Checkbox sync with current user structure data
+                    const checkbox = document.getElementById('adToggleCheckbox');
+                    if(checkbox) {
+                        checkbox.checked = me.adsEnabled === false; 
+                    }
+                } else {
+                    verifySection.style.display = 'none';
+                }
+
                 loadFeed("u-feed", user.uid);
             }
         };
@@ -464,9 +739,7 @@
                     const p = d.data();
                     if(uid) { stars += (p.stars?.length || 0); posts++; }
                     
-                    // Post Avatar Fix
                     const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
-                    
                     const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
                     const el = document.createElement('div');
                     el.className = 'card';
@@ -474,7 +747,7 @@
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
-                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username}</strong>
+                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'}</strong>
                                 <span class="post-time">${timeAgo(p.time)}</span>
                             </div>
                             ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="margin-left:auto; cursor:pointer;">${iconDelete}</div>` : ''}
@@ -487,14 +760,14 @@
                             <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username}')">
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
                                 ${iconShare} Share
                             </span>
                         </div>
                         <div id="drawer-${d.id}" class="comment-drawer">
                             <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
                                 <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span><b style="color:var(--primary)">@${c.user}</b>: ${c.msg}</span>
+                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${c.msg}</span>
                                     ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
                                 </div>`).join('')}</div>
                             <div style="display:flex; gap:8px; margin-top:15px;">
@@ -517,21 +790,27 @@
         window.checkEditUsername = async () => {
             const now = Date.now();
             if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days! or Use this link to make the change immediately.    https://thejaya.vercel.app/username.html"); return; }
-            const newU = prompt("New username:").toLowerCase().replace(/\s+/g,'');
-            if(newU) { await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); }
+            let newU = prompt("New username:");
+            if(newU) { 
+                newU = newU.toLowerCase().replace(/\s+/g,'');
+                const q = query(collection(db, "users"), where("username", "==", newU));
+                const querySnapshot = await getDocs(q);
+                if(!querySnapshot.empty) { alert("Username already taken!"); return; }
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); 
+            }
         };
 
         window.doPost = async () => {
             const t = document.getElementById('postInput').value;
             if(!t.trim()) return;
-            await addDoc(collection(db, "posts"), { text: t, username: me.username, pic: auth.currentUser.photoURL, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
+            await addDoc(collection(db, "posts"), { text: t, username: me.username || 'user', pic: me.pic || defaultAvtr, uid: auth.currentUser.uid, stars: [], comments: [], time: Date.now() });
             document.getElementById('postInput').value = ""; setPostModal(false);
         };
 
         window.addCom = async (id) => {
             const i = document.getElementById('in-'+id);
             if(!i.value.trim()) return;
-            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username, msg: i.value }) });
+            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username || 'user', msg: i.value }) });
             i.value = "";
         };
 
@@ -542,13 +821,16 @@
         };
 
         window.findUser = async () => {
-            const qStr = document.getElementById('sq').value.toLowerCase().trim();
+            let qStr = document.getElementById('sq').value;
+            if(!qStr || !qStr.trim()) return;
+            qStr = qStr.toLowerCase().trim();
             const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
             if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
         };
 
         window.findUserByUname = async (un) => {
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", un)));
+            if(!un) return;
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", un.toLowerCase().trim())));
             if(!s.empty) navTo('profile', false, s.docs[0].data());
         };
 
@@ -569,7 +851,6 @@
         };
 
         window.logout = () => { signOut(auth); location.reload(); };
-        document.getElementById('googleLogin').onclick = () => signInWithPopup(auth, gProv);
 
         const postInput = document.getElementById('postInput');
         const wordCountDisplay = document.getElementById('word-count');
