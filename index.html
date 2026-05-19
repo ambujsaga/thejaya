@@ -201,27 +201,6 @@
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
-        
-        /* --- SPECIAL NEW USER DECORATIONS --- */
-        .special-welcome-badge {
-            background: linear-gradient(90deg, #ffd700, #ff8800);
-            color: #030a1a;
-            font-size: 10px;
-            font-weight: 900;
-            padding: 3px 8px;
-            border-radius: 20px;
-            margin-left: 8px;
-            letter-spacing: 0.5px;
-            box-shadow: var(--gold-shadow);
-            display: inline-block;
-            vertical-align: middle;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        .special-welcome-card {
-            border: 1px dashed #ffd700 !important;
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(6, 17, 39, 0.8)) !important;
-            box-shadow: var(--gold-shadow) !important;
-        }
 
         /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
@@ -572,11 +551,6 @@
         </div>
 
         <div class="container">
-            <div id="special-new-user-hud" class="card" style="display:none; text-align:center; border:1px solid #ffd700; background:rgba(255,215,0,0.05); margin-bottom:15px; border-radius:16px; padding:12px;">
-                <span style="color:#ffd700; font-weight:800; font-size:14px; text-shadow:var(--gold-shadow);">✨ Welcome To The Jaya! ✨</span>
-                <p id="hud-status-desc" style="margin:5px 0 0 0; font-size:12px; color:var(--text-muted);">Your deluxe onboarding perks expire after <b id="posts-left-count" style="color:#ffd700;">3</b> more posts.</p>
-            </div>
-
             <div id="home-view"><div id="feed"></div></div>
             <div id="profile-view" style="display:none;" class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -730,33 +704,6 @@
             return text.match(LINK_REGEX) || [];
         }
 
-        // --- TRACK AND SHOW SPECIAL HUD IF USER IS NEW ---
-        function checkAndRenderNewUserHud() {
-            if (auth.currentUser && me) {
-                const postCountKey = "posts_count_" + auth.currentUser.uid;
-                let currentPostsCount = localStorage.getItem(postCountKey);
-                
-                if (currentPostsCount === null) {
-                    if (me.postsMade !== undefined) {
-                        currentPostsCount = me.postsMade;
-                    } else {
-                        currentPostsCount = 0;
-                    }
-                    localStorage.setItem(postCountKey, currentPostsCount);
-                } else {
-                    currentPostsCount = parseInt(currentPostsCount);
-                }
-
-                const hud = document.getElementById('special-new-user-hud');
-                if (currentPostsCount < 3) {
-                    hud.style.display = 'block';
-                    document.getElementById('posts-left-count').innerText = (3 - currentPostsCount);
-                } else {
-                    hud.style.display = 'none';
-                }
-            }
-        }
-
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -771,7 +718,6 @@
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
-                    checkAndRenderNewUserHud();
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
                     const finalPhoto = u.photoURL || defaultAvtr;
@@ -925,7 +871,6 @@
 
             if(v === 'home') {
                 loadFeed("feed", null);
-                checkAndRenderNewUserHud();
             }
             if(v === 'profile') {
                 const user = isMe ? me : other;
@@ -935,7 +880,7 @@
                 const tickDisplay = user.hasRedTick ? redTickSVG : '';
                 document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
                 
-                // Red Tick Toggle Controller (Button visually removed)
+                // Red Tick Toggle Controller
                 document.getElementById('red-tick-controls').innerHTML = '';
 
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
@@ -960,16 +905,13 @@
             }
         };
 
-        // --- NEW GLOBAL FUNCTION TO TOGGLE RED TICK ---
         window.toggleRedTick = async (uid, currentStatus) => {
             if(!auth.currentUser) return;
             const newStatus = !currentStatus;
             
             try {
-                // Update users collection
                 await updateDoc(doc(db, "users", uid), { hasRedTick: newStatus });
                 
-                // Update all posts made by this user to reflect everywhere immediately
                 const q = query(collection(db, "posts"), where("uid", "==", uid));
                 const snap = await getDocs(q);
                 
@@ -979,12 +921,10 @@
                 });
                 await Promise.all(updatePromises);
 
-                // Update Local Me object if needed
                 if (me && me.uid === uid) {
                     me.hasRedTick = newStatus;
                 }
                 
-                // Reload profile view properly
                 const updatedUserSnap = await getDoc(doc(db, "users", uid));
                 if(updatedUserSnap.exists()) {
                     navTo('profile', me && me.uid === uid, updatedUserSnap.data());
@@ -1023,33 +963,24 @@
                 let finalPostsToRender = [];
 
                 if (uid) {
-                    // Profile Feed: Isme koi shuffling aur expiration ka rule nahi lagega
                     finalPostsToRender = rawPosts;
                     rawPosts.forEach(p => {
                         stars += (p.stars?.length || 0);
                         posts++;
                     });
                 } else {
-                    // Home Feed: 14 Days Filter Rule (14 days = 1209600000 ms)
                     const fourteenDaysAgo = Date.now() - 1209600000;
                     let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
 
-                    // Separate Sticky Posts (Jo pichle 15 minute ke andar bani hain)
-                    const fifteenMinsAgo = Date.now() - 900000; // 15 mins = 900000 ms
+                    const fifteenMinsAgo = Date.now() - 900000; 
                     let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
                     let poolToShuffle = activeFeedPosts.filter(p => p.time < fifteenMinsAgo);
 
-                    // Pehli baar load hone par ya koi post add/delete hone par hi static structure match karega
                     if (feedShuffleOrder === null || currentSnapshotIds !== lastFetchedPostIds) {
                         lastFetchedPostIds = currentSnapshotIds;
-                        
-                        // Remaining posts pool ko fully shuffle karna
                         poolToShuffle = shuffleArray(poolToShuffle);
-                        
-                        // New shuffled order array ko memory state me lock karke save karna
                         feedShuffleOrder = poolToShuffle.map(p => p.id);
                     } else {
-                        // Agar user like/comment trigger kar raha hai toh memory state se order match karwana
                         let mapOrder = {};
                         poolToShuffle.forEach(p => { mapOrder[p.id] = p; });
                         
@@ -1060,18 +991,15 @@
                                 delete mapOrder[savedId];
                             }
                         });
-                        // Agar realtime check me koi miss ho gaya ho toh use safe wrapper de dena
                         Object.values(mapOrder).forEach(leftOver => {
                             reorderedPool.push(leftOver);
                         });
                         poolToShuffle = reorderedPool;
                     }
 
-                    // Strict Order Setup: Sticky Posts top par ordered rahengi, uske baad shuffled array append hoga
                     finalPostsToRender = [...stickyPosts, ...poolToShuffle];
                 }
 
-                // Render execution stack
                 finalPostsToRender.forEach(p => {
                     const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
                     const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
@@ -1085,21 +1013,17 @@
                         });
                         linksHtml += `</div>`;
                     }
-
-                    // Check if post belongs to a new user onboarding stage (under 3 posts)
-                    const isSpecialNewUserPost = p.isNewUserVibe === true;
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
                     const el = document.createElement('div');
-                    el.className = isSpecialNewUserPost ? 'card special-welcome-card' : 'card';
+                    el.className = 'card';
                     el.innerHTML = `
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
                                 <div style="display:flex; align-items:center;">
                                     <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer; display:flex; align-items:center;">@${p.username || 'user'}${postRedTick}</strong>
-                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge">.</span>` : ''}
                                 </div>
                                 <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
@@ -1142,13 +1066,11 @@
         window.starIt = async (id, has) => { 
             if(!auth.currentUser) { alert("Please login first!"); return; }
             
-            // --- NEW ANIMATION LOGIC ON STAR CLICK ---
             if (!has && window.event) {
                 const e = window.event;
                 const clickX = e.clientX;
                 const clickY = e.clientY;
                 
-                // 10 chhote stars particles generate karega
                 for (let i = 0; i < 10; i++) {
                     const p = document.createElement('div');
                     p.className = 'star-particle';
@@ -1156,7 +1078,6 @@
                     p.style.left = clickX + 'px';
                     p.style.top = clickY + 'px';
                     
-                    // Random angles and distances for explosion effect
                     const angle = Math.random() * Math.PI * 2;
                     const distance = 30 + Math.random() * 50; 
                     const x = Math.cos(angle) * distance;
@@ -1209,14 +1130,14 @@
                 cleanedText = "Shared Links:";
             }
 
-            // Fetch state mapping values dynamically
+            // Using localStorage exclusively to track and trigger the first post auto-comment feature
             const postCountKey = "posts_count_" + auth.currentUser.uid;
             let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
-            let isNewUserVibeActive = false;
+            let triggerBotComment = false;
 
-            if (currentPostsCount < 3) {
-                isNewUserVibeActive = true;
-                currentPostsCount++;
+            if (currentPostsCount === 0) {
+                triggerBotComment = true;
+                currentPostsCount = 1;
                 localStorage.setItem(postCountKey, currentPostsCount);
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
                 if(me) me.postsMade = currentPostsCount;
@@ -1232,14 +1153,13 @@
                 comments: [], 
                 time: Date.now(), 
                 edited: false,
-                isNewUserVibe: isNewUserVibeActive,
-                hasRedTick: me.hasRedTick || false // Carry over Red Tick status to new posts
+                hasRedTick: me.hasRedTick || false 
             };
 
             const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
 
-            // Special Welcome auto-comment generator sequence
-            if (isNewUserVibeActive) {
+            // Trigger Bot Welcome Comment sequence on first post only
+            if (triggerBotComment) {
                 setTimeout(async () => {
                     await updateDoc(doc(db, "posts", createdPostRef.id), { 
                         comments: arrayUnion({ 
@@ -1253,7 +1173,6 @@
 
             document.getElementById('postInput').value = ""; 
             setPostModal(false);
-            checkAndRenderNewUserHud();
         };
 
         window.editPost = async (id, oldText) => {
@@ -1323,7 +1242,6 @@
 
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
         
-        // --- UPDATED TOGGLE SEARCH METHOD TO HIDE DROPDOWN ON TOGGLE ---
         window.toggleSearch = () => { 
             const r = document.getElementById('search-row'); 
             const box = document.getElementById('search-suggestions-box');
@@ -1384,14 +1302,12 @@
         postInput.addEventListener('keyup', updateWordCount);
         postInput.addEventListener('change', updateWordCount);
 
-        // --- NEW REALTIME SEARCH SUGGESTIONS FEATURE ENGINE ---
         const searchInput = document.getElementById('sq');
         const suggestionsBox = document.getElementById('search-suggestions-box');
 
         searchInput.addEventListener('input', async () => {
             let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
             
-            // Checking alphanumeric ranges (a-z, 0-9)
             if(!val || val.length === 0) {
                 suggestionsBox.style.display = 'none';
                 suggestionsBox.innerHTML = '';
@@ -1399,7 +1315,6 @@
             }
 
             try {
-                // Firestore Prefix Matching Strategy (\uf8ff handles alphabetical bounds seamlessly)
                 const q = query(
                     collection(db, "users"), 
                     orderBy("username"), 
@@ -1431,7 +1346,6 @@
                         <span style="display:flex; align-items:center;">@${uData.username}${searchItemRedTick}</span>
                     `;
                     
-                    // Click on suggestion to navigate directly using the existing method
                     item.addEventListener('click', () => {
                         searchInput.value = uData.username;
                         suggestionsBox.style.display = 'none';
@@ -1447,7 +1361,6 @@
             }
         });
 
-        // Hides suggestion popup if clicked outside
         document.addEventListener('click', (e) => {
             if (e.target !== searchInput && e.target !== suggestionsBox) {
                 suggestionsBox.style.display = 'none';
