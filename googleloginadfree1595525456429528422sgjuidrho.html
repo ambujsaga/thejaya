@@ -199,7 +199,38 @@
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
-        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); }
+        
+        /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
+        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
+        .search-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; }
+        .search-input-group { display: flex; gap: 10px; width: 100%; }
+        .search-suggestions { 
+            position: absolute; 
+            top: 52px; 
+            left: 0; 
+            width: calc(100% - 60px); 
+            background: rgba(6, 17, 39, 0.98); 
+            border: 1px solid var(--primary); 
+            border-radius: 12px; 
+            max-height: 220px; 
+            overflow-y: auto; 
+            z-index: 5000; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        .suggestion-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px 15px; 
+            cursor: pointer; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover { background: rgba(0, 229, 255, 0.15); }
+        .suggestion-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--primary); }
+        .suggestion-item span { color: var(--text-main); font-weight: 600; font-size: 14px; }
 
         .theme-toggle {
             background: rgba(255,255,255,0.1);
@@ -475,9 +506,12 @@
         </header>
 
         <div id="search-row">
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="sq" placeholder="Search @username...">
-                <button onclick="findUser()" class="btn-primary" style="width: auto;">Go</button>
+            <div class="search-wrapper">
+                <div class="search-input-group">
+                    <input type="text" id="sq" placeholder="Search @username..." autocomplete="off">
+                    <button onclick="findUser()" class="btn-primary" style="width: auto;">Go</button>
+                </div>
+                <div id="search-suggestions-box" class="search-suggestions"></div>
             </div>
         </div>
 
@@ -590,6 +624,10 @@
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
         let me = null;
+
+        // Shuffle state tracking variables
+        let feedShuffleOrder = null; 
+        let lastFetchedPostIds = "";
 
         window.addEventListener('load', () => {
             setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
@@ -813,6 +851,15 @@
             }
         };
 
+        // Fisher-Yates Shuffle Algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function loadFeed(divId, uid) {
             let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
                         : query(collection(db, "posts"), orderBy("time", "desc"));
@@ -820,13 +867,71 @@
             onSnapshot(q, (s) => {
                 const div = document.getElementById(divId); div.innerHTML = "";
                 let stars = 0, posts = 0;
+                
+                let rawPosts = [];
+                let currentSnapshotIds = "";
+
                 s.forEach(d => {
-                    const p = d.data();
-                    if(uid) { stars += (p.stars?.length || 0); posts++; }
-                    
+                    const postData = d.data();
+                    rawPosts.push({ id: d.id, ...postData });
+                    currentSnapshotIds += d.id + ",";
+                });
+
+                let finalPostsToRender = [];
+
+                if (uid) {
+                    // Profile Feed: Isme koi shuffling aur expiration ka rule nahi lagega
+                    finalPostsToRender = rawPosts;
+                    rawPosts.forEach(p => {
+                        stars += (p.stars?.length || 0);
+                        posts++;
+                    });
+                } else {
+                    // Home Feed: 14 Days Filter Rule (14 days = 1209600000 ms)
+                    const fourteenDaysAgo = Date.now() - 1209600000;
+                    let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
+
+                    // Separate Sticky Posts (Jo pichle 15 minute ke andar bani hain)
+                    const fifteenMinsAgo = Date.now() - 900000; // 15 mins = 900000 ms
+                    let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
+                    let poolToShuffle = activeFeedPosts.filter(p => p.time < fifteenMinsAgo);
+
+                    // Pehli baar load hone par ya koi post add/delete hone par hi static structure match karega
+                    if (feedShuffleOrder === null || currentSnapshotIds !== lastFetchedPostIds) {
+                        lastFetchedPostIds = currentSnapshotIds;
+                        
+                        // Remaining posts pool ko fully shuffle karna
+                        poolToShuffle = shuffleArray(poolToShuffle);
+                        
+                        // New shuffled order array ko memory state me lock karke save karna
+                        feedShuffleOrder = poolToShuffle.map(p => p.id);
+                    } else {
+                        // Agar user like/comment trigger kar raha hai toh memory state se order match karwana
+                        let mapOrder = {};
+                        poolToShuffle.forEach(p => { mapOrder[p.id] = p; });
+                        
+                        let reorderedPool = [];
+                        feedShuffleOrder.forEach(savedId => {
+                            if (mapOrder[savedId]) {
+                                reorderedPool.push(mapOrder[savedId]);
+                                delete mapOrder[savedId];
+                            }
+                        });
+                        // Agar realtime check me koi miss ho gaya ho toh use safe wrapper de dena
+                        Object.values(mapOrder).forEach(leftOver => {
+                            reorderedPool.push(leftOver);
+                        });
+                        poolToShuffle = reorderedPool;
+                    }
+
+                    // Strict Order Setup: Sticky Posts top par ordered rahengi, uske baad shuffled array append hoga
+                    finalPostsToRender = [...stickyPosts, ...poolToShuffle];
+                }
+
+                // Render execution stack
+                finalPostsToRender.forEach(p => {
                     const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
                     const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
-                    
                     const isEditable = (auth.currentUser && auth.currentUser.uid === p.uid && (Date.now() - p.time < 3600000));
                     
                     let linksHtml = '';
@@ -848,32 +953,32 @@
                                 <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
                             <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
-                                ${isEditable ? `<div onclick="editPost('${d.id}', '${p.text.replace(/'/g, "\\'")}')" style="cursor:pointer;">${iconEdit}</div>` : ''}
-                                ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${d.id}')" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                                ${isEditable ? `<div onclick="editPost('${p.id}', '${p.text.replace(/'/g, "\\'")}')" style="cursor:pointer;">${iconEdit}</div>` : ''}
+                                ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${p.id}')" style="cursor:pointer;">${iconDelete}</div>` : ''}
                             </div>
                         </div>
                         <p style="margin: 0; line-height:1.5;">${p.text}</p>
                         ${linksHtml}
                         <div class="action-bar">
-                            <span class="action-btn" onclick="starIt('${d.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
+                            <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
                                 ${iconStar} ${p.stars?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${d.id}'))">
+                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${p.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
                             <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
                                 ${iconShare} Share
                             </span>
                         </div>
-                        <div id="drawer-${d.id}" class="comment-drawer">
-                            <div id="list-${d.id}">${(p.comments || []).map((c, i) => `
+                        <div id="drawer-${p.id}" class="comment-drawer">
+                            <div id="list-${p.id}">${(p.comments || []).map((c, i) => `
                                 <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
                                     <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${c.msg}</span>
-                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${d.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${p.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
                                 </div>`).join('')}</div>
                             <div style="display:flex; gap:8px; margin-top:15px;">
-                                <input id="in-${d.id}" placeholder="Reply...">
-                                <button onclick="addCom('${d.id}')" class="btn-primary" style="width:auto;">Send</button>
+                                <input id="in-${p.id}" placeholder="Reply...">
+                                <button onclick="addCom('${p.id}')" class="btn-primary" style="width:auto;">Send</button>
                             </div>
                         </div>
                     `;
@@ -1035,7 +1140,21 @@
         };
 
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
-        window.toggleSearch = () => { const r = document.getElementById('search-row'); r.style.display = r.style.display === 'block'?'none':'block'; };
+        
+        // --- UPDATED TOGGLE SEARCH METHOD TO HIDE DROPDOWN ON TOGGLE ---
+        window.toggleSearch = () => { 
+            const r = document.getElementById('search-row'); 
+            const box = document.getElementById('search-suggestions-box');
+            if(r.style.display === 'block') {
+                r.style.display = 'none';
+                box.style.display = 'none';
+                box.innerHTML = '';
+            } else {
+                r.style.display = 'block';
+                document.getElementById('sq').focus();
+            }
+        };
+
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
         
@@ -1082,6 +1201,74 @@
         postInput.addEventListener('input', updateWordCount);
         postInput.addEventListener('keyup', updateWordCount);
         postInput.addEventListener('change', updateWordCount);
+
+        // --- NEW REALTIME SEARCH SUGGESTIONS FEATURE ENGINE ---
+        const searchInput = document.getElementById('sq');
+        const suggestionsBox = document.getElementById('search-suggestions-box');
+
+        searchInput.addEventListener('input', async () => {
+            let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
+            
+            // Checking alphanumeric ranges (a-z, 0-9)
+            if(!val || val.length === 0) {
+                suggestionsBox.style.display = 'none';
+                suggestionsBox.innerHTML = '';
+                return;
+            }
+
+            try {
+                // Firestore Prefix Matching Strategy (\uf8ff handles alphabetical bounds seamlessly)
+                const q = query(
+                    collection(db, "users"), 
+                    orderBy("username"), 
+                    where("username", ">=", val), 
+                    where("username", "<=", val + "\uf8ff")
+                );
+                
+                const snap = await getDocs(q);
+                
+                if(snap.empty) {
+                    suggestionsBox.style.display = 'none';
+                    suggestionsBox.innerHTML = '';
+                    return;
+                }
+
+                suggestionsBox.innerHTML = '';
+                suggestionsBox.style.display = 'block';
+
+                snap.forEach(docSnap => {
+                    const uData = docSnap.data();
+                    const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `
+                        <img src="${uPic}" onerror="this.src='${defaultAvtr}'">
+                        <span>@${uData.username}</span>
+                    `;
+                    
+                    // Click on suggestion to navigate directly using the existing method
+                    item.addEventListener('click', () => {
+                        searchInput.value = uData.username;
+                        suggestionsBox.style.display = 'none';
+                        suggestionsBox.innerHTML = '';
+                        navTo('profile', false, uData);
+                    });
+
+                    suggestionsBox.appendChild(item);
+                });
+
+            } catch (err) {
+                console.error("Suggestion engine error: ", err);
+            }
+        });
+
+        // Hides suggestion popup if clicked outside
+        document.addEventListener('click', (e) => {
+            if (e.target !== searchInput && e.target !== suggestionsBox) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
