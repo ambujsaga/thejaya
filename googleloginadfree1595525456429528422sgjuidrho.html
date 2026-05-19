@@ -36,6 +36,7 @@
             --star: #ffd700; 
             --red: #ff4444; 
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            --gold-glow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
 
         body.light-mode {
@@ -45,6 +46,7 @@
             --text-muted: #65676b;
             --primary: #008ad3;
             --neon-shadow: 0 4px 12px rgba(0, 138, 211, 0.2);
+            --gold-glow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
 
         body { 
@@ -443,6 +445,22 @@
                 opacity: 0;
             }
         }
+
+        /* --- SPECIAL WELCOME STYLE FOR NEW USERS --- */
+        .welcome-tracker {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 229, 255, 0.15));
+            border: 2px dashed var(--primary);
+            box-shadow: var(--gold-glow);
+            border-radius: 18px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: pulseGlow 2.5s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: var(--gold-glow); }
+            50% { box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); }
+        }
     </style>
 </head>
 <body>
@@ -516,6 +534,8 @@
         </div>
 
         <div class="container">
+            <div id="welcome-banner-zone"></div>
+
             <div id="home-view"><div id="feed"></div></div>
             <div id="profile-view" style="display:none;" class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -583,6 +603,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -665,6 +686,63 @@
             return text.match(LINK_REGEX) || [];
         }
 
+        // --- NEW USER ENGINE UTILITIES ---
+        function initNewUserSystem(uid, isBrandNew = false) {
+            const storageKey = `jaya_posts_count_${uid}`;
+            const alertKey = `jaya_welcome_alert_${uid}`;
+            
+            if (isBrandNew) {
+                localStorage.setItem(storageKey, "0");
+            } else if (localStorage.getItem(storageKey) === null) {
+                localStorage.setItem(storageKey, "4"); // Existing user fallback to bypass tracker smoothly
+            }
+
+            const currentCount = parseInt(localStorage.getItem(storageKey) || "4");
+            
+            if (currentCount < 3) {
+                if (!localStorage.getItem(alertKey)) {
+                    alert("✨ Welcome to The Jaya! Premium layout activated for your first 3 posts. Let's create something awesome! 🚀");
+                    localStorage.setItem(alertKey, "true");
+                }
+                renderWelcomeTracker(currentCount);
+            } else {
+                document.getElementById('welcome-banner-zone').innerHTML = '';
+            }
+        }
+
+        function renderWelcomeTracker(count) {
+            const zone = document.getElementById('welcome-banner-zone');
+            const messages = [
+                "Welcome Champ! Drop your very first post to light up the feed! 🔥",
+                "Fantastic start! Share your 2nd post to show your vibe! ⚡",
+                "Just one more special post left to unlock full standard access! 🌟"
+            ];
+            
+            zone.innerHTML = `
+                <div class="welcome-tracker">
+                    <h3 style="margin: 0 0 5px 0; color: var(--primary); font-size: 16px; text-shadow: var(--neon-shadow);">✨ Special New User Mode (${count}/3 Posts)</h3>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-main); font-weight: 500;">${messages[count] || messages[0]}</p>
+                </div>
+            `;
+        }
+
+        function trackUserPosting() {
+            if (!auth.currentUser) return;
+            const storageKey = `jaya_posts_count_${auth.currentUser.uid}`;
+            let currentCount = parseInt(localStorage.getItem(storageKey) || "4");
+            
+            if (currentCount < 3) {
+                currentCount++;
+                localStorage.setItem(storageKey, currentCount.toString());
+                if (currentCount >= 3) {
+                    alert("🎉 Incredible! You've successfully finished the special starter guide. Enjoy the standard feed timeline!");
+                    document.getElementById('welcome-banner-zone').innerHTML = '';
+                } else {
+                    renderWelcomeTracker(currentCount);
+                }
+            }
+        }
+
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -678,6 +756,7 @@
 
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
+                    initNewUserSystem(u.uid, false);
                     navTo('home');
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
@@ -689,11 +768,13 @@
                         email: u.email || "",
                         lastChange: Date.now() 
                     });
+                    initNewUserSystem(u.uid, true);
                     location.reload();
                 }
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('main-app').style.display = 'none';
+                document.getElementById('welcome-banner-zone').innerHTML = '';
             }
         });
 
@@ -732,7 +813,8 @@
 
             if(mode === 'login') {
                 try {
-                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                    const cred = await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                    initNewUserSystem(cred.user.uid, false);
                 } catch (err) {
                     if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
                         alert("Invalid Username or Password!");
@@ -756,6 +838,7 @@
                         email: pseudoEmail,
                         lastChange: Date.now()
                     });
+                    initNewUserSystem(cred.user.uid, true);
                     alert("Account Created successfully!");
                     location.reload();
                 } catch (err) {
@@ -790,11 +873,13 @@
                         email: user.email,
                         lastChange: Date.now()
                     });
+                    initNewUserSystem(user.uid, true);
                 } else {
                     await updateDoc(doc(db, "users", user.uid), {
                         pic: user.photoURL || defaultAvtr,
                         email: user.email
                     });
+                    initNewUserSystem(user.uid, false);
                 }
             } catch (err) {
                 alert("Google Sign-In Error: " + err.message);
@@ -804,6 +889,7 @@
         window.showGuestFeed = () => {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
+            document.getElementById('welcome-banner-zone').innerHTML = '';
             loadFeed("feed", null);
         };
         document.getElementById('guest-trigger').onclick = showGuestFeed;
@@ -822,6 +908,14 @@
             
             if(auth.currentUser) {
                 document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
+                // Re-evaluate visibility state safely when home navigations switch
+                if (v === 'home') {
+                    const storageKey = `jaya_posts_count_${auth.currentUser.uid}`;
+                    const currentCount = parseInt(localStorage.getItem(storageKey) || "4");
+                    if (currentCount < 3) renderWelcomeTracker(currentCount);
+                } else {
+                    document.getElementById('welcome-banner-zone').innerHTML = '';
+                }
             }
 
             if(v === 'home') loadFeed("feed", null);
@@ -1072,6 +1166,7 @@
 
             document.getElementById('postInput').value = ""; 
             setPostModal(false);
+            trackUserPosting(); // Increments count state perfectly if new user
         };
 
         window.editPost = async (id, oldText) => {
