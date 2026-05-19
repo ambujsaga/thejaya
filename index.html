@@ -36,6 +36,7 @@
             --star: #ffd700; 
             --red: #ff4444; 
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            --gold-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
         }
 
         body.light-mode {
@@ -45,6 +46,7 @@
             --text-muted: #65676b;
             --primary: #008ad3;
             --neon-shadow: 0 4px 12px rgba(0, 138, 211, 0.2);
+            --gold-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
         }
 
         body { 
@@ -200,6 +202,27 @@
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
         
+        /* --- SPECIAL NEW USER DECORATIONS --- */
+        .special-welcome-badge {
+            background: linear-gradient(90deg, #ffd700, #ff8800);
+            color: #030a1a;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+            letter-spacing: 0.5px;
+            box-shadow: var(--gold-shadow);
+            display: inline-block;
+            vertical-align: middle;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .special-welcome-card {
+            border: 1px dashed #ffd700 !important;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(6, 17, 39, 0.8)) !important;
+            box-shadow: var(--gold-shadow) !important;
+        }
+
         /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
         .search-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; }
@@ -516,6 +539,11 @@
         </div>
 
         <div class="container">
+            <div id="special-new-user-hud" class="card" style="display:none; text-align:center; border:1px solid #ffd700; background:rgba(255,215,0,0.05); margin-bottom:15px; border-radius:16px; padding:12px;">
+                <span style="color:#ffd700; font-weight:800; font-size:14px; text-shadow:var(--gold-shadow);">✨ Welcome To The Jaya! ✨</span>
+                <p id="hud-status-desc" style="margin:5px 0 0 0; font-size:12px; color:var(--text-muted);">Your premium onboarding perks expire after <b id="posts-left-count" style="color:#ffd700;">3</b> more posts.</p>
+            </div>
+
             <div id="home-view"><div id="feed"></div></div>
             <div id="profile-view" style="display:none;" class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -665,6 +693,33 @@
             return text.match(LINK_REGEX) || [];
         }
 
+        // --- TRACK AND SHOW SPECIAL HUD IF USER IS NEW ---
+        function checkAndRenderNewUserHud() {
+            if (auth.currentUser && me) {
+                const postCountKey = "posts_count_" + auth.currentUser.uid;
+                let currentPostsCount = localStorage.getItem(postCountKey);
+                
+                if (currentPostsCount === null) {
+                    if (me.postsMade !== undefined) {
+                        currentPostsCount = me.postsMade;
+                    } else {
+                        currentPostsCount = 0;
+                    }
+                    localStorage.setItem(postCountKey, currentPostsCount);
+                } else {
+                    currentPostsCount = parseInt(currentPostsCount);
+                }
+
+                const hud = document.getElementById('special-new-user-hud');
+                if (currentPostsCount < 3) {
+                    hud.style.display = 'block';
+                    document.getElementById('posts-left-count').innerText = (3 - currentPostsCount);
+                } else {
+                    hud.style.display = 'none';
+                }
+            }
+        }
+
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -679,6 +734,7 @@
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
+                    checkAndRenderNewUserHud();
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
                     const finalPhoto = u.photoURL || defaultAvtr;
@@ -687,7 +743,8 @@
                         uid: u.uid, 
                         pic: finalPhoto, 
                         email: u.email || "",
-                        lastChange: Date.now() 
+                        lastChange: Date.now(),
+                        postsMade: 0
                     });
                     location.reload();
                 }
@@ -754,7 +811,8 @@
                         uid: cred.user.uid,
                         pic: defaultAvtr,
                         email: pseudoEmail,
-                        lastChange: Date.now()
+                        lastChange: Date.now(),
+                        postsMade: 0
                     });
                     alert("Account Created successfully!");
                     location.reload();
@@ -788,7 +846,8 @@
                         uid: user.uid,
                         pic: user.photoURL || defaultAvtr,
                         email: user.email,
-                        lastChange: Date.now()
+                        lastChange: Date.now(),
+                        postsMade: 0
                     });
                 } else {
                     await updateDoc(doc(db, "users", user.uid), {
@@ -824,7 +883,10 @@
                 document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
             }
 
-            if(v === 'home') loadFeed("feed", null);
+            if(v === 'home') {
+                loadFeed("feed", null);
+                checkAndRenderNewUserHud();
+            }
             if(v === 'profile') {
                 const user = isMe ? me : other;
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
@@ -943,13 +1005,19 @@
                         linksHtml += `</div>`;
                     }
 
+                    // Check if post belongs to a new user onboarding stage (under 3 posts)
+                    const isSpecialNewUserPost = p.isNewUserVibe === true;
+
                     const el = document.createElement('div');
-                    el.className = 'card';
+                    el.className = isSpecialNewUserPost ? 'card special-welcome-card' : 'card';
                     el.innerHTML = `
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
-                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'}</strong>
+                                <div style="display:flex; align-items:center;">
+                                    <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'}</strong>
+                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge">✨ NEW STAR</span>` : ''}
+                                </div>
                                 <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
                             <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
@@ -1058,7 +1126,20 @@
                 cleanedText = "Shared Links:";
             }
 
-            await addDoc(collection(db, "posts"), { 
+            // Fetch state mapping values dynamically
+            const postCountKey = "posts_count_" + auth.currentUser.uid;
+            let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
+            let isNewUserVibeActive = false;
+
+            if (currentPostsCount < 3) {
+                isNewUserVibeActive = true;
+                currentPostsCount++;
+                localStorage.setItem(postCountKey, currentPostsCount);
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
+                if(me) me.postsMade = currentPostsCount;
+            }
+
+            const postDocData = { 
                 text: cleanedText, 
                 links: detectedLinks,
                 username: me.username || 'user', 
@@ -1067,11 +1148,28 @@
                 stars: [], 
                 comments: [], 
                 time: Date.now(), 
-                edited: false 
-            });
+                edited: false,
+                isNewUserVibe: isNewUserVibeActive
+            };
+
+            const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
+
+            // Special Welcome auto-comment generator sequence
+            if (isNewUserVibeActive) {
+                setTimeout(async () => {
+                    await updateDoc(doc(db, "posts", createdPostRef.id), { 
+                        comments: arrayUnion({ 
+                            uid: "thejaya_system_bot", 
+                            user: "TheJayaBot", 
+                            msg: `Welcome @${me.username || 'user'} to the platform! Let's boost this incredible first vibe crew! 🚀🔥` 
+                        }) 
+                    });
+                }, 800);
+            }
 
             document.getElementById('postInput').value = ""; 
             setPostModal(false);
+            checkAndRenderNewUserHud();
         };
 
         window.editPost = async (id, oldText) => {
