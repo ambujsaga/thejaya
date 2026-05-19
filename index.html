@@ -1016,7 +1016,7 @@
                             <div class="user-info">
                                 <div style="display:flex; align-items:center;">
                                     <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'}</strong>
-                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge"></span>` : ''}
+                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge">.</span>` : ''}
                                 </div>
                                 <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
