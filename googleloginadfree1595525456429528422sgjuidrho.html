@@ -36,7 +36,7 @@
             --star: #ffd700; 
             --red: #ff4444; 
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
-            --special-neon: 0 0 20px rgba(255, 215, 0, 0.7);
+            --gold-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
         }
 
         body.light-mode {
@@ -46,7 +46,7 @@
             --text-muted: #65676b;
             --primary: #008ad3;
             --neon-shadow: 0 4px 12px rgba(0, 138, 211, 0.2);
-            --special-neon: 0 4px 15px rgba(212, 175, 55, 0.4);
+            --gold-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
         }
 
         body { 
@@ -202,6 +202,27 @@
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
         
+        /* --- SPECIAL NEW USER DECORATIONS --- */
+        .special-welcome-badge {
+            background: linear-gradient(90deg, #ffd700, #ff8800);
+            color: #030a1a;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+            letter-spacing: 0.5px;
+            box-shadow: var(--gold-shadow);
+            display: inline-block;
+            vertical-align: middle;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .special-welcome-card {
+            border: 1px dashed #ffd700 !important;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(6, 17, 39, 0.8)) !important;
+            box-shadow: var(--gold-shadow) !important;
+        }
+
         /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
         .search-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; }
@@ -232,7 +253,7 @@
         }
         .suggestion-item:hover { background: rgba(0, 229, 255, 0.15); }
         .suggestion-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--primary); }
-        .suggestion-item span { color: var(--text-main); font-weight: 600; font-size: 14px; }
+        .suggestion-item span { color: var(--text-main); font-weight: 600; font-size: 14px; display: flex; align-items: center; }
 
         .theme-toggle {
             background: rgba(255,255,255,0.1);
@@ -446,18 +467,37 @@
             }
         }
 
-        /* --- NEW USER WELCOME NOTIFICATION BADGE --- */
-        .welcome-badge {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(0, 229, 255, 0.1));
-            border: 1px dashed var(--star);
-            padding: 12px;
-            border-radius: 16px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 13px;
-            color: var(--text-main);
-            box-shadow: var(--special-neon);
-            animation: modalSlideUp 0.4s ease;
+        /* --- RED TICK CSS --- */
+        .red-tick-svg {
+            width: 18px;
+            height: 18px;
+            color: #ff4444;
+            margin-left: 5px;
+            vertical-align: middle;
+            filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.4));
+            display: inline-block;
+        }
+        
+        .tick-toggle-btn {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+        .tick-toggle-btn:hover {
+            background: #ff4444;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
         }
     </style>
 </head>
@@ -532,8 +572,11 @@
         </div>
 
         <div class="container">
-            <div id="welcome-banner-space"></div>
-            
+            <div id="special-new-user-hud" class="card" style="display:none; text-align:center; border:1px solid #ffd700; background:rgba(255,215,0,0.05); margin-bottom:15px; border-radius:16px; padding:12px;">
+                <span style="color:#ffd700; font-weight:800; font-size:14px; text-shadow:var(--gold-shadow);">✨ Welcome To The Jaya! ✨</span>
+                <p id="hud-status-desc" style="margin:5px 0 0 0; font-size:12px; color:var(--text-muted);">Your deluxe onboarding perks expire after <b id="posts-left-count" style="color:#ffd700;">3</b> more posts.</p>
+            </div>
+
             <div id="home-view"><div id="feed"></div></div>
             <div id="profile-view" style="display:none;" class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -543,8 +586,10 @@
                 </div>
                 <div style="text-align:center;">
                     <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
-                    <h2 id="u-name" style="margin:15px 0;">@username</h2>
+                    <h2 id="u-name" style="margin:15px 0; display: flex; align-items: center; justify-content: center;">@username</h2>
                     
+                    <div id="red-tick-controls" style="margin-bottom: 15px;"></div>
+
                     <div id="verification-section" style="margin-bottom: 15px; display: none;">
                         <div class="verify-box">
                             <span id="verify-status-text">Account Connected Via Google</span>
@@ -601,8 +646,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js" /* Added for security verification but Firestore link will run standalone */;
-        import { getFirestore as initializeFirestore, collection as cRef } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
@@ -640,7 +684,7 @@
         
         const app = initializeApp(conf);
         const auth = getAuth(app);
-        const db = initializeFirestore(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
         let me = null;
 
@@ -648,47 +692,7 @@
         let feedShuffleOrder = null; 
         let lastFetchedPostIds = "";
 
-        // --- NEW USER LOCALSTORAGE TRACKING ENGINE ---
-        function checkAndInitNewUser(uid) {
-            const storageKey = `jaya_posts_count_${uid}`;
-            if (localStorage.getItem(storageKey) === null) {
-                localStorage.setItem(storageKey, "0");
-            }
-            updateWelcomeBanner();
-        }
-
-        function getPostCount() {
-            if (!auth.currentUser) return 4; 
-            return parseInt(localStorage.getItem(`jaya_posts_count_${auth.currentUser.uid}`) || "0");
-        }
-
-        function incrementPostCount() {
-            if (!auth.currentUser) return;
-            const currentCount = getPostCount();
-            if (currentCount < 3) {
-                localStorage.setItem(`jaya_posts_count_${auth.currentUser.uid}`, (currentCount + 1).toString());
-                updateWelcomeBanner();
-            }
-        }
-
-        function updateWelcomeBanner() {
-            const bannerSpace = document.getElementById('welcome-banner-space');
-            if (!auth.currentUser) {
-                bannerSpace.innerHTML = "";
-                return;
-            }
-            const count = getPostCount();
-            if (count < 3) {
-                bannerSpace.innerHTML = `
-                    <div class="welcome-badge">
-                        <strong>Welcome to The Jaya, @${me ? me.username : 'creator'}! ✨</strong><br>
-                        <span style="font-size:11px; opacity:0.9;">You are on Special Status Mode! (${3 - count} early onboarding posts remaining)</span>
-                    </div>
-                `;
-            } else {
-                bannerSpace.innerHTML = "";
-            }
-        }
+        const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
         window.addEventListener('load', () => {
             setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
@@ -726,6 +730,33 @@
             return text.match(LINK_REGEX) || [];
         }
 
+        // --- TRACK AND SHOW SPECIAL HUD IF USER IS NEW ---
+        function checkAndRenderNewUserHud() {
+            if (auth.currentUser && me) {
+                const postCountKey = "posts_count_" + auth.currentUser.uid;
+                let currentPostsCount = localStorage.getItem(postCountKey);
+                
+                if (currentPostsCount === null) {
+                    if (me.postsMade !== undefined) {
+                        currentPostsCount = me.postsMade;
+                    } else {
+                        currentPostsCount = 0;
+                    }
+                    localStorage.setItem(postCountKey, currentPostsCount);
+                } else {
+                    currentPostsCount = parseInt(currentPostsCount);
+                }
+
+                const hud = document.getElementById('special-new-user-hud');
+                if (currentPostsCount < 3) {
+                    hud.style.display = 'block';
+                    document.getElementById('posts-left-count').innerText = (3 - currentPostsCount);
+                } else {
+                    hud.style.display = 'none';
+                }
+            }
+        }
+
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -737,12 +768,10 @@
                         await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
                     }
 
-                    // Onboarding validation trigger
-                    checkAndInitNewUser(u.uid);
-
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
+                    checkAndRenderNewUserHud();
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
                     const finalPhoto = u.photoURL || defaultAvtr;
@@ -751,14 +780,15 @@
                         uid: u.uid, 
                         pic: finalPhoto, 
                         email: u.email || "",
-                        lastChange: Date.now() 
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
                     });
                     location.reload();
                 }
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('main-app').style.display = 'none';
-                document.getElementById('welcome-banner-space').innerHTML = "";
             }
         });
 
@@ -819,7 +849,9 @@
                         uid: cred.user.uid,
                         pic: defaultAvtr,
                         email: pseudoEmail,
-                        lastChange: Date.now()
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
                     });
                     alert("Account Created successfully!");
                     location.reload();
@@ -853,7 +885,9 @@
                         uid: user.uid,
                         pic: user.photoURL || defaultAvtr,
                         email: user.email,
-                        lastChange: Date.now()
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
                     });
                 } else {
                     await updateDoc(doc(db, "users", user.uid), {
@@ -869,7 +903,6 @@
         window.showGuestFeed = () => {
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            document.getElementById('welcome-banner-space').innerHTML = "";
             loadFeed("feed", null);
         };
         document.getElementById('guest-trigger').onclick = showGuestFeed;
@@ -888,14 +921,27 @@
             
             if(auth.currentUser) {
                 document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
-                updateWelcomeBanner();
             }
 
-            if(v === 'home') loadFeed("feed", null);
+            if(v === 'home') {
+                loadFeed("feed", null);
+                checkAndRenderNewUserHud();
+            }
             if(v === 'profile') {
                 const user = isMe ? me : other;
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
-                document.getElementById('u-name').innerText = "@" + (user.username || "user");
+                
+                // Show Name and Red Tick if active
+                const tickDisplay = user.hasRedTick ? redTickSVG : '';
+                document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
+                
+                // Red Tick Toggle Controller
+                document.getElementById('red-tick-controls').innerHTML = `
+                    <button class="tick-toggle-btn" onclick="requireLogin(() => toggleRedTick('${user.uid}', ${user.hasRedTick ? true : false}))">
+                        ${user.hasRedTick ? '❌ Turn Off Red Tick' : '✔ Turn On Red Tick'}
+                    </button>
+                `;
+
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
                 
                 const verifySection = document.getElementById('verification-section');
@@ -915,6 +961,40 @@
                 }
 
                 loadFeed("u-feed", user.uid);
+            }
+        };
+
+        // --- NEW GLOBAL FUNCTION TO TOGGLE RED TICK ---
+        window.toggleRedTick = async (uid, currentStatus) => {
+            if(!auth.currentUser) return;
+            const newStatus = !currentStatus;
+            
+            try {
+                // Update users collection
+                await updateDoc(doc(db, "users", uid), { hasRedTick: newStatus });
+                
+                // Update all posts made by this user to reflect everywhere immediately
+                const q = query(collection(db, "posts"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+                
+                const updatePromises = [];
+                snap.forEach((dSnap) => {
+                    updatePromises.push(updateDoc(doc(db, "posts", dSnap.id), { hasRedTick: newStatus }));
+                });
+                await Promise.all(updatePromises);
+
+                // Update Local Me object if needed
+                if (me && me.uid === uid) {
+                    me.hasRedTick = newStatus;
+                }
+                
+                // Reload profile view properly
+                const updatedUserSnap = await getDoc(doc(db, "users", uid));
+                if(updatedUserSnap.exists()) {
+                    navTo('profile', me && me.uid === uid, updatedUserSnap.data());
+                }
+            } catch(err) {
+                alert("Error modifying Red Tick: " + err.message);
             }
         };
 
@@ -1010,19 +1090,22 @@
                         linksHtml += `</div>`;
                     }
 
-                    // Check if post belongs to a new user onboarding phase via custom check flag
-                    const isSpecialCreator = p.isNewCreatorPost === true;
-                    const cardStyle = isSpecialCreator ? `style="border: 1px dashed var(--star); box-shadow: var(--special-neon);"` : '';
+                    // Check if post belongs to a new user onboarding stage (under 3 posts)
+                    const isSpecialNewUserPost = p.isNewUserVibe === true;
+                    
+                    const postRedTick = p.hasRedTick ? redTickSVG : '';
 
                     const el = document.createElement('div');
-                    el.className = 'card';
-                    if(isSpecialCreator) el.setAttribute('style', `border: 1px dashed var(--star); box-shadow: var(--special-neon);`);
+                    el.className = isSpecialNewUserPost ? 'card special-welcome-card' : 'card';
                     el.innerHTML = `
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
-                                <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer;">@${p.username || 'user'} ${isSpecialCreator ? '✨' : ''}</strong>
-                                <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''} ${isSpecialCreator ? '<b style="color:var(--star); font-size:10px; margin-left:5px;">[New Creator]</b>' : ''}</span>
+                                <div style="display:flex; align-items:center;">
+                                    <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer; display:flex; align-items:center;">@${p.username || 'user'}${postRedTick}</strong>
+                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge">.</span>` : ''}
+                                </div>
+                                <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
                             <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
                                 ${isEditable ? `<div onclick="editPost('${p.id}', '${p.text.replace(/'/g, "\\'")}')" style="cursor:pointer;">${iconEdit}</div>` : ''}
@@ -1038,7 +1121,7 @@
                             <span class="action-btn" onclick="requireLogin(() => toggleComs('${p.id}'))">
                                 ${iconComment} ${p.comments?.length || 0}
                             </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}', ${isSpecialCreator})">
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
                                 ${iconShare} Share
                             </span>
                         </div>
@@ -1130,11 +1213,20 @@
                 cleanedText = "Shared Links:";
             }
 
-            // Fetch dynamic status onboarding logic
-            const currentNewUserCount = getPostCount();
-            const isEligibleForSpecial = currentNewUserCount < 3;
+            // Fetch state mapping values dynamically
+            const postCountKey = "posts_count_" + auth.currentUser.uid;
+            let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
+            let isNewUserVibeActive = false;
 
-            await addDoc(collection(db, "posts"), { 
+            if (currentPostsCount < 3) {
+                isNewUserVibeActive = true;
+                currentPostsCount++;
+                localStorage.setItem(postCountKey, currentPostsCount);
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
+                if(me) me.postsMade = currentPostsCount;
+            }
+
+            const postDocData = { 
                 text: cleanedText, 
                 links: detectedLinks,
                 username: me.username || 'user', 
@@ -1144,16 +1236,28 @@
                 comments: [], 
                 time: Date.now(), 
                 edited: false,
-                isNewCreatorPost: isEligibleForSpecial
-            });
+                isNewUserVibe: isNewUserVibeActive,
+                hasRedTick: me.hasRedTick || false // Carry over Red Tick status to new posts
+            };
 
-            // Trigger increment state
-            if(isEligibleForSpecial) {
-                incrementPostCount();
+            const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
+
+            // Special Welcome auto-comment generator sequence
+            if (isNewUserVibeActive) {
+                setTimeout(async () => {
+                    await updateDoc(doc(db, "posts", createdPostRef.id), { 
+                        comments: arrayUnion({ 
+                            uid: "thejaya_system_bot", 
+                            user: "TheJayaBot", 
+                            msg: `Welcome @${me.username || 'user'} to the platform! Let's boost this incredible first vibe crew! 🚀🔥` 
+                        }) 
+                    });
+                }, 800);
             }
 
             document.getElementById('postInput').value = ""; 
             setPostModal(false);
+            checkAndRenderNewUserHud();
         };
 
         window.editPost = async (id, oldText) => {
@@ -1240,9 +1344,8 @@
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
         window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
         
-        window.sharePost = async (text, username, isSpecialCreator = false) => {
-            const tag = isSpecialCreator ? "\n~ New Creator ✨" : "";
-            const shareText = `"${text}"\n\n~by @${username}${tag} on The Jaya\n\nCheckout here:`;
+        window.sharePost = async (text, username) => {
+            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
             const shareUrl = window.location.href;
             if (navigator.share) {
                 try { await navigator.share({ title: 'The Jaya Post', text: shareText, url: shareUrl }); } catch (err) {}
@@ -1323,11 +1426,13 @@
                     const uData = docSnap.data();
                     const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
                     
+                    const searchItemRedTick = uData.hasRedTick ? redTickSVG : '';
+
                     const item = document.createElement('div');
                     item.className = 'suggestion-item';
                     item.innerHTML = `
                         <img src="${uPic}" onerror="this.src='${defaultAvtr}'">
-                        <span>@${uData.username}</span>
+                        <span style="display:flex; align-items:center;">@${uData.username}${searchItemRedTick}</span>
                     `;
                     
                     // Click on suggestion to navigate directly using the existing method
