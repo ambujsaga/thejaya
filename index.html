@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json">
 
      <style>
-        /* --- DESKTOP OPTIMIZATION --- */
+        /* --- DESKTOP OPTIMIZATION (UPDATED FOR COOL DESKTOP VIEW) --- */
         @media (min-width: 768px) {
             .container { 
                 max-width: 650px !important; 
@@ -22,6 +22,7 @@
             }
             .logo { font-size: 28px; }
             
+            /* Enhanced modern look for desktop cards */
             .card { 
                 padding: 25px !important; 
                 border-radius: 24px !important; 
@@ -42,6 +43,7 @@
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
             #post-modal .container { max-width: 500px; }
             
+            /* Centering row modifications */
             #search-row {
                 padding: 15px 15% !important;
             }
@@ -178,6 +180,7 @@
 
         .bits-btn:hover { background: var(--primary); color: #fff; }
 
+        /* --- LEFT SIDE DOTS MENU --- */
         .more-btn {
             position: fixed;
             bottom: 35px;
@@ -220,6 +223,7 @@
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
 
+        /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
         .search-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; }
         .search-input-group { display: flex; gap: 10px; width: 100%; }
@@ -290,17 +294,19 @@
             box-shadow: var(--neon-shadow);
         }
 
+        /* Tabs UI Style */
         .auth-card { max-width: 360px; margin: auto; padding: 20px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(0, 229, 255, 0.2); }
         .auth-tabs { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
         .auth-tab { padding: 10px; color: var(--text-muted); cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
         .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); text-shadow: var(--neon-shadow); }
         .verify-box { margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--primary); font-size: 13px; }
         
+        /* New Links UI Container Styling */
         .post-links-wrapper { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 5px; }
         .post-link-icon-btn { display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; width: 32px; height: 32px; font-size: 14px; text-decoration: none; transition: 0.2s ease; }
         .post-link-icon-btn:hover { background: var(--primary); color: #030a1a; box-shadow: var(--neon-shadow); }
 
-        /* --- POST MODAL SYSTEM --- */
+        /* --- MODERN & COOL POST MODAL SYSTEM --- */
         #post-modal {
             display: none; 
             position: fixed; 
@@ -439,7 +445,7 @@
             box-shadow: var(--neon-shadow);
         }
 
-        /* --- STAR PARTICLE ANIMATION --- */
+        /* --- STAR PARTICLE ANIMATION CSS --- */
         .star-particle {
             position: fixed;
             pointer-events: none;
@@ -494,11 +500,11 @@
             box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
         }
 
-        /* --- POST CAROUSEL & PHOTO LAYOUTS --- */
+        /* --- NEW STYLES FOR ASPECT RATIO 4:3 PHOTO POSTS & CAROUSEL --- */
         .post-media-container {
             position: relative;
             width: 100%;
-            padding-top: 75%; 
+            padding-top: 75%; /* Strict 4:3 Aspect Ratio Box */
             margin-top: 12px;
             border-radius: 14px;
             overflow: hidden;
@@ -519,7 +525,7 @@
         .post-media-slide img {
             width: 100%;
             height: 100%;
-            object-fit: cover; 
+            object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
         }
         .carousel-btn {
             position: absolute;
@@ -599,9 +605,8 @@
 </head>
 <body>
     
-    <script src="https://formssternlystately.com/cc/bd/8c/ccbd8c819b67bbe0311b54841f1dd181.js"></script>
-    
-    <div id="loader-screen">
+<script src="https://formssternlystately.com/cc/bd/8c/ccbd8c819b67bbe0311b54841f1dd181.js"></script>
+ <div id="loader-screen">
         <div class="loader-visual">
             <div class="planet"></div>
             <div class="orbit"></div>
@@ -719,7 +724,7 @@
             <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
             
             <div class="upload-row">
-                <label for="photoSelector" class="btn-upload-label">🖼️ Add Pics (Max 5)</label>
+                <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
                 <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
                 <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
             </div>
@@ -786,12 +791,16 @@
         const googleProvider = new GoogleAuthProvider();
         let me = null;
 
+        // Shuffle state tracking variables
         let feedShuffleOrder = null; 
         let lastFetchedPostIds = "";
+
+        // Global arrays to handle base64 image strings inside post creation
         let selectedBase64Images = [];
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
+        // Optimized Loader Fix: Instantly hides after a tiny micro-delay instead of freezing for 3 seconds
         window.addEventListener('load', () => {
             setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 400);
         });
@@ -1000,10 +1009,13 @@
                 const user = isMe ? me : other;
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
                 
+                // Show Name and Red Tick if active
                 const tickDisplay = user.hasRedTick ? redTickSVG : '';
                 document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
                 
+                // Red Tick Toggle Controller
                 document.getElementById('red-tick-controls').innerHTML = '';
+
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
                 
                 const verifySection = document.getElementById('verification-section');
@@ -1055,6 +1067,7 @@
             }
         };
 
+        // Fisher-Yates Shuffle Algorithm
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -1063,6 +1076,7 @@
             return array;
         }
 
+        // Image Handling Mechanics (Compressed < 1MB & Select Preview Tracker)
         window.handleModalImagesSelect = (inputField) => {
             const files = Array.from(inputField.files);
             if (files.length > 5) {
@@ -1084,6 +1098,7 @@
                         let width = tempImg.width;
                         let height = tempImg.height;
                         
+                        // Downscale layout bounds if too massive
                         const max_size = 1200;
                         if (width > height) {
                             if (width > max_size) { height *= max_size / width; width = max_size; }
@@ -1096,6 +1111,7 @@
                         const ctx = canvas.getContext("2d");
                         ctx.drawImage(tempImg, 0, 0, width, height);
                         
+                        // Strict low quality compression parameters to stay well under 1MB threshold boundaries
                         let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
                         selectedBase64Images.push(compressedDataUrl);
 
@@ -1109,6 +1125,7 @@
             });
         };
 
+        // Custom Safe Carousel Navigation Routine Engine
         window.shiftCarousel = (postID, steps) => {
             const slider = document.getElementById(`slider-${postID}`);
             const counterLabel = document.getElementById(`counter-${postID}`);
@@ -1135,6 +1152,7 @@
             onSnapshot(q, (s) => {
                 const div = document.getElementById(divId); 
                 div.innerHTML = "";
+                // Optimization: Fragment batch DOM updates
                 const fragment = document.createDocumentFragment();
                 let stars = 0, posts = 0;
                 
@@ -1203,6 +1221,7 @@
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
+                    // 4:3 Carousel Generator System Injection
                     let imagesHtml = "";
                     if (p.images && p.images.length > 0) {
                         const count = p.images.length;
@@ -1267,6 +1286,7 @@
                     `;
                     fragment.appendChild(el);
                 });
+                // Render all posts at once
                 div.appendChild(fragment);
                 
                 if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
@@ -1321,6 +1341,7 @@
 
         window.doPost = async () => {
             const originalInputText = document.getElementById('postInput').value;
+            // Prevent execution if both text content and media bundles are completely absent
             if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
 
             const detectedLinks = extractLinks(originalInputText);
@@ -1340,6 +1361,7 @@
                 cleanedText = "Shared Links:";
             }
 
+            // Using localStorage exclusively to track and trigger the first post auto-comment feature
             const postCountKey = "posts_count_" + auth.currentUser.uid;
             let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
             let triggerBotComment = false;
@@ -1355,7 +1377,7 @@
             const postDocData = { 
                 text: cleanedText, 
                 links: detectedLinks,
-                images: selectedBase64Images, 
+                images: selectedBase64Images, // Inserted safe payload images array
                 username: me.username || 'user', 
                 pic: me.pic || defaultAvtr, 
                 uid: auth.currentUser.uid, 
@@ -1368,6 +1390,7 @@
 
             const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
 
+            // Trigger Bot Welcome Comment sequence on first post only
             if (triggerBotComment) {
                 setTimeout(async () => {
                     await updateDoc(doc(db, "posts", createdPostRef.id), { 
@@ -1380,6 +1403,7 @@
                 }, 800);
             }
 
+            // Reset upload arrays and inputs securely
             document.getElementById('postInput').value = ""; 
             document.getElementById('photoSelector').value = "";
             document.getElementById('previewContainer').innerHTML = "";
@@ -1432,15 +1456,10 @@
             i.value = "";
         };
 
-        window.delCom = async (pid, idx) => {
-            if(!confirm("Delete this comment?")) return;
-            const r = doc(db, "posts", pid); 
-            const s = await getDoc(r);
-            if(s.exists()){
-                let c = s.data().comments; 
-                c.splice(idx, 1);
-                await updateDoc(r, { comments: c });
-            }
+        window.getCom = async (pid, idx) => {
+            const r = doc(db, "posts", pid); const s = await getDoc(r);
+            let c = s.data().comments; c.splice(idx, 1);
+            await updateDoc(r, { comments: c });
         };
 
         window.findUser = async () => {
@@ -1477,6 +1496,7 @@
         window.setPostModal = (s) => {
             document.getElementById('post-modal').style.display = s?'flex':'none';
             if(!s) {
+                // Clear states when modal closing
                 document.getElementById('postInput').value = "";
                 document.getElementById('photoSelector').value = "";
                 document.getElementById('previewContainer').innerHTML = "";
@@ -1532,6 +1552,7 @@
         const searchInput = document.getElementById('sq');
         const suggestionsBox = document.getElementById('search-suggestions-box');
 
+        // Optimization: Added Debouncing so Firebase isn't queried on every single keystroke
         let searchDebounceTimer;
         searchInput.addEventListener('input', async () => {
             clearTimeout(searchDebounceTimer);
@@ -1589,7 +1610,7 @@
                 } catch (err) {
                     console.error("Suggestion engine error: ", err);
                 }
-            }, 300); 
+            }, 300); // Wait 300ms before calling DB
         });
 
         document.addEventListener('click', (e) => {
