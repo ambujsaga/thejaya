@@ -13,7 +13,6 @@
             --text-muted: #8a99b3;
             --red: #ff4444; 
             --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
-            --seen-color: #4a5568;
         }
 
         body {
@@ -36,7 +35,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             background: var(--card-bg);
             padding: 15px;
             border-radius: 16px;
@@ -51,6 +50,14 @@
             object-fit: cover;
         }
 
+        .red-tick {
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+            vertical-align: middle;
+            fill: #ff4444;
+        }
+
         /* --- STORIES TRAY COMPONENT --- */
         .stories-tray {
             display: flex;
@@ -58,7 +65,7 @@
             overflow-x: auto;
             width: 100%;
             padding: 10px 0;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .stories-tray::-webkit-scrollbar { display: none; }
@@ -75,20 +82,14 @@
             width: 65px;
             height: 65px;
             border-radius: 50%;
-            padding: 3px;
+            border: 3px solid var(--text-muted); /* Default grey for seen */
+            padding: 2px;
             transition: all 0.3s ease;
         }
 
-        /* Neon ring indicator for UNSEEN statuses */
         .story-ring.unseen {
-            border: 3px solid var(--primary);
+            border-color: var(--primary);
             box-shadow: var(--neon-shadow);
-        }
-
-        /* Muted gray ring for SEEN statuses */
-        .story-ring.seen {
-            border: 3px solid var(--seen-color);
-            box-shadow: none;
         }
 
         .story-ring img {
@@ -106,30 +107,12 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-
-        /* --- COLLAPSIBLE COMPONENT BOX --- */
-        .toggle-create-btn {
-            width: 100%;
-            background: rgba(0, 229, 255, 0.1);
-            color: var(--primary);
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            padding: 14px;
-            border-radius: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 10px;
-            transition: 0.2s;
+            justify-content: center;
         }
 
-        .toggle-create-btn:hover {
-            background: rgba(0, 229, 255, 0.2);
-        }
-
+        /* --- CONTROL CARD PANEL --- */
         .card {
             background: var(--card-bg);
             border-radius: 24px;
@@ -137,12 +120,33 @@
             border: 1px solid rgba(0, 229, 255, 0.15);
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
             margin-bottom: 20px;
-            display: none; /* Controlled via toggle */
         }
 
-        .card.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in-out;
+        .toggle-upload-btn {
+            width: 100%;
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--primary);
+            border: 1px dashed var(--primary);
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+        .toggle-upload-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .upload-container {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -150,7 +154,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        textarea {
+        textarea, input[type="text"] {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -161,7 +165,6 @@
             outline: none;
             margin-bottom: 12px;
             font-family: inherit;
-            resize: none;
         }
 
         .file-input-wrapper {
@@ -172,15 +175,25 @@
         }
 
         .btn-upload-label {
-            background: rgba(0, 229, 255, 0.05);
+            background: rgba(0, 229, 255, 0.1);
             color: var(--primary);
-            border: 1px dashed rgba(0, 229, 255, 0.4);
-            padding: 12px;
+            border: 1px dashed var(--primary);
+            padding: 10px;
             border-radius: 12px;
             text-align: center;
             font-size: 13px;
             font-weight: bold;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .btn-upload-label svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
         }
 
         .btn-submit {
@@ -195,7 +208,7 @@
             box-shadow: var(--neon-shadow);
         }
 
-        /* --- FULLSCREEN VIEW MODAL --- */
+        /* --- FULLSCREEN ULTRA VIEW MODAL --- */
         .status-viewer {
             display: none;
             position: fixed;
@@ -203,64 +216,71 @@
             background: #000;
             z-index: 9999;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            padding: 20px 0;
-        }
-
-        .viewer-top-panel {
-            width: 100%;
-            padding: 0 20px;
-            box-sizing: border-box;
-        }
-
-        .progress-container {
-            height: 3px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            display: flex;
-            gap: 4px;
-        }
-
-        .segment-bg {
-            flex: 1;
-            background: rgba(255,255,255,0.3);
-            height: 100%;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .segment-bar {
-            height: 100%;
-            width: 0%;
-            background: var(--primary);
         }
 
         .viewer-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            width: 100%;
+            z-index: 10;
         }
-
+        
         .viewer-user-info {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .viewer-close {
-            color: #fff;
-            font-size: 28px;
-            cursor: pointer;
+        .progress-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
         }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+        }
+
+        .viewer-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+        .action-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+        .action-btn.delete-btn { color: var(--red); }
 
         .viewer-content {
             width: 100%;
             max-width: 450px;
-            height: 65vh;
+            height: 80vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -279,49 +299,44 @@
             word-break: break-word;
         }
 
-        /* --- ACTION PANEL (DELETE & VIEWS TRACKER) --- */
-        .viewer-action-panel {
+        /* --- VIEWER LIST MODAL --- */
+        .viewers-list-modal {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
             width: 100%;
-            max-width: 450px;
-            background: rgba(6, 17, 39, 0.85);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding: 15px 20px;
-            box-sizing: border-box;
-            border-radius: 20px 20px 0 0;
-            text-align: center;
-        }
-
-        .view-count-trigger {
-            font-size: 13px;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .viewer-delete-btn {
-            background: var(--red);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .views-modal-list {
-            font-size: 12px;
-            color: #fff;
-            max-height: 60px;
+            background: var(--card-bg);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            max-height: 50vh;
             overflow-y: auto;
-            margin-top: 8px;
-            padding: 5px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px;
-            text-align: left;
+            z-index: 10000;
+            padding: 20px;
+            box-sizing: border-box;
+            border-top: 1px solid rgba(0, 229, 255, 0.2);
+        }
+        
+        .viewers-list-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .viewer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .viewer-item img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -331,62 +346,91 @@
         <header>
             <img id="user-avatar" src="" class="p-pic" alt="Profile">
             <div>
-                <div style="font-weight: bold; font-size: 18px;" id="welcome-username">@username</div>
+                <div style="font-weight: bold; font-size: 18px; display: flex; align-items: center;" id="welcome-username-container">
+                    <span id="welcome-username">@username</span>
+                </div>
                 <div style="font-size: 12px; color: var(--text-muted);">The Jaya Status Room</div>
             </div>
         </header>
 
         <div class="stories-tray" id="stories-tray-zone"></div>
 
-        <button class="toggle-create-btn" onclick="toggleCreateBox()">
-            ✍️ Create New Status Update
-        </button>
-
-        <div class="card" id="create-status-card">
-            <h3 style="margin-top: 0; color: var(--primary);">Create Status</h3>
-            <textarea id="status-text-input" placeholder="Type your mind status text..."></textarea>
+        <div class="card">
+            <button class="toggle-upload-btn" onclick="toggleUploadUI()">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                Add New Status
+            </button>
             
-            <div class="file-input-wrapper">
-                <label class="btn-upload-label">
-                    📸 Add Photos (Max 10)
-                    <input type="file" id="photo-files" accept="image/*" multiple style="display: none;" onchange="validateFiles()">
-                </label>
-                <label class="btn-upload-label">
-                    🎥 Add Videos (Max 5)
-                    <input type="file" id="video-files" accept="video/*" multiple style="display: none;" onchange="validateFiles()">
-                </label>
+            <div class="upload-container" id="upload-ui-container">
+                <textarea id="status-text-input" placeholder="What's on your mind? Type a status..."></textarea>
+                
+                <div class="file-input-wrapper">
+                    <label class="btn-upload-label">
+                        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                        Photos (Max 10)
+                        <input type="file" id="photo-files" accept="image/*" multiple style="display: none;" onchange="validateFiles()">
+                    </label>
+                    <label class="btn-upload-label">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" stroke="currentColor" stroke-width="2" fill="none"/><line x1="7" y1="2" x2="7" y2="22" stroke="currentColor" stroke-width="2"/><line x1="17" y1="2" x2="17" y2="22" stroke="currentColor" stroke-width="2"/><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2"/><line x1="2" y1="7" x2="7" y2="7" stroke="currentColor" stroke-width="2"/><line x1="2" y1="17" x2="7" y2="17" stroke="currentColor" stroke-width="2"/><line x1="17" y1="17" x2="22" y2="17" stroke="currentColor" stroke-width="2"/><line x1="17" y1="7" x2="22" y2="7" stroke="currentColor" stroke-width="2"/></svg>
+                        Videos (Max 5)
+                        <input type="file" id="video-files" accept="video/*" multiple style="display: none;" onchange="validateFiles()">
+                    </label>
+                </div>
+                <div id="file-count-status" style="font-size: 12px; margin-bottom: 10px; color: var(--text-muted);"></div>
+                <button class="btn-submit" onclick="publishStatus()">Upload Status</button>
             </div>
-            <div id="file-count-status" style="font-size: 12px; margin-bottom: 10px; color: var(--text-muted);"></div>
-            <button class="btn-submit" onclick="publishStatus()">Upload Status</button>
         </div>
     </div>
 
     <div class="status-viewer" id="status-player-modal">
-        <div class="viewer-top-panel">
-            <div class="progress-container" id="segments-wrapper"></div>
-            <div class="viewer-header">
-                <div class="viewer-user-info">
-                    <img id="viewer-avatar" src="" class="p-pic" style="width: 38px; height: 38px;">
-                    <strong id="viewer-username"></strong>
-                </div>
-                <div class="viewer-close" onclick="closeStatusViewer()">✕</div>
+        <div class="progress-container"><div class="progress-bar" id="status-progress"></div></div>
+        
+        <div class="viewer-header">
+            <div class="viewer-user-info">
+                <img id="viewer-avatar" src="" class="p-pic" style="width: 35px; height: 35px;">
+                <strong id="viewer-username-container" style="display:flex; align-items:center;">
+                    <span id="viewer-username"></span>
+                </strong>
+            </div>
+            
+            <div class="viewer-actions">
+                <button id="view-count-btn" class="action-btn" style="display:none;" onclick="showViewers()">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                    <span id="view-count-text">0</span>
+                </button>
+                <button id="delete-status-btn" class="action-btn delete-btn" style="display:none;" onclick="deleteCurrentStatus()">
+                    <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                </button>
+                <button class="action-btn" onclick="closeStatusViewer()">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
+                </button>
             </div>
         </div>
-
         <div class="viewer-content" id="viewer-body-render"></div>
-
-        <div class="viewer-action-panel" id="viewer-bottom-controls">
-            <div class="view-count-trigger" id="view-counter-node">👁️ 0 Views</div>
-            <div class="views-modal-list" id="views-list-container" style="display:none;"></div>
-            <div id="delete-action-injection"></div>
+        
+        <div id="viewers-list-panel" class="viewers-list-modal">
+            <div class="viewers-list-header">
+                <span>Viewed By</span>
+                <span style="cursor:pointer;" onclick="hideViewers()">
+                    <svg style="width:20px;height:20px;fill:var(--text-main)" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                </span>
+            </div>
+            <div id="viewers-list-content"></div>
         </div>
     </div>
+
+    <template id="red-tick-svg">
+        <svg class="red-tick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+    </template>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Extracted Core Database Credentials from Source
         const firebaseConfig = { 
             apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
             authDomain: "the-jaya-by-ree.firebaseapp.com",
@@ -399,16 +443,16 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Core Global Session Identity Cache
         let activeSessionUser = null;
 
+        // Route Authentication Gate Controller
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
                     const userSnap = await getDoc(doc(db, "users", user.uid));
                     if (userSnap.exists()) {
                         activeSessionUser = userSnap.data();
-                        // Add secure uid fallback parsing directly if missing inside data payload
-                        if(!activeSessionUser.uid) activeSessionUser.uid = user.uid;
                         initializeStatusEngine();
                     } else {
                         throwAuthError();
@@ -422,30 +466,39 @@
         });
 
         function throwAuthError() {
-            alert("❌ Access Denied: Pahle Official Website 'The Jaya' par account login karein!");
+            alert("❌ Access Denied: Please login via the official website 'The Jaya' first!");
             window.location.href = "index.html";
         }
 
         function initializeStatusEngine() {
             document.getElementById('user-avatar').src = activeSessionUser.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
             document.getElementById('welcome-username').innerText = "@" + activeSessionUser.username;
+            
+            // Red Tick Logic - append tick if verified
+            if (activeSessionUser.redTick || activeSessionUser.verified || activeSessionUser.role === 'admin') {
+                const tickTemplate = document.getElementById('red-tick-svg').content.cloneNode(true);
+                document.getElementById('welcome-username-container').appendChild(tickTemplate);
+            }
+
             window.currentUserProfile = activeSessionUser;
-            renderStoriesTray();
+            window.renderStoriesTray(); // Expose to global for HTML onclicks
         }
     </script>
 
     <script>
         const PHOTO_LIMIT = 10;
         const VIDEO_LIMIT = 5;
-        const EXPIRATION_TIME = 24 * 60 * 60 * 1000;
+        const EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 Hours in ms
 
+        let storyPlaybackTimer = null;
         let progressAnimationInterval = null;
-        let activeStoryDataReference = null;
-        let currentSlidePointerIndex = 0;
+        let currentViewingStory = null;
+        let currentSlideIndex = 0;
+        let isViewerPaused = false;
 
-        function toggleCreateBox() {
-            const card = document.getElementById('create-status-card');
-            card.classList.toggle('active');
+        function toggleUploadUI() {
+            const ui = document.getElementById('upload-ui-container');
+            ui.style.display = ui.style.display === 'block' ? 'none' : 'block';
         }
 
         function validateFiles() {
@@ -483,98 +536,71 @@
             const videoFiles = document.getElementById('video-files').files;
 
             if (!textContent && photoFiles.length === 0 && videoFiles.length === 0) {
-                alert("Kucch to write ya select kijiye status dalne ke liye!");
+                alert("Please write something or select media to upload!");
                 return;
             }
 
-            const mediaItems = [];
+            const newSlides = [];
+            const now = Date.now();
 
             if (textContent) {
-                mediaItems.push({
-                    slideId: 'slide_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    type: 'text',
-                    content: textContent,
-                    duration: 7000,
-                    views: []
-                });
+                newSlides.push({ id: 's_'+now+'_t', type: 'text', content: textContent, duration: 10000, timestamp: now, viewedBy: [] });
             }
 
             for(let i=0; i<photoFiles.length; i++) {
                 const b64Data = await convertToBase64(photoFiles[i]);
-                mediaItems.push({
-                    slideId: 'slide_' + Date.now() + '_p' + i,
-                    type: 'image',
-                    content: b64Data,
-                    duration: 7000,
-                    views: []
-                });
+                newSlides.push({ id: 's_'+now+'_p'+i, type: 'image', content: b64Data, duration: 10000, timestamp: now, viewedBy: [] });
             }
 
             for(let i=0; i<videoFiles.length; i++) {
                 const b64Data = await convertToBase64(videoFiles[i]);
-                mediaItems.push({
-                    slideId: 'slide_' + Date.now() + '_v' + i,
-                    type: 'video',
-                    content: b64Data,
-                    duration: 15000,
-                    views: []
+                newSlides.push({ id: 's_'+now+'_v'+i, type: 'video', content: b64Data, duration: 25000, timestamp: now, viewedBy: [] });
+            }
+
+            let database = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
+            
+            // Check if user already has an active story grouping
+            const existingUserIndex = database.findIndex(story => story.uid === window.currentUserProfile.uid);
+
+            if (existingUserIndex > -1) {
+                // Append slides to existing user's profile ring
+                database[existingUserIndex].slides.push(...newSlides);
+            } else {
+                // Create new user profile ring
+                database.push({
+                    uid: window.currentUserProfile.uid,
+                    username: window.currentUserProfile.username,
+                    avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                    redTick: window.currentUserProfile.redTick || window.currentUserProfile.verified || false, // Cache verification
+                    slides: newSlides
                 });
             }
 
-            let collectiveStories = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
-            const currentUid = window.currentUserProfile.uid;
+            localStorage.setItem('thejaya_stories_db', JSON.stringify(database));
 
-            // Find if user already has an active entry stack trace
-            let existingUserNode = collectiveStories.find(item => item.uid === currentUid);
-
-            if (existingUserNode) {
-                // Merge new slides smoothly inside the exact profile context data layer
-                existingUserNode.slides.push(...mediaItems);
-                existingUserNode.timestamp = Date.now(); // Reset delta to bubble up updates array
-            } else {
-                // Construct clean metadata frame node system layout
-                const newStatusEntry = {
-                    id: 'status_' + Date.now(),
-                    uid: currentUid,
-                    username: window.currentUserProfile.username,
-                    avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                    timestamp: Date.now(),
-                    slides: mediaItems
-                };
-                collectiveStories.push(newStatusEntry);
-            }
-
-            localStorage.setItem('thejaya_stories_db', JSON.stringify(collectiveStories));
-
-            // UI Fields Cleanup Routine
+            // Reset UI
             document.getElementById('status-text-input').value = "";
             document.getElementById('photo-files').value = "";
             document.getElementById('video-files').value = "";
             document.getElementById('file-count-status').innerText = "";
-            document.getElementById('create-status-card').classList.remove('active');
+            toggleUploadUI();
 
-            alert("🚀 Status uploaded successfully matching internal platform method matrix!");
-            renderStoriesTray();
+            alert("🚀 Status uploaded successfully!");
+            window.renderStoriesTray();
         }
 
-        function renderStoriesTray() {
+        window.renderStoriesTray = function() {
             const tray = document.getElementById('stories-tray-zone');
             tray.innerHTML = "";
             
             let database = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
             const now = Date.now();
-            const currentUid = window.currentUserProfile ? window.currentUserProfile.uid : null;
 
-            // 24hr lifetime limit filter per explicit slides verification architecture
-            database.forEach(userEntry => {
-                userEntry.slides = userEntry.slides.filter(slide => {
-                    const slideTime = parseInt(slide.slideId.split('_')[1]);
-                    return (now - slideTime) < EXPIRATION_TIME;
-                });
+            // Self cleanup: Remove slides older than 24h, then remove empty users
+            database.forEach(story => {
+                story.slides = story.slides.filter(slide => (now - slide.timestamp) < EXPIRATION_TIME);
             });
-
-            // Cleanup empty users who have no active slides left
-            database = database.filter(userEntry => userEntry.slides.length > 0);
+            database = database.filter(story => story.slides.length > 0);
             localStorage.setItem('thejaya_stories_db', JSON.stringify(database));
 
             if(database.length === 0) {
@@ -583,226 +609,205 @@
             }
 
             database.forEach(userStory => {
-                // Signal detection mechanism: calculate if any slide is unseen by current session tracker
-                let isUnseen = false;
-                if(currentUid) {
-                    isUnseen = userStory.slides.some(slide => !slide.views || !slide.views.includes(currentUid));
-                }
-
                 const node = document.createElement('div');
                 node.className = 'story-node';
                 node.onclick = () => openStatusViewer(userStory);
+                
+                // Check if the current user has viewed all slides in this story
+                const isCurrentUser = (window.currentUserProfile && userStory.uid === window.currentUserProfile.uid);
+                let hasUnseen = false;
+                
+                if(!isCurrentUser && window.currentUserProfile) {
+                    hasUnseen = userStory.slides.some(slide => {
+                        return !slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid);
+                    });
+                }
+
+                // Add Red Tick visually to tray if applicable
+                const tickHtml = userStory.redTick ? `<svg class="red-tick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
 
                 node.innerHTML = `
-                    <div class="story-ring ${isUnseen ? 'unseen' : 'seen'}">
+                    <div class="story-ring ${hasUnseen ? 'unseen' : ''}">
                         <img src="${userStory.avatar}" alt="user">
                     </div>
-                    <div class="story-username">@${userStory.username}</div>
+                    <div class="story-username">@${userStory.username} ${tickHtml}</div>
                 `;
                 tray.appendChild(node);
             });
         }
 
         function openStatusViewer(storyData) {
-            activeStoryDataReference = storyData;
-            currentSlidePointerIndex = 0;
-
+            currentViewingStory = storyData;
+            currentSlideIndex = 0;
             const modal = document.getElementById('status-player-modal');
+            
             document.getElementById('viewer-avatar').src = storyData.avatar;
-            document.getElementById('viewer-username').innerText = "@" + storyData.username;
+            
+            const usernameContainer = document.getElementById('viewer-username-container');
+            usernameContainer.innerHTML = `<span id="viewer-username">@${storyData.username}</span>`;
+            if(storyData.redTick) {
+                const tickTemplate = document.getElementById('red-tick-svg').content.cloneNode(true);
+                usernameContainer.appendChild(tickTemplate);
+            }
             
             modal.style.display = 'flex';
-            
-            // Generate visual segmented linear indicator bars frame
-            const segmentsWrapper = document.getElementById('segments-wrapper');
-            segmentsWrapper.innerHTML = "";
-            for(let i=0; i < storyData.slides.length; i++) {
-                const segBg = document.createElement('div');
-                segBg.className = 'segment-bg';
-                const segBar = document.createElement('div');
-                segBar.className = 'segment-bar';
-                segBar.id = `slide-bar-${i}`;
-                segBg.appendChild(segBar);
-                segmentsWrapper.appendChild(segBg);
-            }
-
-            playSlideshowEngine();
+            playSlideshow();
         }
 
-        function playSlideshowEngine() {
-            const renderTarget = document.getElementById('viewer-body-render');
-            clearInterval(progressAnimationInterval);
-
-            if(currentSlidePointerIndex >= activeStoryDataReference.slides.length) {
+        function playSlideshow() {
+            if(currentSlideIndex >= currentViewingStory.slides.length) {
                 closeStatusViewer();
                 return;
             }
 
+            const renderTarget = document.getElementById('viewer-body-render');
+            const progressBar = document.getElementById('status-progress');
             renderTarget.innerHTML = "";
+            progressBar.style.width = "0%";
+            isViewerPaused = false;
             
-            // Mark previously loaded segment lines as filled completely
-            for(let i=0; i<currentSlidePointerIndex; i++) {
-                const bar = document.getElementById(`slide-bar-${i}`);
-                if(bar) bar.style.width = "100%";
+            const slide = currentViewingStory.slides[currentSlideIndex];
+            const isOwner = (window.currentUserProfile && currentViewingStory.uid === window.currentUserProfile.uid);
+
+            // Viewer tracking (if not owner)
+            if (!isOwner && window.currentUserProfile) {
+                const alreadyViewed = slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid);
+                if (!alreadyViewed) {
+                    slide.viewedBy.push({
+                        uid: window.currentUserProfile.uid,
+                        username: window.currentUserProfile.username,
+                        avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                    });
+                    syncToDatabase();
+                }
             }
-            // Reset current and future indicator bars
-            for(let i=currentSlidePointerIndex; i<activeStoryDataReference.slides.length; i++) {
-                const bar = document.getElementById(`slide-bar-${i}`);
-                if(bar) bar.style.width = "0%";
+
+            // Show Owner Controls
+            if (isOwner) {
+                document.getElementById('delete-status-btn').style.display = 'flex';
+                document.getElementById('view-count-btn').style.display = 'flex';
+                document.getElementById('view-count-text').innerText = slide.viewedBy.length;
+            } else {
+                document.getElementById('delete-status-btn').style.display = 'none';
+                document.getElementById('view-count-btn').style.display = 'none';
             }
 
-            const currentSlide = activeStoryDataReference.slides[currentSlidePointerIndex];
-            let playbackTimeoutLimit = currentSlide.duration || 7000;
+            let playbackTimeoutLimit = slide.duration;
 
-            // Sync structural seen status metadata instantly 
-            syncViewTrackRecord(currentSlide.slideId);
-
-            // Populate active controls setup base layer
-            renderActionControlPanel(currentSlide);
-
-            if (currentSlide.type === 'text') {
+            if (slide.type === 'text') {
                 const textBlock = document.createElement('div');
                 textBlock.className = 'viewer-text';
-                textBlock.innerText = currentSlide.content;
+                textBlock.innerText = slide.content;
                 renderTarget.appendChild(textBlock);
             } 
-            else if (currentSlide.type === 'image') {
+            else if (slide.type === 'image') {
                 const imgNode = document.createElement('img');
-                imgNode.src = currentSlide.content;
+                imgNode.src = slide.content;
                 renderTarget.appendChild(imgNode);
             } 
-            else if (currentSlide.type === 'video') {
+            else if (slide.type === 'video') {
                 const videoNode = document.createElement('video');
-                videoNode.src = currentSlide.content;
+                videoNode.src = slide.content;
                 videoNode.autoplay = true;
                 videoNode.muted = false;
                 videoNode.playsInline = true;
                 renderTarget.appendChild(videoNode);
 
                 videoNode.onloadedmetadata = function() {
-                    if(videoNode.duration && videoNode.duration < 15) {
+                    if(videoNode.duration < 25) {
                         playbackTimeoutLimit = videoNode.duration * 1000;
                     }
                 };
             }
 
             let elapsedCounter = 0;
-            const intervalTickRate = 40; 
-            const progressBar = document.getElementById(`slide-bar-${currentSlidePointerIndex}`);
+            const intervalTickRate = 50; 
+            clearInterval(progressAnimationInterval);
             
             progressAnimationInterval = setInterval(() => {
+                if (isViewerPaused) return; // Pause logic for when checking viewers
+
                 elapsedCounter += intervalTickRate;
                 const calculatedPercentage = (elapsedCounter / playbackTimeoutLimit) * 100;
-                if(progressBar) progressBar.style.width = Math.min(calculatedPercentage, 100) + "%";
+                progressBar.style.width = Math.min(calculatedPercentage, 100) + "%";
                 
                 if(elapsedCounter >= playbackTimeoutLimit) {
                     clearInterval(progressAnimationInterval);
-                    currentSlidePointerIndex++;
-                    playSlideshowEngine();
+                    currentSlideIndex++;
+                    playSlideshow();
                 }
             }, intervalTickRate);
         }
 
-        function syncViewTrackRecord(slideId) {
-            if(!window.currentUserProfile) return;
-            const currentUid = window.currentUserProfile.uid;
-
-            let database = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
-            let structuralUpdateFlag = false;
-
-            database.forEach(userStory => {
-                userStory.slides.forEach(slide => {
-                    if(slide.slideId === slideId) {
-                        if(!slide.views) slide.views = [];
-                        if(!slide.views.includes(currentUid)) {
-                            slide.views.push(currentUid);
-                            structuralUpdateFlag = true;
-                        }
-                    }
-                });
-            });
-
-            if(structuralUpdateFlag) {
-                localStorage.setItem('thejaya_stories_db', JSON.stringify(database));
-                // Hot sync active runtime ref cache
-                const updatedStory = database.find(item => item.id === activeStoryDataReference.id);
-                if(updatedStory) activeStoryDataReference = updatedStory;
-            }
-        }
-
-        function renderActionControlPanel(slide) {
-            const currentUid = window.currentUserProfile ? window.currentUserProfile.uid : null;
-            const deleteZone = document.getElementById('delete-action-injection');
-            const counterNode = document.getElementById('view-counter-node');
-            const listContainer = document.getElementById('views-list-container');
-            
-            deleteZone.innerHTML = "";
-            listContainer.style.display = "none";
-            
-            const viewList = slide.views || [];
-            counterNode.innerText = `👁️ ${viewList.length} View${viewList.length === 1 ? '' : 's'}`;
-
-            // Attach dynamic toggler event securely to layout node
-            counterNode.onclick = () => {
-                if(listContainer.style.display === "none") {
-                    listContainer.innerHTML = viewList.length > 0 
-                        ? viewList.map(uid => `<div>• Viewer Account Key Reference ID: ${uid}</div>`).join('')
-                        : "No views yet";
-                    listContainer.style.display = "block";
+        // Action: Owner Deletes Status
+        window.deleteCurrentStatus = function() {
+            if(confirm("Are you sure you want to delete this status?")) {
+                currentViewingStory.slides.splice(currentSlideIndex, 1);
+                syncToDatabase();
+                
+                if (currentViewingStory.slides.length === 0) {
+                    closeStatusViewer();
                 } else {
-                    listContainer.style.display = "none";
+                    // Replay at same index (which is now the next slide) or go back if it was the last one
+                    if(currentSlideIndex >= currentViewingStory.slides.length) {
+                        currentSlideIndex = currentViewingStory.slides.length - 1;
+                    }
+                    playSlideshow();
                 }
-            };
-
-            // Author privilege configuration parsing checks
-            if(activeStoryDataReference.uid === currentUid) {
-                const delBtn = document.createElement('button');
-                delBtn.className = 'viewer-delete-btn';
-                delBtn.innerHTML = '🗑️ Delete This Status';
-                delBtn.onclick = () => executionDeleteSlideTarget(slide.slideId);
-                deleteZone.appendChild(delBtn);
             }
         }
 
-        function executionDeleteSlideTarget(slideId) {
-            if(!confirm("Kya aap is status slide ko sach me delete karna chahte hain?")) return;
+        // Action: Owner sees who viewed
+        window.showViewers = function() {
+            isViewerPaused = true; // Pause slide progression
+            const slide = currentViewingStory.slides[currentSlideIndex];
+            const listContent = document.getElementById('viewers-list-content');
             
-            clearInterval(progressAnimationInterval);
-            let database = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
-
-            database.forEach(userStory => {
-                if(userStory.id === activeStoryDataReference.id) {
-                    userStory.slides = userStory.slides.filter(s => s.slideId !== slideId);
-                }
-            });
-
-            // Strip redundant empty object schemas completely
-            database = database.filter(userStory => userStory.slides.length > 0);
-            localStorage.setItem('thejaya_stories_db', JSON.stringify(database));
-
-            alert("🗑️ Status slide deleted successfully!");
-            
-            // Shift target indexing or bounce tracking loops
-            const activeUserEntry = database.find(item => item.id === activeStoryDataReference.id);
-            if(activeUserEntry && activeUserEntry.slides.length > 0) {
-                activeStoryDataReference = activeUserEntry;
-                // Keep playing next remaining slide loop stack smoothly
-                playSlideshowEngine();
+            if (slide.viewedBy.length === 0) {
+                listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`;
             } else {
-                closeStatusViewer();
+                listContent.innerHTML = slide.viewedBy.map(v => `
+                    <div class="viewer-item">
+                        <img src="${v.avatar}">
+                        <span>@${v.username}</span>
+                    </div>
+                `).join('');
             }
-            renderStoriesTray();
+            
+            document.getElementById('viewers-list-panel').style.display = 'block';
         }
 
-        function closeStatusViewer() {
+        window.hideViewers = function() {
+            document.getElementById('viewers-list-panel').style.display = 'none';
+            isViewerPaused = false; // Resume slide progression
+        }
+
+        function syncToDatabase() {
+            let database = JSON.parse(localStorage.getItem('thejaya_stories_db') || '[]');
+            
+            const dbIndex = database.findIndex(s => s.uid === currentViewingStory.uid);
+            if (dbIndex > -1) {
+                if (currentViewingStory.slides.length === 0) {
+                    database.splice(dbIndex, 1);
+                } else {
+                    database[dbIndex] = currentViewingStory;
+                }
+                localStorage.setItem('thejaya_stories_db', JSON.stringify(database));
+                window.renderStoriesTray(); // Update glowing rings
+            }
+        }
+
+        window.closeStatusViewer = function() {
             document.getElementById('status-player-modal').style.display = 'none';
+            document.getElementById('viewers-list-panel').style.display = 'none';
             document.getElementById('viewer-body-render').innerHTML = "";
             clearInterval(progressAnimationInterval);
-            renderStoriesTray();
+            clearTimeout(storyPlaybackTimer);
+            currentViewingStory = null;
         }
 
         window.onload = () => {
-            renderStoriesTray();
+            if(window.renderStoriesTray) window.renderStoriesTray();
         };
     </script>
 </body>
