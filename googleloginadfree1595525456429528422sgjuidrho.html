@@ -2,25 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Jaya</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
     <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
     <link rel="manifest" href="manifest.json">
 
      <style>
-        /* --- DESKTOP OPTIMIZATION --- */
+        /* --- DESKTOP OPTIMIZATION (UPDATED FOR COOL DESKTOP VIEW) --- */
         @media (min-width: 768px) {
-            .container { max-width: 700px; margin: 30px auto; }
-            header { padding: 15px 10%; }
+            .container { 
+                max-width: 650px !important; 
+                margin: 40px auto !important; 
+                padding: 0 15px;
+            }
+            header { 
+                padding: 15px 15% !important; 
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            }
             .logo { font-size: 28px; }
-            .card { padding: 25px; border-radius: 24px; transition: transform 0.2s ease; }
-            .card:hover { border-color: var(--primary); }
+            
+            /* Enhanced modern look for desktop cards */
+            .card { 
+                padding: 25px !important; 
+                border-radius: 24px !important; 
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease !important; 
+                background: linear-gradient(145deg, rgba(8, 22, 51, 0.8), rgba(4, 13, 31, 0.85)) !important;
+                border: 1px solid rgba(0, 229, 255, 0.15) !important;
+            }
+            .card:hover { 
+                border-color: var(--primary) !important; 
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 229, 255, 0.15), 0 5px 15px rgba(0,0,0,0.4) !important;
+            }
             input, textarea { font-size: 16px; }
-            .fab { right: 50px; bottom: 50px; width: 70px; height: 70px; }
+            .fab { right: 10% !important; bottom: 50px !important; width: 70px !important; height: 70px !important; }
+            .bits-btn { right: 10.5% !important; bottom: 135px !important; width: 50px !important; height: 50px !important; }
+            .more-btn { left: 10% !important; bottom: 50px !important; width: 50px !important; height: 50px !important; }
             .p-pic { width: 50px; height: 50px; }
-            .stats-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
-            #post-modal .container { max-width: 600px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+            #post-modal .container { max-width: 500px; }
+            
+            /* Centering row modifications */
+            #search-row {
+                padding: 15px 15% !important;
+            }
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -57,11 +83,6 @@
             padding-bottom: 100px; 
             overflow-x: hidden; 
             transition: background 0.3s ease;
-        }
-
-        #loader-screen {
-            position: fixed; inset: 0; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
 
         header { 
@@ -201,27 +222,6 @@
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
         .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
-        
-        /* --- SPECIAL NEW USER DECORATIONS --- */
-        .special-welcome-badge {
-            background: linear-gradient(90deg, #ffd700, #ff8800);
-            color: #030a1a;
-            font-size: 10px;
-            font-weight: 900;
-            padding: 3px 8px;
-            border-radius: 20px;
-            margin-left: 8px;
-            letter-spacing: 0.5px;
-            box-shadow: var(--gold-shadow);
-            display: inline-block;
-            vertical-align: middle;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        .special-welcome-card {
-            border: 1px dashed #ffd700 !important;
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(6, 17, 39, 0.8)) !important;
-            box-shadow: var(--gold-shadow) !important;
-        }
 
         /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
         #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
@@ -499,6 +499,108 @@
             color: #fff;
             box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
         }
+
+        /* --- NEW STYLES FOR ASPECT RATIO 4:3 PHOTO POSTS & CAROUSEL --- */
+        .post-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* Strict 4:3 Aspect Ratio Box */
+            margin-top: 12px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #020712;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+        }
+        .post-media-slider {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .post-media-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .post-media-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
+        }
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(3, 10, 26, 0.75);
+            backdrop-filter: blur(4px);
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
+            font-size: 16px; font-weight: bold;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .carousel-btn:hover { background: var(--primary); color: #030a1a; }
+        .carousel-prev { left: 10px; }
+        .carousel-next { right: 10px; }
+        .carousel-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(3, 10, 26, 0.8);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            z-index: 10;
+        }
+        .upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .btn-upload-label {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-grow: 1;
+            transition: 0.2s;
+        }
+        .btn-upload-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(0, 229, 255, 0.02);
+        }
+        .upload-preview-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .preview-img-wrapper {
+            position: relative;
+            min-width: 50px; max-width: 50px; height: 50px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+        .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -572,11 +674,6 @@
         </div>
 
         <div class="container">
-            <div id="special-new-user-hud" class="card" style="display:none; text-align:center; border:1px solid #ffd700; background:rgba(255,215,0,0.05); margin-bottom:15px; border-radius:16px; padding:12px;">
-                <span style="color:#ffd700; font-weight:800; font-size:14px; text-shadow:var(--gold-shadow);">✨ Welcome To The Jaya! ✨</span>
-                <p id="hud-status-desc" style="margin:5px 0 0 0; font-size:12px; color:var(--text-muted);">Your deluxe onboarding perks expire after <b id="posts-left-count" style="color:#ffd700;">3</b> more posts.</p>
-            </div>
-
             <div id="home-view"><div id="feed"></div></div>
             <div id="profile-view" style="display:none;" class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -615,7 +712,7 @@
             <svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </a>
 
-        <a href="thejayabit.html" class="bits-btn" title="Bits">Bits</a>
+        <a href="status.html" class="bits-btn" title="status">Status</a>
         <div id="fab-btn" class="fab" onclick="requireLogin(() => setPostModal(true))">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
@@ -624,8 +721,14 @@
     <div id="post-modal">
         <div class="card">
             <h3>New Post</h3>
-            <textarea id="postInput" rows="5" placeholder="What's happening?"></textarea>
-            <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 5px 2px 0 0; text-align: right;">0 / 110</p>
+            <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
+            
+            <div class="upload-row">
+                <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
+                <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
+                <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
+            </div>
+            <div id="previewContainer" class="upload-preview-container"></div>
             
             <div class="modal-actions-grid">
                 <div class="modal-top-buttons">
@@ -692,10 +795,14 @@
         let feedShuffleOrder = null; 
         let lastFetchedPostIds = "";
 
+        // Global arrays to handle base64 image strings inside post creation
+        let selectedBase64Images = [];
+
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
+        // Optimized Loader Fix: Instantly hides after a tiny micro-delay instead of freezing for 3 seconds
         window.addEventListener('load', () => {
-            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 3000);
+            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 400);
         });
 
         window.pasteText = async () => {
@@ -730,33 +837,6 @@
             return text.match(LINK_REGEX) || [];
         }
 
-        // --- TRACK AND SHOW SPECIAL HUD IF USER IS NEW ---
-        function checkAndRenderNewUserHud() {
-            if (auth.currentUser && me) {
-                const postCountKey = "posts_count_" + auth.currentUser.uid;
-                let currentPostsCount = localStorage.getItem(postCountKey);
-                
-                if (currentPostsCount === null) {
-                    if (me.postsMade !== undefined) {
-                        currentPostsCount = me.postsMade;
-                    } else {
-                        currentPostsCount = 0;
-                    }
-                    localStorage.setItem(postCountKey, currentPostsCount);
-                } else {
-                    currentPostsCount = parseInt(currentPostsCount);
-                }
-
-                const hud = document.getElementById('special-new-user-hud');
-                if (currentPostsCount < 3) {
-                    hud.style.display = 'block';
-                    document.getElementById('posts-left-count').innerText = (3 - currentPostsCount);
-                } else {
-                    hud.style.display = 'none';
-                }
-            }
-        }
-
         onAuthStateChanged(auth, async (u) => {
             if(u) {
                 const dSnap = await getDoc(doc(db, "users", u.uid));
@@ -771,7 +851,6 @@
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('auth-section').style.display = 'none';
                     navTo('home');
-                    checkAndRenderNewUserHud();
                 } else {
                     const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
                     const finalPhoto = u.photoURL || defaultAvtr;
@@ -925,7 +1004,6 @@
 
             if(v === 'home') {
                 loadFeed("feed", null);
-                checkAndRenderNewUserHud();
             }
             if(v === 'profile') {
                 const user = isMe ? me : other;
@@ -936,11 +1014,7 @@
                 document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
                 
                 // Red Tick Toggle Controller
-                document.getElementById('red-tick-controls').innerHTML = `
-                    <button class="tick-toggle-btn" onclick="requireLogin(() => toggleRedTick('${user.uid}', ${user.hasRedTick ? true : false}))">
-                        ${user.hasRedTick ? '❌ Turn Off Red Tick' : '✔ Turn On Red Tick'}
-                    </button>
-                `;
+                document.getElementById('red-tick-controls').innerHTML = '';
 
                 document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
                 
@@ -964,16 +1038,13 @@
             }
         };
 
-        // --- NEW GLOBAL FUNCTION TO TOGGLE RED TICK ---
         window.toggleRedTick = async (uid, currentStatus) => {
             if(!auth.currentUser) return;
             const newStatus = !currentStatus;
             
             try {
-                // Update users collection
                 await updateDoc(doc(db, "users", uid), { hasRedTick: newStatus });
                 
-                // Update all posts made by this user to reflect everywhere immediately
                 const q = query(collection(db, "posts"), where("uid", "==", uid));
                 const snap = await getDocs(q);
                 
@@ -983,12 +1054,10 @@
                 });
                 await Promise.all(updatePromises);
 
-                // Update Local Me object if needed
                 if (me && me.uid === uid) {
                     me.hasRedTick = newStatus;
                 }
                 
-                // Reload profile view properly
                 const updatedUserSnap = await getDoc(doc(db, "users", uid));
                 if(updatedUserSnap.exists()) {
                     navTo('profile', me && me.uid === uid, updatedUserSnap.data());
@@ -1007,12 +1076,84 @@
             return array;
         }
 
+        // Image Handling Mechanics (Compressed < 1MB & Select Preview Tracker)
+        window.handleModalImagesSelect = (inputField) => {
+            const files = Array.from(inputField.files);
+            if (files.length > 5) {
+                alert("Maximum 5 photos can be uploaded at a time!");
+                inputField.value = "";
+                return;
+            }
+            selectedBase64Images = [];
+            const previewContainer = document.getElementById("previewContainer");
+            previewContainer.innerHTML = "";
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const tempImg = new Image();
+                    tempImg.src = e.target.result;
+                    tempImg.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        let width = tempImg.width;
+                        let height = tempImg.height;
+                        
+                        // Downscale layout bounds if too massive
+                        const max_size = 1200;
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(tempImg, 0, 0, width, height);
+                        
+                        // Strict low quality compression parameters to stay well under 1MB threshold boundaries
+                        let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+                        selectedBase64Images.push(compressedDataUrl);
+
+                        const wrp = document.createElement("div");
+                        wrp.className = "preview-img-wrapper";
+                        wrp.innerHTML = `<img src="${compressedDataUrl}">`;
+                        previewContainer.appendChild(wrp);
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        // Custom Safe Carousel Navigation Routine Engine
+        window.shiftCarousel = (postID, steps) => {
+            const slider = document.getElementById(`slider-${postID}`);
+            const counterLabel = document.getElementById(`counter-${postID}`);
+            if(!slider) return;
+            
+            const totalSlides = parseInt(slider.getAttribute("data-total") || "1");
+            let currentIndex = parseInt(slider.getAttribute("data-index") || "0");
+            
+            currentIndex += steps;
+            if(currentIndex < 0) currentIndex = 0;
+            if(currentIndex >= totalSlides) currentIndex = totalSlides - 1;
+            
+            slider.setAttribute("data-index", currentIndex);
+            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+            if(counterLabel) {
+                counterLabel.innerText = `${currentIndex + 1} / ${totalSlides}`;
+            }
+        };
+
         function loadFeed(divId, uid) {
             let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
                         : query(collection(db, "posts"), orderBy("time", "desc"));
 
             onSnapshot(q, (s) => {
-                const div = document.getElementById(divId); div.innerHTML = "";
+                const div = document.getElementById(divId); 
+                div.innerHTML = "";
+                // Optimization: Fragment batch DOM updates
+                const fragment = document.createDocumentFragment();
                 let stars = 0, posts = 0;
                 
                 let rawPosts = [];
@@ -1027,33 +1168,24 @@
                 let finalPostsToRender = [];
 
                 if (uid) {
-                    // Profile Feed: Isme koi shuffling aur expiration ka rule nahi lagega
                     finalPostsToRender = rawPosts;
                     rawPosts.forEach(p => {
                         stars += (p.stars?.length || 0);
                         posts++;
                     });
                 } else {
-                    // Home Feed: 14 Days Filter Rule (14 days = 1209600000 ms)
                     const fourteenDaysAgo = Date.now() - 1209600000;
                     let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
 
-                    // Separate Sticky Posts (Jo pichle 15 minute ke andar bani hain)
-                    const fifteenMinsAgo = Date.now() - 900000; // 15 mins = 900000 ms
+                    const fifteenMinsAgo = Date.now() - 900000; 
                     let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
                     let poolToShuffle = activeFeedPosts.filter(p => p.time < fifteenMinsAgo);
 
-                    // Pehli baar load hone par ya koi post add/delete hone par hi static structure match karega
                     if (feedShuffleOrder === null || currentSnapshotIds !== lastFetchedPostIds) {
                         lastFetchedPostIds = currentSnapshotIds;
-                        
-                        // Remaining posts pool ko fully shuffle karna
                         poolToShuffle = shuffleArray(poolToShuffle);
-                        
-                        // New shuffled order array ko memory state me lock karke save karna
                         feedShuffleOrder = poolToShuffle.map(p => p.id);
                     } else {
-                        // Agar user like/comment trigger kar raha hai toh memory state se order match karwana
                         let mapOrder = {};
                         poolToShuffle.forEach(p => { mapOrder[p.id] = p; });
                         
@@ -1064,18 +1196,15 @@
                                 delete mapOrder[savedId];
                             }
                         });
-                        // Agar realtime check me koi miss ho gaya ho toh use safe wrapper de dena
                         Object.values(mapOrder).forEach(leftOver => {
                             reorderedPool.push(leftOver);
                         });
                         poolToShuffle = reorderedPool;
                     }
 
-                    // Strict Order Setup: Sticky Posts top par ordered rahengi, uske baad shuffled array append hoga
                     finalPostsToRender = [...stickyPosts, ...poolToShuffle];
                 }
 
-                // Render execution stack
                 finalPostsToRender.forEach(p => {
                     const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
                     const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
@@ -1089,21 +1218,38 @@
                         });
                         linksHtml += `</div>`;
                     }
-
-                    // Check if post belongs to a new user onboarding stage (under 3 posts)
-                    const isSpecialNewUserPost = p.isNewUserVibe === true;
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
+                    // 4:3 Carousel Generator System Injection
+                    let imagesHtml = "";
+                    if (p.images && p.images.length > 0) {
+                        const count = p.images.length;
+                        imagesHtml += `<div class="post-media-container">`;
+                        
+                        if(count > 1) {
+                            imagesHtml += `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${p.id}', -1)">❮</div>`;
+                            imagesHtml += `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${p.id}', 1)">❯</div>`;
+                            imagesHtml += `<div id="counter-${p.id}" class="carousel-counter">1 / ${count}</div>`;
+                        } else {
+                            imagesHtml += `<div class="carousel-counter">1 / 1</div>`;
+                        }
+                        
+                        imagesHtml += `<div id="slider-${p.id}" class="post-media-slider" data-index="0" data-total="${count}">`;
+                        p.images.forEach(imgBase64 => {
+                            imagesHtml += `<div class="post-media-slide"><img src="${imgBase64}" onerror="this.parentNode.style.display='none'"></div>`;
+                        });
+                        imagesHtml += `</div></div>`;
+                    }
+
                     const el = document.createElement('div');
-                    el.className = isSpecialNewUserPost ? 'card special-welcome-card' : 'card';
+                    el.className = 'card';
                     el.innerHTML = `
                         <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
                             <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
                             <div class="user-info">
                                 <div style="display:flex; align-items:center;">
                                     <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer; display:flex; align-items:center;">@${p.username || 'user'}${postRedTick}</strong>
-                                    ${isSpecialNewUserPost ? `<span class="special-welcome-badge">.</span>` : ''}
                                 </div>
                                 <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
                             </div>
@@ -1113,6 +1259,7 @@
                             </div>
                         </div>
                         <p style="margin: 0; line-height:1.5;">${p.text}</p>
+                        ${imagesHtml}
                         ${linksHtml}
                         <div class="action-bar">
                             <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
@@ -1137,8 +1284,11 @@
                             </div>
                         </div>
                     `;
-                    div.appendChild(el);
+                    fragment.appendChild(el);
                 });
+                // Render all posts at once
+                div.appendChild(fragment);
+                
                 if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
             });
         }
@@ -1146,13 +1296,11 @@
         window.starIt = async (id, has) => { 
             if(!auth.currentUser) { alert("Please login first!"); return; }
             
-            // --- NEW ANIMATION LOGIC ON STAR CLICK ---
             if (!has && window.event) {
                 const e = window.event;
                 const clickX = e.clientX;
                 const clickY = e.clientY;
                 
-                // 10 chhote stars particles generate karega
                 for (let i = 0; i < 10; i++) {
                     const p = document.createElement('div');
                     p.className = 'star-particle';
@@ -1160,7 +1308,6 @@
                     p.style.left = clickX + 'px';
                     p.style.top = clickY + 'px';
                     
-                    // Random angles and distances for explosion effect
                     const angle = Math.random() * Math.PI * 2;
                     const distance = 30 + Math.random() * 50; 
                     const x = Math.cos(angle) * distance;
@@ -1194,7 +1341,8 @@
 
         window.doPost = async () => {
             const originalInputText = document.getElementById('postInput').value;
-            if(!originalInputText.trim()) return;
+            // Prevent execution if both text content and media bundles are completely absent
+            if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
 
             const detectedLinks = extractLinks(originalInputText);
 
@@ -1213,14 +1361,14 @@
                 cleanedText = "Shared Links:";
             }
 
-            // Fetch state mapping values dynamically
+            // Using localStorage exclusively to track and trigger the first post auto-comment feature
             const postCountKey = "posts_count_" + auth.currentUser.uid;
             let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
-            let isNewUserVibeActive = false;
+            let triggerBotComment = false;
 
-            if (currentPostsCount < 3) {
-                isNewUserVibeActive = true;
-                currentPostsCount++;
+            if (currentPostsCount === 0) {
+                triggerBotComment = true;
+                currentPostsCount = 1;
                 localStorage.setItem(postCountKey, currentPostsCount);
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
                 if(me) me.postsMade = currentPostsCount;
@@ -1229,6 +1377,7 @@
             const postDocData = { 
                 text: cleanedText, 
                 links: detectedLinks,
+                images: selectedBase64Images, // Inserted safe payload images array
                 username: me.username || 'user', 
                 pic: me.pic || defaultAvtr, 
                 uid: auth.currentUser.uid, 
@@ -1236,14 +1385,13 @@
                 comments: [], 
                 time: Date.now(), 
                 edited: false,
-                isNewUserVibe: isNewUserVibeActive,
-                hasRedTick: me.hasRedTick || false // Carry over Red Tick status to new posts
+                hasRedTick: me.hasRedTick || false 
             };
 
             const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
 
-            // Special Welcome auto-comment generator sequence
-            if (isNewUserVibeActive) {
+            // Trigger Bot Welcome Comment sequence on first post only
+            if (triggerBotComment) {
                 setTimeout(async () => {
                     await updateDoc(doc(db, "posts", createdPostRef.id), { 
                         comments: arrayUnion({ 
@@ -1255,9 +1403,12 @@
                 }, 800);
             }
 
+            // Reset upload arrays and inputs securely
             document.getElementById('postInput').value = ""; 
+            document.getElementById('photoSelector').value = "";
+            document.getElementById('previewContainer').innerHTML = "";
+            selectedBase64Images = [];
             setPostModal(false);
-            checkAndRenderNewUserHud();
         };
 
         window.editPost = async (id, oldText) => {
@@ -1305,7 +1456,7 @@
             i.value = "";
         };
 
-        window.delCom = async (pid, idx) => {
+        window.getCom = async (pid, idx) => {
             const r = doc(db, "posts", pid); const s = await getDoc(r);
             let c = s.data().comments; c.splice(idx, 1);
             await updateDoc(r, { comments: c });
@@ -1327,7 +1478,6 @@
 
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
         
-        // --- UPDATED TOGGLE SEARCH METHOD TO HIDE DROPDOWN ON TOGGLE ---
         window.toggleSearch = () => { 
             const r = document.getElementById('search-row'); 
             const box = document.getElementById('search-suggestions-box');
@@ -1342,7 +1492,18 @@
         };
 
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
-        window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
+        
+        window.setPostModal = (s) => {
+            document.getElementById('post-modal').style.display = s?'flex':'none';
+            if(!s) {
+                // Clear states when modal closing
+                document.getElementById('postInput').value = "";
+                document.getElementById('photoSelector').value = "";
+                document.getElementById('previewContainer').innerHTML = "";
+                selectedBase64Images = [];
+                updateWordCount();
+            }
+        };
         
         window.sharePost = async (text, username) => {
             const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
@@ -1388,70 +1549,70 @@
         postInput.addEventListener('keyup', updateWordCount);
         postInput.addEventListener('change', updateWordCount);
 
-        // --- NEW REALTIME SEARCH SUGGESTIONS FEATURE ENGINE ---
         const searchInput = document.getElementById('sq');
         const suggestionsBox = document.getElementById('search-suggestions-box');
 
+        // Optimization: Added Debouncing so Firebase isn't queried on every single keystroke
+        let searchDebounceTimer;
         searchInput.addEventListener('input', async () => {
+            clearTimeout(searchDebounceTimer);
             let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
             
-            // Checking alphanumeric ranges (a-z, 0-9)
             if(!val || val.length === 0) {
                 suggestionsBox.style.display = 'none';
                 suggestionsBox.innerHTML = '';
                 return;
             }
 
-            try {
-                // Firestore Prefix Matching Strategy (\uf8ff handles alphabetical bounds seamlessly)
-                const q = query(
-                    collection(db, "users"), 
-                    orderBy("username"), 
-                    where("username", ">=", val), 
-                    where("username", "<=", val + "\uf8ff")
-                );
-                
-                const snap = await getDocs(q);
-                
-                if(snap.empty) {
-                    suggestionsBox.style.display = 'none';
-                    suggestionsBox.innerHTML = '';
-                    return;
-                }
-
-                suggestionsBox.innerHTML = '';
-                suggestionsBox.style.display = 'block';
-
-                snap.forEach(docSnap => {
-                    const uData = docSnap.data();
-                    const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
+            searchDebounceTimer = setTimeout(async () => {
+                try {
+                    const q = query(
+                        collection(db, "users"), 
+                        orderBy("username"), 
+                        where("username", ">=", val), 
+                        where("username", "<=", val + "\uf8ff")
+                    );
                     
-                    const searchItemRedTick = uData.hasRedTick ? redTickSVG : '';
-
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `
-                        <img src="${uPic}" onerror="this.src='${defaultAvtr}'">
-                        <span style="display:flex; align-items:center;">@${uData.username}${searchItemRedTick}</span>
-                    `;
+                    const snap = await getDocs(q);
                     
-                    // Click on suggestion to navigate directly using the existing method
-                    item.addEventListener('click', () => {
-                        searchInput.value = uData.username;
+                    if(snap.empty) {
                         suggestionsBox.style.display = 'none';
                         suggestionsBox.innerHTML = '';
-                        navTo('profile', false, uData);
+                        return;
+                    }
+
+                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.style.display = 'block';
+
+                    snap.forEach(docSnap => {
+                        const uData = docSnap.data();
+                        const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
+                        
+                        const searchItemRedTick = uData.hasRedTick ? redTickSVG : '';
+
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <img src="${uPic}" onerror="this.src='${defaultAvtr}'">
+                            <span style="display:flex; align-items:center;">@${uData.username}${searchItemRedTick}</span>
+                        `;
+                        
+                        item.addEventListener('click', () => {
+                            searchInput.value = uData.username;
+                            suggestionsBox.style.display = 'none';
+                            suggestionsBox.innerHTML = '';
+                            navTo('profile', false, uData);
+                        });
+
+                        suggestionsBox.appendChild(item);
                     });
 
-                    suggestionsBox.appendChild(item);
-                });
-
-            } catch (err) {
-                console.error("Suggestion engine error: ", err);
-            }
+                } catch (err) {
+                    console.error("Suggestion engine error: ", err);
+                }
+            }, 300); // Wait 300ms before calling DB
         });
 
-        // Hides suggestion popup if clicked outside
         document.addEventListener('click', (e) => {
             if (e.target !== searchInput && e.target !== suggestionsBox) {
                 suggestionsBox.style.display = 'none';
