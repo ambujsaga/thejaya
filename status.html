@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Jaya - Status Room</title>
+    <style>
+        :root { 
+            --primary: #00e5ff; 
+            --bg: #030a1a; 
+            --card-bg: rgba(6, 17, 39, 0.85); 
+            --text-main: #ffffff; 
+            --text-muted: #8a99b3;
+            --red: #ff4444; 
+            --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        header { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(15px); 
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(0, 229, 255, 0.15); 
+            position: sticky; top: 0; z-index: 1000; 
+        }
+
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary); text-shadow: var(--neon-shadow); text-decoration: none; }
+        .container { width: 95%; max-width: 600px; margin: 20px auto; padding-bottom: 100px; }
+        
+        .user-badge { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.2); }
+        .user-badge img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+
+        /* Facebook Style Stories Row */
+        .stories-section { margin-bottom: 30px; }
+        .section-title { font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .stories-container { display: flex; gap: 12px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; }
+        .stories-container::-webkit-scrollbar { display: none; }
+
+        .story-bubble { display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; width: 75px; flex-shrink: 0; }
+        .img-wrapper { width: 64px; height: 64px; border-radius: 50%; padding: 2px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; box-shadow: var(--neon-shadow); transition: transform 0.2s; }
+        .story-bubble:hover .img-wrapper { transform: scale(1.05); }
+        .img-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #1c1e21; }
+        .story-bubble span { font-size: 11px; margin-top: 6px; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; width: 100%; }
+
+        /* Upload Panel Card */
+        .card { 
+            background: var(--card-bg); padding: 20px; border-radius: 24px; border: 1px solid rgba(0, 229, 255, 0.15); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4); backdrop-filter: blur(10px); margin-bottom: 25px;
+        }
+        .card h3 { margin-top: 0; color: var(--primary); }
+        textarea { 
+            width: 100%; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 14px; padding: 12px; color: var(--text-main); box-sizing: border-box; outline: none; resize: none; font-size: 14px;
+        }
+        
+        .upload-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .file-label { 
+            background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--primary); padding: 12px; border-radius: 12px; 
+            text-align: center; cursor: pointer; font-size: 13px; font-weight: bold; color: var(--primary); display: block;
+        }
+        .file-label:hover { background: rgba(0, 229, 255, 0.15); }
+        input[type="file"] { display: none; }
+        .limits-info { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-top: -5px; margin-bottom: 15px; }
+
+        button { cursor: pointer; border: none; border-radius: 14px; padding: 12px 20px; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #030a1a; width: 100%; box-shadow: var(--neon-shadow); }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Fullscreen Status Viewer (WhatsApp Style) */
+        #status-viewer { 
+            display: none; position: fixed; inset: 0; background: #000; z-index: 5000; 
+            flex-direction: column; justify-content: center; align-items: center; 
+        }
+        .viewer-header { 
+            position: absolute; top: 0; left: 0; right: 0; padding: 20px 15px 40px; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); z-index: 5100; 
+        }
+        .progress-container { display: flex; gap: 4px; width: 100%; margin-bottom: 15px; }
+        .progress-bar { height: 3px; background: rgba(255,255,255,0.3); flex-grow: 1; border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: var(--primary); transition: width linear; }
+        
+        .viewer-user-info { display: flex; align-items: center; justify-content: space-between; color: #fff; }
+        .viewer-user-meta { display: flex; align-items: center; gap: 10px; }
+        .viewer-user-meta img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--primary); }
+        .viewer-close { font-size: 28px; cursor: pointer; color: #fff; line-height: 1; padding: 0 5px; }
+
+        .media-container { width: 100%; max-width: 500px; height: 75vh; display: flex; align-items: center; justify-content: center; position: relative; }
+        .media-container img, .media-container video { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .text-status-bg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 24px; font-weight: bold; padding: 30px; box-sizing: border-box; background: linear-gradient(135deg, #081633, #030a1a); color: #fff; word-break: break-word; }
+
+        /* Navigation Taps Area for Next/Prev */
+        .nav-tap { position: absolute; top: 80px; bottom: 0; width: 35%; z-index: 5050; }
+        .nav-tap-left { left: 0; }
+        .nav-tap-right { right: 0; }
+
+        /* Absolute Center Error / Wall Box */
+        #auth-gate { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        #auth-gate h1 { color: var(--red); font-size: 28px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-gate">
+        <h1>Access Denied 🔐</h1>
+        <p style="color: var(--text-muted); max-width: 380px;">Aap The Jaya App par logged-in nahi hain. Kripya pehle mukhya website par apna account login karein.</p>
+        <a href="index.html" class="btn-primary" style="text-decoration: none; margin-top: 15px; display: inline-block;">Go to Login</a>
+    </div>
+
+    <div id="app-content">
+        <header>
+            <a href="#" class="logo">The Jaya Status</a>
+            <div class="user-badge">
+                <img id="my-profile-pic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile">
+                <span id="my-username">@user</span>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="stories-section">
+                <div class="section-title">Recent Statuses</div>
+                <div class="stories-container" id="storiesRow">
+                    </div>
+            </div>
+
+            <div class="card">
+                <h3>Add New Status</h3>
+                <textarea id="textInput" rows="3" placeholder="Kuch likhein jo aap status par dikhana chahte hain..."></textarea>
+                
+                <div class="upload-controls">
+                    <div>
+                        <label for="photoFile" class="file-label">📸 Add Photos (<span id="photoCount">0</span>/10)</label>
+                        <input type="file" id="photoFile" accept="image/*" multiple onchange="validateFiles(this, 'photo', 10)">
+                    </div>
+                    <div>
+                        <label for="videoFile" class="file-label">🎥 Add Videos (<span id="videoCount">0</span>/5)</label>
+                        <input type="file" id="videoFile" accept="video/*" multiple onchange="validateFiles(this, 'video', 5)">
+                    </div>
+                </div>
+                <div class="limits-info">
+                    💡 *Rules:* Photos max 10, Videos max 5. Video duration filter lagkar 25 seconds chalega, Photo slide 10 seconds tak active rahegi. 24 Hours me status self-destruct ho jayega.
+                </div>
+
+                <button class="btn-primary" onclick="publishStatus()">Upload Status</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-viewer">
+        <div class="nav-tap nav-tap-left" onclick="prevSlide()"></div>
+        <div class="nav-tap nav-tap-right" onclick="nextSlide()"></div>
+
+        <div class="viewer-header">
+            <div class="progress-container" id="progressContainer">
+                </div>
+            <div class="viewer-user-info">
+                <div class="viewer-user-meta">
+                    <img id="viewer-avatar" src="" alt="">
+                    <strong id="viewer-username">@username</strong>
+                </div>
+                <div class="viewer-close" onclick="closeViewer()">✕</div>
+            </div>
+        </div>
+
+        <div class="media-container" id="viewerMediaBody">
+            </div>
+    </div>
+
+
+    <script>
+        // --- SECURE THE JAYA FIREBASE SIMULATED BRIDGE ---
+        // Jaya index.html localstorage elements fetch structure
+        let currentUser = null;
+        const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        function verifyAuthenticationBridge() {
+            // Check cross platform login key derived from original application flow
+            const keys = Object.keys(localStorage);
+            // Dynamic check identifying active Firebase auth persistence inside LocalStorage
+            const hasFirebaseToken = keys.some(k => k.startsWith("firebase:authUser"));
+            
+            if (!hasFirebaseToken) {
+                document.getElementById('auth-gate').style.display = 'flex';
+                document.getElementById('app-content').style.display = 'none';
+                return false;
+            }
+
+            // Fallback mock identity or direct hook retrieval simulation setup 
+            currentUser = {
+                username: localStorage.getItem("last_active_username") || "ambuj_saga",
+                pic: localStorage.getItem("last_active_avatar") || defaultAvtr,
+                uid: localStorage.getItem("last_active_uid") || "uid_" + Math.floor(Math.random() * 100000)
+            };
+
+            // Injecting inside DOM Header elements
+            document.getElementById('my-username').innerText = "@" + currentUser.username;
+            document.getElementById('my-profile-pic').src = currentUser.pic;
+            return true;
+        }
+
+        // --- STORES STRUCTURE MANAGEMENT ---
+        let preparedPhotos = [];
+        let preparedVideos = [];
+
+        function validateFiles(input, type, limit) {
+            const files = Array.from(input.files);
+            if (files.length > limit) {
+                alert(`Aap ek baar me maximum ${limit} ${type}s chun sakte hain!`);
+                input.value = "";
+                return;
+            }
+
+            const targetArray = (type === 'photo') ? preparedPhotos = [] : preparedVideos = [];
+            document.getElementById(`${type}Count`).innerText = files.length;
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    targetArray.push(e.target.result); // Base64 encoding storing in client layer
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- PUBLISH SYSTEM ---
+        function publishStatus() {
+            const textContent = document.getElementById('textInput').value.trim();
+
+            if (!textContent && preparedPhotos.length === 0 && preparedVideos.length === 0) {
+                alert("Please add text, photos, or videos to publish your status!");
+                return;
+            }
+
+            // Compile array items array
+            let statusItems = [];
+
+            if (textContent) {
+                statusItems.push({ type: 'text', data: textContent, duration: 10000 });
+            }
+            preparedPhotos.forEach(pBase => {
+                statusItems.push({ type: 'photo', data: pBase, duration: 10000 }); // Photo limit 10 seconds
+            });
+            preparedVideos.forEach(vBase => {
+                statusItems.push({ type: 'video', data: vBase, duration: 25000 }); // Video limit 25 seconds
+            });
+
+            const newStatusBlock = {
+                id: "status_" + Date.now(),
+                uid: currentUser.uid,
+                username: currentUser.username,
+                avatar: currentUser.pic,
+                timestamp: Date.now(),
+                slides: statusItems
+            };
+
+            // Save to existing global list pipeline
+            let globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+            // Filter old status out if same user posts updates or keep appending
+            globalStatuses = globalStatuses.filter(s => s.uid !== currentUser.uid);
+            globalStatuses.push(newStatusBlock);
+
+            localStorage.setItem('the_jaya_statuses', JSON.stringify(globalStatuses));
+
+            // Resetting view models
+            document.getElementById('textInput').value = "";
+            document.getElementById('photoFile').value = "";
+            document.getElementById('videoFile').value = "";
+            document.getElementById('photoCount').innerText = "0";
+            document.getElementById('videoCount').innerText = "0";
+            preparedPhotos = [];
+            preparedVideos = [];
+
+            alert("Status upload ho gaya successfully!");
+            renderStoriesRow();
+        }
+
+        // --- RENDER RECENT STORIES BLOCK ---
+        function renderStoriesRow() {
+            const container = document.getElementById('storiesRow');
+            container.innerHTML = "";
+
+            let globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+            const absoluteExpirationTime = Date.now() - (24 * 60 * 60 * 1000); // 24 Hours in millisecond
+
+            // Self-cleaning cycle loop inside system engine 
+            globalStatuses = globalStatuses.filter(status => {
+                return status.timestamp > absoluteExpirationTime && status.slides.length > 0;
+            });
+            localStorage.setItem('the_jaya_statuses', JSON.stringify(globalStatuses));
+
+            if (globalStatuses.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:13px; margin: 10px 0;">No active status available</p>`;
+                return;
+            }
+
+            globalStatuses.forEach((status, index) => {
+                const bubble = document.createElement('div');
+                bubble.className = 'story-bubble';
+                bubble.onclick = () => openStatusViewer(index);
+
+                bubble.innerHTML = `
+                    <div class="img-wrapper">
+                        <img src="${status.avatar}" onerror="this.src='${defaultAvtr}'">
+                    </div>
+                    <span>@${status.username}</span>
+                `;
+                container.appendChild(bubble);
+            });
+        }
+
+        // --- STORY PLAYBACK VIEWENGINE CONTROLLERS ---
+        let activeGroupIndex = 0;
+        let activeSlideIndex = 0;
+        let playbackTimeout = null;
+        let slideStartTime = 0;
+        let currentSlideDuration = 0;
+
+        function openStatusViewer(groupIndex) {
+            const globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+            if (!globalStatuses[groupIndex]) return;
+
+            document.getElementById('status-viewer').style.display = 'flex';
+            activeGroupIndex = groupIndex;
+            activeSlideIndex = 0;
+
+            loadSlideData();
+        }
+
+        function loadSlideData() {
+            clearTimeout(playbackTimeout);
+            const globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+            const currentGroup = globalStatuses[activeGroupIndex];
+            const slide = currentGroup.slides[activeSlideIndex];
+
+            // Metadata updates
+            document.getElementById('viewer-avatar').src = currentGroup.avatar;
+            document.getElementById('viewer-username').innerText = `@${currentGroup.username}`;
+
+            // Reset setup layout segment line progress bars
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.innerHTML = "";
+            for (let i = 0; i < currentGroup.slides.length; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'progress-bar';
+                const fill = document.createElement('div');
+                fill.className = 'progress-fill';
+                if (i < activeSlideIndex) fill.style.width = '100%';
+                bar.appendChild(fill);
+                progressContainer.appendChild(bar);
+            }
+
+            // Target frame view
+            const mediaBody = document.getElementById('viewerMediaBody');
+            mediaBody.innerHTML = "";
+
+            currentSlideDuration = slide.duration;
+
+            if (slide.type === 'text') {
+                const box = document.createElement('div');
+                box.className = 'text-status-bg';
+                box.innerText = slide.data;
+                mediaBody.appendChild(box);
+            } else if (slide.type === 'photo') {
+                const img = document.createElement('img');
+                img.src = slide.data;
+                mediaBody.appendChild(img);
+            } else if (slide.type === 'video') {
+                const vid = document.createElement('video');
+                vid.src = slide.data;
+                vid.autoplay = true;
+                vid.muted = false;
+                vid.playsInline = true;
+                
+                // Strict 25 second viewport constraint
+                vid.onloadedmetadata = function() {
+                    if (vid.duration > 25) {
+                        currentSlideDuration = 25000;
+                    } else {
+                        currentSlideDuration = vid.duration * 1000;
+                    }
+                };
+                mediaBody.appendChild(vid);
+            }
+
+            // Animate progress filling engine 
+            setTimeout(() => {
+                const activeBarFill = progressContainer.children[activeSlideIndex].querySelector('.progress-fill');
+                if (activeBarFill) {
+                    activeBarFill.style.transition = `width ${currentSlideDuration}ms linear`;
+                    activeBarFill.style.width = '100%';
+                }
+            }, 50);
+
+            slideStartTime = Date.now();
+            playbackTimeout = setTimeout(nextSlide, currentSlideDuration);
+        }
+
+        function nextSlide() {
+            const globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+            const currentGroup = globalStatuses[activeGroupIndex];
+
+            if (activeSlideIndex < currentGroup.slides.length - 1) {
+                activeSlideIndex++;
+                loadSlideData();
+            } else {
+                // Shift forward to next user's cluster status bundle group
+                if (activeGroupIndex < globalStatuses.length - 1) {
+                    activeGroupIndex++;
+                    activeSlideIndex = 0;
+                    loadSlideData();
+                } else {
+                    closeViewer();
+                }
+            }
+        }
+
+        function prevSlide() {
+            if (activeSlideIndex > 0) {
+                activeSlideIndex--;
+                loadSlideData();
+            } else {
+                // Shift backward to previous user's status group
+                if (activeGroupIndex > 0) {
+                    activeGroupIndex--;
+                    const globalStatuses = JSON.parse(localStorage.getItem('the_jaya_statuses') || '[]');
+                    activeSlideIndex = globalStatuses[activeGroupIndex].slides.length - 1;
+                    loadSlideData();
+                } else {
+                    loadSlideData(); // Re-index active frame 0
+                }
+            }
+        }
+
+        function closeViewer() {
+            clearTimeout(playbackTimeout);
+            document.getElementById('status-viewer').style.display = 'none';
+            const mediaBody = document.getElementById('viewerMediaBody');
+            mediaBody.innerHTML = ""; // Kill background elements loops execution immediately
+        }
+
+        // --- LIFECYCLE RUNTIME START BOOTSTRAP ---
+        window.addEventListener('load', () => {
+            if (verifyAuthenticationBridge()) {
+                // Simulated baseline configurations syncing helper setup
+                if(!localStorage.getItem("firebase:authUser:default_key")) {
+                     localStorage.setItem("firebase:authUser:default_key", "true");
+                     localStorage.setItem("last_active_username", "ambuj_saga");
+                }
+                renderStoriesRow();
+            }
+        });
+    </script>
+</body>
+</html>
