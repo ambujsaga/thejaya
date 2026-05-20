@@ -499,6 +499,108 @@
             color: #fff;
             box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
         }
+
+        /* --- NEW STYLES FOR ASPECT RATIO 4:3 PHOTO POSTS & CAROUSEL --- */
+        .post-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* Strict 4:3 Aspect Ratio Box */
+            margin-top: 12px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #020712;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+        }
+        .post-media-slider {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .post-media-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .post-media-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
+        }
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(3, 10, 26, 0.75);
+            backdrop-filter: blur(4px);
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
+            font-size: 16px; font-weight: bold;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .carousel-btn:hover { background: var(--primary); color: #030a1a; }
+        .carousel-prev { left: 10px; }
+        .carousel-next { right: 10px; }
+        .carousel-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(3, 10, 26, 0.8);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            z-index: 10;
+        }
+        .upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .btn-upload-label {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-grow: 1;
+            transition: 0.2s;
+        }
+        .btn-upload-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(0, 229, 255, 0.02);
+        }
+        .upload-preview-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .preview-img-wrapper {
+            position: relative;
+            min-width: 50px; max-width: 50px; height: 50px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+        .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -619,8 +721,14 @@
     <div id="post-modal">
         <div class="card">
             <h3>New Post</h3>
-            <textarea id="postInput" rows="5" placeholder="What's happening?"></textarea>
-            <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 5px 2px 0 0; text-align: right;">0 / 110</p>
+            <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
+            
+            <div class="upload-row">
+                <label for="photoSelector" class="btn-upload-label">🖼️ Add Pics (Max 5)</label>
+                <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
+                <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
+            </div>
+            <div id="previewContainer" class="upload-preview-container"></div>
             
             <div class="modal-actions-grid">
                 <div class="modal-top-buttons">
@@ -686,6 +794,9 @@
         // Shuffle state tracking variables
         let feedShuffleOrder = null; 
         let lastFetchedPostIds = "";
+
+        // Global arrays to handle base64 image strings inside post creation
+        let selectedBase64Images = [];
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
@@ -965,6 +1076,75 @@
             return array;
         }
 
+        // Image Handling Mechanics (Compressed < 1MB & Select Preview Tracker)
+        window.handleModalImagesSelect = (inputField) => {
+            const files = Array.from(inputField.files);
+            if (files.length > 5) {
+                alert("Maximum 5 photos can be uploaded at a time!");
+                inputField.value = "";
+                return;
+            }
+            selectedBase64Images = [];
+            const previewContainer = document.getElementById("previewContainer");
+            previewContainer.innerHTML = "";
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const tempImg = new Image();
+                    tempImg.src = e.target.result;
+                    tempImg.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        let width = tempImg.width;
+                        let height = tempImg.height;
+                        
+                        // Downscale layout bounds if too massive
+                        const max_size = 1200;
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(tempImg, 0, 0, width, height);
+                        
+                        // Strict low quality compression parameters to stay well under 1MB threshold boundaries
+                        let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+                        selectedBase64Images.push(compressedDataUrl);
+
+                        const wrp = document.createElement("div");
+                        wrp.className = "preview-img-wrapper";
+                        wrp.innerHTML = `<img src="${compressedDataUrl}">`;
+                        previewContainer.appendChild(wrp);
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        // Custom Safe Carousel Navigation Routine Engine
+        window.shiftCarousel = (postID, steps) => {
+            const slider = document.getElementById(`slider-${postID}`);
+            const counterLabel = document.getElementById(`counter-${postID}`);
+            if(!slider) return;
+            
+            const totalSlides = parseInt(slider.getAttribute("data-total") || "1");
+            let currentIndex = parseInt(slider.getAttribute("data-index") || "0");
+            
+            currentIndex += steps;
+            if(currentIndex < 0) currentIndex = 0;
+            if(currentIndex >= totalSlides) currentIndex = totalSlides - 1;
+            
+            slider.setAttribute("data-index", currentIndex);
+            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+            if(counterLabel) {
+                counterLabel.innerText = `${currentIndex + 1} / ${totalSlides}`;
+            }
+        };
+
         function loadFeed(divId, uid) {
             let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
                         : query(collection(db, "posts"), orderBy("time", "desc"));
@@ -1041,6 +1221,27 @@
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
+                    // 4:3 Carousel Generator System Injection
+                    let imagesHtml = "";
+                    if (p.images && p.images.length > 0) {
+                        const count = p.images.length;
+                        imagesHtml += `<div class="post-media-container">`;
+                        
+                        if(count > 1) {
+                            imagesHtml += `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${p.id}', -1)">❮</div>`;
+                            imagesHtml += `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${p.id}', 1)">❯</div>`;
+                            imagesHtml += `<div id="counter-${p.id}" class="carousel-counter">1 / ${count}</div>`;
+                        } else {
+                            imagesHtml += `<div class="carousel-counter">1 / 1</div>`;
+                        }
+                        
+                        imagesHtml += `<div id="slider-${p.id}" class="post-media-slider" data-index="0" data-total="${count}">`;
+                        p.images.forEach(imgBase64 => {
+                            imagesHtml += `<div class="post-media-slide"><img src="${imgBase64}" onerror="this.parentNode.style.display='none'"></div>`;
+                        });
+                        imagesHtml += `</div></div>`;
+                    }
+
                     const el = document.createElement('div');
                     el.className = 'card';
                     el.innerHTML = `
@@ -1058,6 +1259,7 @@
                             </div>
                         </div>
                         <p style="margin: 0; line-height:1.5;">${p.text}</p>
+                        ${imagesHtml}
                         ${linksHtml}
                         <div class="action-bar">
                             <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
@@ -1139,7 +1341,8 @@
 
         window.doPost = async () => {
             const originalInputText = document.getElementById('postInput').value;
-            if(!originalInputText.trim()) return;
+            // Prevent execution if both text content and media bundles are completely absent
+            if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
 
             const detectedLinks = extractLinks(originalInputText);
 
@@ -1174,6 +1377,7 @@
             const postDocData = { 
                 text: cleanedText, 
                 links: detectedLinks,
+                images: selectedBase64Images, // Inserted safe payload images array
                 username: me.username || 'user', 
                 pic: me.pic || defaultAvtr, 
                 uid: auth.currentUser.uid, 
@@ -1199,7 +1403,11 @@
                 }, 800);
             }
 
+            // Reset upload arrays and inputs securely
             document.getElementById('postInput').value = ""; 
+            document.getElementById('photoSelector').value = "";
+            document.getElementById('previewContainer').innerHTML = "";
+            selectedBase64Images = [];
             setPostModal(false);
         };
 
@@ -1284,7 +1492,18 @@
         };
 
         window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
-        window.setPostModal = (s) => document.getElementById('post-modal').style.display = s?'flex':'none';
+        
+        window.setPostModal = (s) => {
+            document.getElementById('post-modal').style.display = s?'flex':'none';
+            if(!s) {
+                // Clear states when modal closing
+                document.getElementById('postInput').value = "";
+                document.getElementById('photoSelector').value = "";
+                document.getElementById('previewContainer').innerHTML = "";
+                selectedBase64Images = [];
+                updateWordCount();
+            }
+        };
         
         window.sharePost = async (text, username) => {
             const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
