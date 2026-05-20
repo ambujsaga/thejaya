@@ -526,7 +526,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // ATTACH FIRESTORE FUNCTIONS TO WINDOW FOR GLOBAL ACCESS
         window.db = db;
         window.doc = doc;
         window.setDoc = setDoc;
@@ -569,12 +568,8 @@
             }
 
             window.currentUserProfile = activeSessionUser;
-            
-            // HYBRID LOGIC: Step 1 - Instant Load from LocalStorage
             window.globalStories = JSON.parse(localStorage.getItem('thejaya_stories_db_live') || '[]');
             window.renderStoriesTray();
-            
-            // HYBRID LOGIC: Step 2 - Initialize Cloud Sync to fetch latest changes
             window.setupRealtimeStories(); 
         }
     </script>
@@ -592,26 +587,19 @@
         
         window.globalStories = [];
 
-        // HYBRID REAL-TIME LISTENER
         window.setupRealtimeStories = function() {
             const storiesRef = window.collection(window.db, "status_stories");
-            
             window.onSnapshot(storiesRef, (snapshot) => {
                 let liveDatabase = [];
                 snapshot.forEach((doc) => {
                     liveDatabase.push(doc.data());
                 });
-
                 const now = Date.now();
                 liveDatabase.forEach(story => {
                     story.slides = story.slides.filter(slide => (now - slide.timestamp) < EXPIRATION_TIME);
                 });
-                
                 window.globalStories = liveDatabase.filter(story => story.slides.length > 0);
-                
-                // HYBRID LOGIC: Step 3 - Sync fetched live data back into LocalStorage for cache
                 localStorage.setItem('thejaya_stories_db_live', JSON.stringify(window.globalStories));
-                
                 window.renderStoriesTray();
             });
         };
@@ -625,17 +613,8 @@
             const photos = document.getElementById('photo-files').files;
             const videos = document.getElementById('video-files').files;
             const indicator = document.getElementById('file-count-status');
-
-            if(photos.length > PHOTO_LIMIT) {
-                alert(`Maximum ${PHOTO_LIMIT} photos allowed!`);
-                document.getElementById('photo-files').value = "";
-                return;
-            }
-            if(videos.length > VIDEO_LIMIT) {
-                alert(`Maximum ${VIDEO_LIMIT} videos allowed!`);
-                document.getElementById('video-files').value = "";
-                return;
-            }
+            if(photos.length > PHOTO_LIMIT) { alert(`Maximum ${PHOTO_LIMIT} photos allowed!`); document.getElementById('photo-files').value = ""; return; }
+            if(videos.length > VIDEO_LIMIT) { alert(`Maximum ${VIDEO_LIMIT} videos allowed!`); document.getElementById('video-files').value = ""; return; }
             indicator.innerText = `Selected: ${photos.length} Photo(s) | ${videos.length} Video(s)`;
         }
 
@@ -648,33 +627,58 @@
             });
         }
 
+        async function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 1200;
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) { height *= maxDim / width; width = maxDim; }
+                            else { width *= maxDim / height; height = maxDim; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        let quality = 0.7;
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        if (dataUrl.length > 1000000) { quality = 0.5; dataUrl = canvas.toDataURL('image/jpeg', quality); }
+                        resolve(dataUrl);
+                    };
+                };
+            });
+        }
+
         async function publishStatus() {
             if (!window.currentUserProfile) return;
-
             const textContent = document.getElementById('status-text-input').value.trim();
             const photoFiles = document.getElementById('photo-files').files;
             const videoFiles = document.getElementById('video-files').files;
 
-            if (!textContent && photoFiles.length === 0 && videoFiles.length === 0) {
-                alert("Please write something or select media to upload!");
-                return;
+            if (!textContent && photoFiles.length === 0 && videoFiles.length === 0) { alert("Please write something or select media to upload!"); return; }
+
+            for (let i = 0; i < videoFiles.length; i++) {
+                if (videoFiles[i].size > 1024 * 1024) { alert(`Video "${videoFiles[i].name}" is too large. Please upload video smaller than 1MB.`); return; }
             }
 
-            if(photoFiles.length > 0 || videoFiles.length > 0) {
-                document.querySelector('.btn-submit').innerText = "Uploading Status...";
-                document.querySelector('.btn-submit').disabled = true;
-            }
+            document.querySelector('.btn-submit').innerText = "Processing & Uploading...";
+            document.querySelector('.btn-submit').disabled = true;
 
             const newSlides = [];
             const now = Date.now();
 
-            if (textContent) {
-                newSlides.push({ id: 's_'+now+'_t', type: 'text', content: textContent, duration: 10000, timestamp: now, viewedBy: [] });
-            }
+            if (textContent) { newSlides.push({ id: 's_'+now+'_t', type: 'text', content: textContent, duration: 10000, timestamp: now, viewedBy: [] }); }
 
             for(let i=0; i<photoFiles.length; i++) {
-                const b64Data = await convertToBase64(photoFiles[i]);
-                newSlides.push({ id: 's_'+now+'_p'+i, type: 'image', content: b64Data, duration: 10000, timestamp: now, viewedBy: [] });
+                const compressedB64 = await compressImage(photoFiles[i]);
+                newSlides.push({ id: 's_'+now+'_p'+i, type: 'image', content: compressedB64, duration: 10000, timestamp: now, viewedBy: [] });
             }
 
             for(let i=0; i<videoFiles.length; i++) {
@@ -699,16 +703,13 @@
             }
 
             try {
-                // Upload directly to server. The onSnapshot listener will catch this instantly and update localStorage for everyone.
                 const userDocRef = window.doc(window.db, "status_stories", window.currentUserProfile.uid);
                 await window.setDoc(userDocRef, storyDataToSave);
-
                 document.getElementById('status-text-input').value = "";
                 document.getElementById('photo-files').value = "";
                 document.getElementById('video-files').value = "";
                 document.getElementById('file-count-status').innerText = "";
                 toggleUploadUI();
-
                 alert("🚀 Status uploaded successfully!");
             } catch (error) {
                 console.error("Upload Error: ", error);
@@ -722,34 +723,18 @@
         window.renderStoriesTray = function() {
             const tray = document.getElementById('stories-tray-zone');
             tray.innerHTML = "";
-
-            if(window.globalStories.length === 0) {
-                tray.innerHTML = `<div style="color:var(--text-muted); font-size:13px; padding-left:5px;">No active updates available...</div>`;
-                return;
-            }
-
+            if(window.globalStories.length === 0) { tray.innerHTML = `<div style="color:var(--text-muted); font-size:13px; padding-left:5px;">No active updates available...</div>`; return; }
             window.globalStories.forEach(userStory => {
                 const node = document.createElement('div');
                 node.className = 'story-node';
                 node.onclick = () => openStatusViewer(userStory);
-                
                 const isCurrentUser = (window.currentUserProfile && userStory.uid === window.currentUserProfile.uid);
                 let hasUnseen = false;
-                
                 if(!isCurrentUser && window.currentUserProfile) {
-                    hasUnseen = userStory.slides.some(slide => {
-                        return !slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid);
-                    });
+                    hasUnseen = userStory.slides.some(slide => !slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid));
                 }
-
                 const tickHtml = userStory.redTick ? `<svg class="red-tick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
-
-                node.innerHTML = `
-                    <div class="story-ring ${hasUnseen ? 'unseen' : ''}">
-                        <img src="${userStory.avatar}" alt="user">
-                    </div>
-                    <div class="story-username">@${userStory.username} ${tickHtml}</div>
-                `;
+                node.innerHTML = `<div class="story-ring ${hasUnseen ? 'unseen' : ''}"><img src="${userStory.avatar}" alt="user"></div><div class="story-username">@${userStory.username} ${tickHtml}</div>`;
                 tray.appendChild(node);
             });
         }
@@ -758,122 +743,56 @@
             currentViewingStory = storyData;
             currentSlideIndex = 0;
             const modal = document.getElementById('status-player-modal');
-            
             document.getElementById('viewer-avatar').src = storyData.avatar;
-            
             const usernameContainer = document.getElementById('viewer-username-container');
             usernameContainer.innerHTML = `<span id="viewer-username">@${storyData.username}</span>`;
             if(storyData.redTick) {
                 const tickTemplate = document.getElementById('red-tick-svg').content.cloneNode(true);
                 usernameContainer.appendChild(tickTemplate);
             }
-            
             modal.style.display = 'flex';
             playSlideshow();
         }
 
-        // SKIP LOGIC START
-        window.skipNext = function() {
-            currentSlideIndex++;
-            if(currentSlideIndex >= currentViewingStory.slides.length) {
-                closeStatusViewer(); // Last status tha to close kardo
-            } else {
-                playSlideshow();
-            }
-        }
-
-        window.skipPrev = function() {
-            currentSlideIndex--;
-            if(currentSlideIndex < 0) {
-                currentSlideIndex = 0; // Piche aur kuch nahi hai to same par rakho
-            }
-            playSlideshow();
-        }
-        // SKIP LOGIC END
+        window.skipNext = function() { currentSlideIndex++; if(currentSlideIndex >= currentViewingStory.slides.length) closeStatusViewer(); else playSlideshow(); }
+        window.skipPrev = function() { currentSlideIndex--; if(currentSlideIndex < 0) currentSlideIndex = 0; playSlideshow(); }
 
         function playSlideshow() {
-            if(currentSlideIndex >= currentViewingStory.slides.length) {
-                closeStatusViewer();
-                return;
-            }
-
+            if(currentSlideIndex >= currentViewingStory.slides.length) { closeStatusViewer(); return; }
             const renderTarget = document.getElementById('viewer-body-render');
             const progressBar = document.getElementById('status-progress');
             renderTarget.innerHTML = "";
             progressBar.style.width = "0%";
             isViewerPaused = false;
-            
             const slide = currentViewingStory.slides[currentSlideIndex];
             const isOwner = (window.currentUserProfile && currentViewingStory.uid === window.currentUserProfile.uid);
-
-            // Update Status Counter UI
             document.getElementById('status-counter-display').innerText = `${currentSlideIndex + 1} / ${currentViewingStory.slides.length}`;
 
             if (!isOwner && window.currentUserProfile) {
                 const alreadyViewed = slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid);
-                if (!alreadyViewed) {
-                    slide.viewedBy.push({
-                        uid: window.currentUserProfile.uid,
-                        username: window.currentUserProfile.username,
-                        avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-                    });
-                    syncToDatabase();
-                }
+                if (!alreadyViewed) { slide.viewedBy.push({ uid: window.currentUserProfile.uid, username: window.currentUserProfile.username, avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png" }); syncToDatabase(); }
             }
 
-            if (isOwner) {
-                document.getElementById('delete-status-btn').style.display = 'flex';
-                document.getElementById('view-count-btn').style.display = 'flex';
-                document.getElementById('view-count-text').innerText = slide.viewedBy.length;
-            } else {
-                document.getElementById('delete-status-btn').style.display = 'none';
-                document.getElementById('view-count-btn').style.display = 'none';
-            }
+            if (isOwner) { document.getElementById('delete-status-btn').style.display = 'flex'; document.getElementById('view-count-btn').style.display = 'flex'; document.getElementById('view-count-text').innerText = slide.viewedBy.length; } 
+            else { document.getElementById('delete-status-btn').style.display = 'none'; document.getElementById('view-count-btn').style.display = 'none'; }
 
             let playbackTimeoutLimit = slide.duration;
-
-            if (slide.type === 'text') {
-                const textBlock = document.createElement('div');
-                textBlock.className = 'viewer-text';
-                textBlock.innerText = slide.content;
-                renderTarget.appendChild(textBlock);
-            } 
-            else if (slide.type === 'image') {
-                const imgNode = document.createElement('img');
-                imgNode.src = slide.content;
-                renderTarget.appendChild(imgNode);
-            } 
-            else if (slide.type === 'video') {
-                const videoNode = document.createElement('video');
-                videoNode.src = slide.content;
-                videoNode.autoplay = true;
-                videoNode.muted = false;
-                videoNode.playsInline = true;
-                renderTarget.appendChild(videoNode);
-
-                videoNode.onloadedmetadata = function() {
-                    if(videoNode.duration < 25) {
-                        playbackTimeoutLimit = videoNode.duration * 1000;
-                    }
-                };
+            if (slide.type === 'text') { const textBlock = document.createElement('div'); textBlock.className = 'viewer-text'; textBlock.innerText = slide.content; renderTarget.appendChild(textBlock); } 
+            else if (slide.type === 'image') { const imgNode = document.createElement('img'); imgNode.src = slide.content; renderTarget.appendChild(imgNode); } 
+            else if (slide.type === 'video') { 
+                const videoNode = document.createElement('video'); videoNode.src = slide.content; videoNode.autoplay = true; videoNode.muted = false; videoNode.playsInline = true; renderTarget.appendChild(videoNode); 
+                videoNode.onloadedmetadata = function() { if(videoNode.duration < 25) playbackTimeoutLimit = videoNode.duration * 1000; };
             }
 
             let elapsedCounter = 0;
             const intervalTickRate = 50; 
             clearInterval(progressAnimationInterval);
-            
             progressAnimationInterval = setInterval(() => {
                 if (isViewerPaused) return;
-
                 elapsedCounter += intervalTickRate;
                 const calculatedPercentage = (elapsedCounter / playbackTimeoutLimit) * 100;
                 progressBar.style.width = Math.min(calculatedPercentage, 100) + "%";
-                
-                if(elapsedCounter >= playbackTimeoutLimit) {
-                    clearInterval(progressAnimationInterval);
-                    currentSlideIndex++;
-                    playSlideshow();
-                }
+                if(elapsedCounter >= playbackTimeoutLimit) { clearInterval(progressAnimationInterval); currentSlideIndex++; playSlideshow(); }
             }, intervalTickRate);
         }
 
@@ -881,67 +800,15 @@
             if(confirm("Are you sure you want to delete this status?")) {
                 currentViewingStory.slides.splice(currentSlideIndex, 1);
                 syncToDatabase();
-                
-                if (currentViewingStory.slides.length === 0) {
-                    closeStatusViewer();
-                } else {
-                    if(currentSlideIndex >= currentViewingStory.slides.length) {
-                        currentSlideIndex = currentViewingStory.slides.length - 1;
-                    }
-                    playSlideshow();
-                }
+                if (currentViewingStory.slides.length === 0) closeStatusViewer();
+                else { if(currentSlideIndex >= currentViewingStory.slides.length) currentSlideIndex = currentViewingStory.slides.length - 1; playSlideshow(); }
             }
         }
 
-        window.showViewers = function() {
-            isViewerPaused = true;
-            const slide = currentViewingStory.slides[currentSlideIndex];
-            const listContent = document.getElementById('viewers-list-content');
-            
-            if (slide.viewedBy.length === 0) {
-                listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`;
-            } else {
-                listContent.innerHTML = slide.viewedBy.map(v => `
-                    <div class="viewer-item">
-                        <img src="${v.avatar}">
-                        <span>@${v.username}</span>
-                    </div>
-                `).join('');
-            }
-            
-            document.getElementById('viewers-list-panel').style.display = 'block';
-        }
-
-        window.hideViewers = function() {
-            document.getElementById('viewers-list-panel').style.display = 'none';
-            isViewerPaused = false;
-        }
-
-        async function syncToDatabase() {
-            if(!currentViewingStory) return;
-            
-            const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid);
-            
-            try {
-                if (currentViewingStory.slides.length === 0) {
-                    await window.deleteDoc(userDocRef);
-                } else {
-                    await window.setDoc(userDocRef, currentViewingStory);
-                }
-            } catch(e) {
-                console.error("Error updating story state:", e);
-            }
-        }
-
-        window.closeStatusViewer = function() {
-            document.getElementById('status-player-modal').style.display = 'none';
-            document.getElementById('viewers-list-panel').style.display = 'none';
-            document.getElementById('viewer-body-render').innerHTML = "";
-            clearInterval(progressAnimationInterval);
-            clearTimeout(storyPlaybackTimer);
-            currentViewingStory = null;
-        }
-
+        window.showViewers = function() { isViewerPaused = true; const slide = currentViewingStory.slides[currentSlideIndex]; const listContent = document.getElementById('viewers-list-content'); if (slide.viewedBy.length === 0) listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; else listContent.innerHTML = slide.viewedBy.map(v => `<div class="viewer-item"><img src="${v.avatar}"><span>@${v.username}</span></div>`).join(''); document.getElementById('viewers-list-panel').style.display = 'block'; }
+        window.hideViewers = function() { document.getElementById('viewers-list-panel').style.display = 'none'; isViewerPaused = false; }
+        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
+        window.closeStatusViewer = function() { document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; document.getElementById('viewer-body-render').innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null; }
     </script>
 </body>
 </html>
