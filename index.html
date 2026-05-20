@@ -601,6 +601,30 @@
             border: 1px solid rgba(0, 229, 255, 0.3);
         }
         .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+                 /* --- DYNAMIC ORIGINAL SIZE PHOTO TOGGLE ON CLICK --- */
+        .post-media-slide img {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        /* Jab photo expanded state me hoga */
+        .post-media-container.expanded-original-size {
+            padding-top: 0 !important; /* Strict 4:3 hatane ke liye */
+            height: auto !important;
+            overflow: visible !important;
+            background: transparent !important;
+        }
+        .post-media-slide.expanded-original-size {
+            height: auto !important;
+        }
+        .post-media-slide img.expanded-original-size {
+            object-fit: contain !important;
+            height: auto !important;
+            max-height: none !important;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
     </style>
 </head>
 <body>
@@ -1618,6 +1642,28 @@
                 suggestionsBox.style.display = 'none';
             }
         });
+            // --- DYNAMIC CLICK EVENT FOR TOGGLING 4:3 AND ORIGINAL SIZE ---
+        document.body.addEventListener('click', (e) => {
+            // Check agar click post ke photo par hua hai
+            if (e.target && e.target.matches('.post-media-slide img')) {
+                const img = e.target;
+                const slide = img.closest('.post-media-slide');
+                const container = img.closest('.post-media-container');
+
+                if (img.classList.contains('expanded-original-size')) {
+                    // Agar pehle se bada hai to wapas 4:3 size me lane ke liye classes remove karenge
+                    img.classList.remove('expanded-original-size');
+                    if (slide) slide.classList.remove('expanded-original-size');
+                    if (container) container.classList.remove('expanded-original-size');
+                } else {
+                    // Agar 4:3 size me hai to use original size me badlenge
+                    img.classList.add('expanded-original-size');
+                    if (slide) slide.classList.add('expanded-original-size');
+                    if (container) container.classList.add('expanded-original-size');
+                }
+            }
+        });
+                    
     </script>
 </body>
 </html>
