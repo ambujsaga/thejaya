@@ -526,7 +526,25 @@
             width: 100%;
             height: 100%;
             object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+
+        /* --- NEW SAFE FULLSCREEN OVERLAY TRANSITION FOR ORIGINAL SIZE PREVIEW --- */
+        .post-media-slide img.original-size-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain !important;
+            background: rgba(2, 7, 18, 0.96) !important;
+            z-index: 99999 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
         .carousel-btn {
             position: absolute;
             top: 50%;
@@ -724,18 +742,17 @@
             <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
             
             <div class="upload-row">
-                <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
+                <label for="photoSelector" class="btn-upload-label">🖼️ Add Pics (Max 5)</label>
                 <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
                 <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
             </div>
             <div id="previewContainer" class="upload-preview-container"></div>
-            
+
             <div class="modal-actions-grid">
                 <div class="modal-top-buttons">
                     <button class="btn-primary" onclick="doPost()">Post Now</button>
                     <button class="btn-cancel" onclick="setPostModal(false)">Cancel</button>
                 </div>
-                
                 <div class="modal-bottom-buttons">
                     <button class="btn-paste" onclick="pasteText()">📋 Paste</button>
                     <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" class="ai-notes-link">
@@ -777,22 +794,23 @@
             }
         });
 
-        const conf = { 
-            apiKey: "AIzaSyCtedhm7TlywjRg3CNxk6Cq-lDm1Sm0Vak",
-  authDomain: "thejaya-ree.firebaseapp.com",
-  databaseURL: "https://thejaya-ree-default-rtdb.firebaseio.com",
-  projectId: "thejaya-ree",
-  storageBucket: "thejaya-ree.firebasestorage.app",
+        const conf = {
+            apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
+            authDomain: "the-jaya-by-ree.firebaseapp.com",
+            databaseURL: "https://the-jaya-by-ree-default-rtdb.firebaseio.com",
+            projectId: "the-jaya-by-ree",
+            storageBucket: "the-jaya-by-ree.firebasestorage.app",
         };
-        
+
         const app = initializeApp(conf);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
+
         let me = null;
 
         // Shuffle state tracking variables
-        let feedShuffleOrder = null; 
+        let feedShuffleOrder = null;
         let lastFetchedPostIds = "";
 
         // Global arrays to handle base64 image strings inside post creation
@@ -802,18 +820,21 @@
 
         // Optimized Loader Fix: Instantly hides after a tiny micro-delay instead of freezing for 3 seconds
         window.addEventListener('load', () => {
-            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 400);
+            setTimeout(() => {
+                document.getElementById('loader-screen').style.display = 'none';
+            }, 400);
         });
 
         window.pasteText = async () => {
             try {
                 const text = await navigator.clipboard.readText();
                 const input = document.getElementById('postInput');
-                input.value += text; input.focus();
+                input.value += text;
+                input.focus();
                 updateWordCount();
             } catch (err) {}
         };
-        
+
         window.toggleTheme = () => {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
@@ -822,760 +843,823 @@
 
         const timeAgo = (t) => {
             const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
-            if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
+            if(m < 1) return "Just now";
+            if(m < 60) return m+"m ago";
+            if(h < 24) return h+"h ago";
+            return day+"d ago";
         };
 
         const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
-        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
-        const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
-        const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
-        const iconEdit = '<svg class="edit-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 001-1V4a1 1 0 00-1-1H4a1 1 0 00-1 1v12a1 1 0 001 1zm8-11a1 1 0 110 2 1 1 0 010-2zm0 4a1 1 0 110 2 1 1 0 010-2zm0 4a1 1 0 110 2 1 1 0 010-2z"/></svg>';
 
-        const LINK_REGEX = /(https?:\/\/[^\s]+)/gi;
-
-        function extractLinks(text) {
-            return text.match(LINK_REGEX) || [];
+        function generateUniqueId() {
+            return btoa(Math.random().toString()).substring(10, 25).toLowerCase();
         }
 
-        onAuthStateChanged(auth, async (u) => {
-            if(u) {
-                const dSnap = await getDoc(doc(db, "users", u.uid));
-                if(dSnap.exists()) {
-                    me = dSnap.data();
-                    
-                    if(u.photoURL && me.pic !== u.photoURL) {
-                        me.pic = u.photoURL;
-                        await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
-                    }
-
-                    document.getElementById('main-app').style.display = 'block';
-                    document.getElementById('auth-section').style.display = 'none';
-                    navTo('home');
+        // Realtime User Synchronization Engine
+        function syncMe(uid) {
+            onSnapshot(doc(db, "users", uid), async (snap) => {
+                if (snap.exists()) {
+                    me = { uid, ...snap.data() };
+                    document.getElementById('head-pic').src = me.pic || defaultAvtr;
+                    buildRedTickUI();
                 } else {
-                    const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
-                    const finalPhoto = u.photoURL || defaultAvtr;
-                    await setDoc(doc(db, "users", u.uid), { 
-                        username: generatedUsername.toLowerCase().replace(/\s+/g,'').trim(), 
-                        uid: u.uid, 
-                        pic: finalPhoto, 
-                        email: u.email || "",
-                        lastChange: Date.now(),
-                        postsMade: 0,
-                        hasRedTick: false
-                    });
-                    location.reload();
+                    let dName = "user_" + uid.substring(0, 5);
+                    const defaultUserData = {
+                        username: dName.toLowerCase(),
+                        pic: defaultAvtr,
+                        starsGave: {},
+                        hasRedTick: false,
+                        starsCount: 0,
+                        postsCount: 0
+                    };
+                    await setDoc(doc(db, "users", uid), defaultUserData);
+                    me = { uid, ...defaultUserData };
+                    document.getElementById('head-pic').src = defaultAvtr;
+                    buildRedTickUI();
                 }
+            });
+        }
+
+        function buildRedTickUI() {
+            const container = document.getElementById('red-tick-controls');
+            if(!container) return;
+            container.innerHTML = '';
+            if(me) {
+                const btn = document.createElement('button');
+                btn.className = 'tick-toggle-btn';
+                if(me.hasRedTick) {
+                    btn.innerHTML = `Remove Red Verified Badge`;
+                    btn.style.background = 'rgba(255,255,255,0.05)';
+                    btn.style.color = 'var(--text-muted)';
+                    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+                } else {
+                    btn.innerHTML = `🌟 Get Red Verified Badge`;
+                }
+                btn.onclick = async () => {
+                    await updateDoc(doc(db, "users", me.uid), {
+                        hasRedTick: !me.hasRedTick
+                    });
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        onAuthStateChanged(auth, (u) => {
+            if (u) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                
+                const verifyBox = document.getElementById('verification-section');
+                const verifyStatusText = document.getElementById('verify-status-text');
+                if(u.providerData && u.providerData[0] && u.providerData[0].providerId === 'google.com') {
+                    if(verifyBox) verifyBox.style.display = 'block';
+                    if(verifyStatusText) verifyStatusText.innerText = "Account Securely Verified via Google";
+                } else {
+                    if(verifyBox) verifyBox.style.display = 'none';
+                }
+
+                syncMe(u.uid);
             } else {
-                document.getElementById('auth-section').style.display = 'block';
+                me = null;
                 document.getElementById('main-app').style.display = 'none';
+                document.getElementById('auth-section').style.display = 'block';
             }
         });
 
-        window.switchAuthTab = (tab) => {
-            if(tab === 'login') {
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('tab-signup').classList.remove('active');
-                document.getElementById('login-form').style.display = 'block';
-                document.getElementById('signup-form').style.display = 'none';
-            } else {
-                document.getElementById('tab-signup').classList.add('active');
-                document.getElementById('tab-login').classList.remove('active');
-                document.getElementById('signup-form').style.display = 'block';
-                document.getElementById('login-form').style.display = 'none';
-            }
+        window.switchAuthTab = (type) => {
+            document.getElementById('tab-login').classList.toggle('active', type==='login');
+            document.getElementById('tab-signup').classList.toggle('active', type==='signup');
+            document.getElementById('login-form').style.display = type==='login'?'block':'none';
+            document.getElementById('signup-form').style.display = type==='signup'?'block':'none';
         };
 
-        window.handleAuthSubmit = async (event, mode) => {
-            event.preventDefault();
-            
-            let uname = "", pass = "";
-            if(mode === 'login') {
-                uname = document.getElementById('login-username').value.toLowerCase().replace(/\s+/g,'').trim();
-                pass = document.getElementById('login-pass').value.trim();
-            } else {
-                uname = document.getElementById('signup-username').value.toLowerCase().replace(/\s+/g,'').trim();
-                pass = document.getElementById('signup-pass').value.trim();
-            }
+        window.handleAuthSubmit = async (e, type) => {
+            e.preventDefault();
+            const uName = document.getElementById(type+'-username').value.trim().toLowerCase();
+            const pass = document.getElementById(type+'-pass').value;
+            const fakeEmail = uName + "@thejaya.com";
 
-            if(!uname || !pass) {
-                alert("Please fill all fields!");
-                return;
-            }
-
-            const pseudoEmail = uname + "@thejaya.com";
-
-            if(mode === 'login') {
+            if (type === 'signup') {
                 try {
-                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
-                } catch (err) {
-                    if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
-                        alert("Invalid Username or Password!");
-                    } else {
-                        alert("Error: " + err.message);
-                    }
-                }
-            } else {
-                try {
-                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
-                    if(!checkSnap.empty) {
-                        alert("Username already taken! Please choose a unique one.");
-                        return;
-                    }
-
-                    const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pass);
+                    const qRes = await getDocs(query(collection(db, "users"), where("username", "==", uName)));
+                    if (!qRes.empty) return alert("Username already taken!");
+                    
+                    const cred = await createUserWithEmailAndPassword(auth, fakeEmail, pass);
                     await setDoc(doc(db, "users", cred.user.uid), {
-                        username: uname,
-                        uid: cred.user.uid,
-                        pic: defaultAvtr,
-                        email: pseudoEmail,
-                        lastChange: Date.now(),
-                        postsMade: 0,
-                        hasRedTick: false
+                        username: uName, pic: defaultAvtr, starsGave: {}, hasRedTick: false, starsCount: 0, postsCount: 0
                     });
-                    alert("Account Created successfully!");
-                    location.reload();
-                } catch (err) {
-                    if(err.code === "auth/email-already-in-use") {
-                        alert("Username already registered!");
-                    } else {
-                        alert("Signup Error: " + err.message);
-                    }
-                }
+                } catch (err) { alert(err.message); }
+            } else {
+                try {
+                    const qRes = await getDocs(query(collection(db, "users"), where("username", "==", uName)));
+                    if (qRes.empty) return alert("Username doesn't exist!");
+                    await signInWithEmailAndPassword(auth, fakeEmail, pass);
+                } catch (err) { alert("Invalid credentials!"); }
             }
         };
 
         window.loginWithGoogle = async () => {
             try {
-                const result = await signInWithPopup(auth, googleProvider);
-                const user = result.user;
-                const dSnap = await getDoc(doc(db, "users", user.uid));
-                
-                if(!dSnap.exists()) {
-                    let baseUsername = user.email ? user.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
-                    baseUsername = baseUsername.toLowerCase().replace(/\s+/g,'').trim();
-                    
-                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", baseUsername)));
-                    if(!checkSnap.empty) {
-                        baseUsername = baseUsername + Math.floor(Math.random() * 100);
-                    }
-
-                    await setDoc(doc(db, "users", user.uid), {
-                        username: baseUsername,
-                        uid: user.uid,
-                        pic: user.photoURL || defaultAvtr,
-                        email: user.email,
-                        lastChange: Date.now(),
-                        postsMade: 0,
-                        hasRedTick: false
-                    });
-                } else {
-                    await updateDoc(doc(db, "users", user.uid), {
-                        pic: user.photoURL || defaultAvtr,
-                        email: user.email
+                const res = await signInWithPopup(auth, googleProvider);
+                const u = res.user;
+                const userDocRef = doc(db, "users", u.uid);
+                const snap = await getDoc(userDocRef);
+                if (!snap.exists()) {
+                    let gName = (u.displayName ? u.displayName.replace(/\s+/g, '') : "googleuser").toLowerCase() + "_" + u.uid.substring(0,4);
+                    await setDoc(userDocRef, {
+                        username: gName,
+                        pic: u.photoURL || defaultAvtr,
+                        starsGave: {},
+                        hasRedTick: false,
+                        starsCount: 0,
+                        postsCount: 0
                     });
                 }
             } catch (err) {
-                alert("Google Sign-In Error: " + err.message);
+                alert("Google Sign-In failed: " + err.message);
             }
         };
 
-        window.showGuestFeed = () => {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            loadFeed("feed", null);
-        };
-        document.getElementById('guest-trigger').onclick = showGuestFeed;
+        window.logout = () => signOut(auth);
 
         window.requireLogin = (cb) => {
-            if(!auth.currentUser) {
-                alert("Authentication required!");
-                document.getElementById('main-app').style.display = 'none';
-                document.getElementById('auth-section').style.display = 'block';
-            } else cb();
+            if (!me) return alert("Please login or connect account to use this feature.");
+            cb();
         };
 
-        window.navTo = (v, isMe = true, other = null) => {
-            document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
-            document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
-            
-            if(auth.currentUser) {
-                document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
-            }
-
-            if(v === 'home') {
-                loadFeed("feed", null);
-            }
-            if(v === 'profile') {
-                const user = isMe ? me : other;
-                document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
-                
-                // Show Name and Red Tick if active
-                const tickDisplay = user.hasRedTick ? redTickSVG : '';
-                document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
-                
-                // Red Tick Toggle Controller
-                document.getElementById('red-tick-controls').innerHTML = '';
-
-                document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
-                
-                const verifySection = document.getElementById('verification-section');
-                if(isMe && auth.currentUser) {
-                    verifySection.style.display = 'block';
-                    const statusText = document.getElementById('verify-status-text');
-                    
-                    if(auth.currentUser.providerData.some(p => p.providerId === 'google.com')) {
-                        statusText.innerHTML = `✅ Google Connected (${user.email || auth.currentUser.email})`;
-                        statusText.style.color = "var(--primary)";
-                    } else {
-                        statusText.innerHTML = "🔗 Traditional Password Account";
-                        statusText.style.color = "var(--text-muted)";
-                    }
-                } else {
-                    verifySection.style.display = 'none';
-                }
-
-                loadFeed("u-feed", user.uid);
+        window.setPostModal = (show) => {
+            document.getElementById('post-modal').style.display = show ? 'flex' : 'none';
+            if (!show) {
+                document.getElementById('postInput').value = '';
+                selectedBase64Images = [];
+                document.getElementById('previewContainer').innerHTML = '';
+                updateWordCount();
             }
         };
 
-        window.toggleRedTick = async (uid, currentStatus) => {
-            if(!auth.currentUser) return;
-            const newStatus = !currentStatus;
-            
-            try {
-                await updateDoc(doc(db, "users", uid), { hasRedTick: newStatus });
-                
-                const q = query(collection(db, "posts"), where("uid", "==", uid));
-                const snap = await getDocs(q);
-                
-                const updatePromises = [];
-                snap.forEach((dSnap) => {
-                    updatePromises.push(updateDoc(doc(db, "posts", dSnap.id), { hasRedTick: newStatus }));
-                });
-                await Promise.all(updatePromises);
+        const postInput = document.getElementById('postInput');
+        const wordCountDisplay = document.getElementById('word-count');
 
-                if (me && me.uid === uid) {
-                    me.hasRedTick = newStatus;
-                }
-                
-                const updatedUserSnap = await getDoc(doc(db, "users", uid));
-                if(updatedUserSnap.exists()) {
-                    navTo('profile', me && me.uid === uid, updatedUserSnap.data());
-                }
-            } catch(err) {
-                alert("Error modifying Red Tick: " + err.message);
+        function updateWordCount() {
+            if(!postInput || !wordCountDisplay) return;
+            let currentLen = postInput.value.length;
+            wordCountDisplay.innerText = `${currentLen} / 110`;
+            if(currentLen > 110) {
+                wordCountDisplay.style.color = 'var(--red)';
+            } else {
+                wordCountDisplay.style.color = 'var(--text-muted)';
             }
-        };
-
-        // Fisher-Yates Shuffle Algorithm
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
         }
 
-        // Image Handling Mechanics (Compressed < 1MB & Select Preview Tracker)
-        window.handleModalImagesSelect = (inputField) => {
-            const files = Array.from(inputField.files);
-            if (files.length > 5) {
-                alert("Maximum 5 photos can be uploaded at a time!");
-                inputField.value = "";
-                return;
-            }
-            selectedBase64Images = [];
-            const previewContainer = document.getElementById("previewContainer");
-            previewContainer.innerHTML = "";
+        if(postInput) {
+            postInput.addEventListener('input', updateWordCount);
+        }
 
-            files.forEach(file => {
+        // Compression Helper to keep base64 strings small inside database logs
+        function compressAndConvertToBase64(file) {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const tempImg = new Image();
-                    tempImg.src = e.target.result;
-                    tempImg.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        let width = tempImg.width;
-                        let height = tempImg.height;
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
                         
-                        // Downscale layout bounds if too massive
-                        const max_size = 1200;
+                        const max_size = 900; // Sharp look optimized resizing bound
                         if (width > height) {
-                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                            if (width > max_size) {
+                                height *= max_size / width;
+                                width = max_size;
+                            }
                         } else {
-                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                            if (height > max_size) {
+                                width *= max_size / height;
+                                height = max_size;
+                            }
                         }
-                        
                         canvas.width = width;
                         canvas.height = height;
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(tempImg, 0, 0, width, height);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Strict low quality compression parameters to stay well under 1MB threshold boundaries
-                        let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
-                        selectedBase64Images.push(compressedDataUrl);
-
-                        const wrp = document.createElement("div");
-                        wrp.className = "preview-img-wrapper";
-                        wrp.innerHTML = `<img src="${compressedDataUrl}">`;
-                        previewContainer.appendChild(wrp);
+                        // high speed compression rendering
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+                        resolve(dataUrl);
                     };
                 };
-                reader.readAsDataURL(file);
-            });
-        };
-
-        // Custom Safe Carousel Navigation Routine Engine
-        window.shiftCarousel = (postID, steps) => {
-            const slider = document.getElementById(`slider-${postID}`);
-            const counterLabel = document.getElementById(`counter-${postID}`);
-            if(!slider) return;
-            
-            const totalSlides = parseInt(slider.getAttribute("data-total") || "1");
-            let currentIndex = parseInt(slider.getAttribute("data-index") || "0");
-            
-            currentIndex += steps;
-            if(currentIndex < 0) currentIndex = 0;
-            if(currentIndex >= totalSlides) currentIndex = totalSlides - 1;
-            
-            slider.setAttribute("data-index", currentIndex);
-            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
-            if(counterLabel) {
-                counterLabel.innerText = `${currentIndex + 1} / ${totalSlides}`;
-            }
-        };
-
-        function loadFeed(divId, uid) {
-            let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
-                        : query(collection(db, "posts"), orderBy("time", "desc"));
-
-            onSnapshot(q, (s) => {
-                const div = document.getElementById(divId); 
-                div.innerHTML = "";
-                // Optimization: Fragment batch DOM updates
-                const fragment = document.createDocumentFragment();
-                let stars = 0, posts = 0;
-                
-                let rawPosts = [];
-                let currentSnapshotIds = "";
-
-                s.forEach(d => {
-                    const postData = d.data();
-                    rawPosts.push({ id: d.id, ...postData });
-                    currentSnapshotIds += d.id + ",";
-                });
-
-                let finalPostsToRender = [];
-
-                if (uid) {
-                    finalPostsToRender = rawPosts;
-                    rawPosts.forEach(p => {
-                        stars += (p.stars?.length || 0);
-                        posts++;
-                    });
-                } else {
-                    const fourteenDaysAgo = Date.now() - 1209600000;
-                    let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
-
-                    const fifteenMinsAgo = Date.now() - 900000; 
-                    let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
-                    let poolToShuffle = activeFeedPosts.filter(p => p.time < fifteenMinsAgo);
-
-                    if (feedShuffleOrder === null || currentSnapshotIds !== lastFetchedPostIds) {
-                        lastFetchedPostIds = currentSnapshotIds;
-                        poolToShuffle = shuffleArray(poolToShuffle);
-                        feedShuffleOrder = poolToShuffle.map(p => p.id);
-                    } else {
-                        let mapOrder = {};
-                        poolToShuffle.forEach(p => { mapOrder[p.id] = p; });
-                        
-                        let reorderedPool = [];
-                        feedShuffleOrder.forEach(savedId => {
-                            if (mapOrder[savedId]) {
-                                reorderedPool.push(mapOrder[savedId]);
-                                delete mapOrder[savedId];
-                            }
-                        });
-                        Object.values(mapOrder).forEach(leftOver => {
-                            reorderedPool.push(leftOver);
-                        });
-                        poolToShuffle = reorderedPool;
-                    }
-
-                    finalPostsToRender = [...stickyPosts, ...poolToShuffle];
-                }
-
-                finalPostsToRender.forEach(p => {
-                    const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
-                    const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
-                    const isEditable = (auth.currentUser && auth.currentUser.uid === p.uid && (Date.now() - p.time < 3600000));
-                    
-                    let linksHtml = '';
-                    if (p.links && p.links.length > 0) {
-                        linksHtml = `<div class="post-links-wrapper">`;
-                        p.links.forEach(linkUrl => {
-                            linksHtml += `<a href="${linkUrl}" target="_blank" class="post-link-icon-btn" title="${linkUrl}">🔗</a>`;
-                        });
-                        linksHtml += `</div>`;
-                    }
-                    
-                    const postRedTick = p.hasRedTick ? redTickSVG : '';
-
-                    // 4:3 Carousel Generator System Injection
-                    let imagesHtml = "";
-                    if (p.images && p.images.length > 0) {
-                        const count = p.images.length;
-                        imagesHtml += `<div class="post-media-container">`;
-                        
-                        if(count > 1) {
-                            imagesHtml += `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${p.id}', -1)">❮</div>`;
-                            imagesHtml += `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${p.id}', 1)">❯</div>`;
-                            imagesHtml += `<div id="counter-${p.id}" class="carousel-counter">1 / ${count}</div>`;
-                        } else {
-                            imagesHtml += `<div class="carousel-counter">1 / 1</div>`;
-                        }
-                        
-                        imagesHtml += `<div id="slider-${p.id}" class="post-media-slider" data-index="0" data-total="${count}">`;
-                        p.images.forEach(imgBase64 => {
-                            imagesHtml += `<div class="post-media-slide"><img src="${imgBase64}" onerror="this.parentNode.style.display='none'"></div>`;
-                        });
-                        imagesHtml += `</div></div>`;
-                    }
-
-                    const el = document.createElement('div');
-                    el.className = 'card';
-                    el.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
-                            <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
-                            <div class="user-info">
-                                <div style="display:flex; align-items:center;">
-                                    <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer; display:flex; align-items:center;">@${p.username || 'user'}${postRedTick}</strong>
-                                </div>
-                                <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
-                            </div>
-                            <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
-                                ${isEditable ? `<div onclick="editPost('${p.id}', '${p.text.replace(/'/g, "\\'")}')" style="cursor:pointer;">${iconEdit}</div>` : ''}
-                                ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${p.id}')" style="cursor:pointer;">${iconDelete}</div>` : ''}
-                            </div>
-                        </div>
-                        <p style="margin: 0; line-height:1.5;">${p.text}</p>
-                        ${imagesHtml}
-                        ${linksHtml}
-                        <div class="action-bar">
-                            <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
-                                ${iconStar} ${p.stars?.length || 0}
-                            </span>
-                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${p.id}'))">
-                                ${iconComment} ${p.comments?.length || 0}
-                            </span>
-                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
-                                ${iconShare} Share
-                            </span>
-                        </div>
-                        <div id="drawer-${p.id}" class="comment-drawer">
-                            <div id="list-${p.id}">${(p.comments || []).map((c, i) => `
-                                <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${c.msg}</span>
-                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${p.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
-                                </div>`).join('')}</div>
-                            <div style="display:flex; gap:8px; margin-top:15px;">
-                                <input id="in-${p.id}" placeholder="Reply...">
-                                <button onclick="addCom('${p.id}')" class="btn-primary" style="width:auto;">Send</button>
-                            </div>
-                        </div>
-                    `;
-                    fragment.appendChild(el);
-                });
-                // Render all posts at once
-                div.appendChild(fragment);
-                
-                if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
             });
         }
 
-        window.starIt = async (id, has) => { 
-            if(!auth.currentUser) { alert("Please login first!"); return; }
-            
-            if (!has && window.event) {
-                const e = window.event;
-                const clickX = e.clientX;
-                const clickY = e.clientY;
-                
-                for (let i = 0; i < 10; i++) {
-                    const p = document.createElement('div');
-                    p.className = 'star-particle';
-                    p.innerText = '★';
-                    p.style.left = clickX + 'px';
-                    p.style.top = clickY + 'px';
-                    
-                    const angle = Math.random() * Math.PI * 2;
-                    const distance = 30 + Math.random() * 50; 
-                    const x = Math.cos(angle) * distance;
-                    const y = Math.sin(angle) * distance;
-                    const rotation = Math.random() * 360;
-                    
-                    p.style.setProperty('--x', `${x}px`);
-                    p.style.setProperty('--y', `${y}px`);
-                    p.style.setProperty('--r', `${rotation}deg`);
-                    
-                    document.body.appendChild(p);
-                    setTimeout(() => p.remove(), 600);
-                }
+        window.handleModalImagesSelect = async (input) => {
+            const files = Array.from(input.files);
+            if((selectedBase64Images.length + files.length) > 5) {
+                alert("You can select up to 5 photos only!");
+                input.value = '';
+                return;
             }
-            
-            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
-        };
 
-        window.checkEditUsername = async () => {
-            const now = Date.now();
-            if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days! or Use this link to make the change immediately.    https://thejaya.vercel.app/username.html"); return; }
-            let newU = prompt("New username:");
-            if(newU) { 
-                newU = newU.toLowerCase().replace(/\s+/g,'');
-                const q = query(collection(db, "users"), where("username", "==", newU));
-                const querySnapshot = await getDocs(q);
-                if(!querySnapshot.empty) { alert("Username already taken!"); return; }
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); 
+            const previewContainer = document.getElementById('previewContainer');
+            
+            for(let file of files) {
+                const b64Str = await compressAndConvertToBase64(file);
+                selectedBase64Images.push(b64Str);
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-img-wrapper';
+                wrapper.innerHTML = `<img src="${b64Str}">`;
+                previewContainer.appendChild(wrapper);
             }
+            input.value = '';
         };
 
         window.doPost = async () => {
-            const originalInputText = document.getElementById('postInput').value;
-            // Prevent execution if both text content and media bundles are completely absent
-            if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
+            const txt = document.getElementById('postInput').value.trim();
+            if (!txt && selectedBase64Images.length === 0) return alert("Write something or add a photo!");
+            if (txt.length > 110) return alert("Post content exceeds max limit of 110 characters!");
 
-            const detectedLinks = extractLinks(originalInputText);
-
-            if (detectedLinks.length > 4) {
-                alert("Maximum 4 links allowed per post!");
-                return;
-            }
-
-            let cleanedText = originalInputText;
-            detectedLinks.forEach(linkUrl => {
-                cleanedText = cleanedText.replace(linkUrl, '');
-            });
-            cleanedText = cleanedText.trim();
-
-            if (!cleanedText && detectedLinks.length > 0) {
-                cleanedText = "Shared Links:";
-            }
-
-            // Using localStorage exclusively to track and trigger the first post auto-comment feature
-            const postCountKey = "posts_count_" + auth.currentUser.uid;
-            let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
-            let triggerBotComment = false;
-
-            if (currentPostsCount === 0) {
-                triggerBotComment = true;
-                currentPostsCount = 1;
-                localStorage.setItem(postCountKey, currentPostsCount);
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
-                if(me) me.postsMade = currentPostsCount;
-            }
-
-            const postDocData = { 
-                text: cleanedText, 
-                links: detectedLinks,
-                images: selectedBase64Images, // Inserted safe payload images array
-                username: me.username || 'user', 
-                pic: me.pic || defaultAvtr, 
-                uid: auth.currentUser.uid, 
-                stars: [], 
-                comments: [], 
-                time: Date.now(), 
-                edited: false,
-                hasRedTick: me.hasRedTick || false 
-            };
-
-            const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
-
-            // Trigger Bot Welcome Comment sequence on first post only
-            if (triggerBotComment) {
-                setTimeout(async () => {
-                    await updateDoc(doc(db, "posts", createdPostRef.id), { 
-                        comments: arrayUnion({ 
-                            uid: "thejaya_system_bot", 
-                            user: "TheJayaBot", 
-                            msg: `Welcome @${me.username || 'user'} to the platform! Let's boost this incredible first vibe crew! 🚀🔥` 
-                        }) 
-                    });
-                }, 800);
-            }
-
-            // Reset upload arrays and inputs securely
-            document.getElementById('postInput').value = ""; 
-            document.getElementById('photoSelector').value = "";
-            document.getElementById('previewContainer').innerHTML = "";
-            selectedBase64Images = [];
-            setPostModal(false);
-        };
-
-        window.editPost = async (id, oldText) => {
-            let newText = prompt("Edit your post:", oldText);
-            if(newText === null) return; 
-            if(!newText.trim()) { alert("Post cannot be empty!"); return; }
-            
-            const detectedLinks = extractLinks(newText);
-            if (detectedLinks.length > 4) {
-                alert("Maximum 4 links allowed per post!");
-                return;
-            }
-
-            let cleanedEditText = newText;
-            detectedLinks.forEach(linkUrl => {
-                cleanedEditText = cleanedEditText.replace(linkUrl, '');
-            });
-            cleanedEditText = cleanedEditText.trim();
-
-            if (!cleanedEditText && detectedLinks.length > 0) {
-                cleanedEditText = "Shared Links:";
-            }
-
-            const words = cleanedEditText.match(/\S+/g) || [];
-            if(words.length > WORD_LIMIT) {
-                cleanedEditText = cleanedEditText.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
-                alert(`Post trimmed to ${WORD_LIMIT} words limit.`);
-            }
+            // Regex engine extraction pattern for dynamic URL parsing
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const extractedUrls = txt.match(urlRegex) || [];
 
             try {
-                await updateDoc(doc(db, "posts", id), {
-                    text: cleanedEditText,
-                    links: detectedLinks,
-                    edited: true
+                await addDoc(collection(db, "posts"), {
+                    uid: me.uid,
+                    username: me.username,
+                    txt,
+                    images: selectedBase64Images, // array containing upto 5 items
+                    links: extractedUrls,
+                    time: Date.now(),
+                    stars: 0,
+                    starMap: {},
+                    comments: []
                 });
-            } catch (err) {
-                alert("Error updating post: " + err.message);
+
+                const mySnap = await getDoc(doc(db, "users", me.uid));
+                let currentPostsCount = (mySnap.exists() && mySnap.data().postsCount) ? mySnap.data().postsCount : 0;
+                await updateDoc(doc(db, "users", me.uid), {
+                    postsCount: currentPostsCount + 1
+                });
+
+                setPostModal(false);
+            } catch (err) { alert(err.message); }
+        };
+
+        // Star click explosion particle routine
+        function spawnStarExplosion(e) {
+            const rect = e.target.getBoundingClientRect();
+            const originX = rect.left + rect.width / 2;
+            const originY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 10; i++) {
+                const p = document.createElement('div');
+                p.className = 'star-particle';
+                p.innerText = '★';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 40 + Math.random() * 60;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                const r = Math.floor(Math.random() * 360) + 'deg';
+
+                p.style.setProperty('--x', `${x}px`);
+                p.style.setProperty('--y', `${y}px`);
+                p.style.setProperty('--r', r);
+                p.style.left = `${originX}px`;
+                p.style.top = `${originY}px`;
+
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+
+        window.toggleStar = async (pid, element) => {
+            if (!me) return alert("Please log in to star posts!");
+            
+            spawnStarExplosion(element);
+
+            const pRef = doc(db, "posts", pid);
+            const snap = await getDoc(pRef);
+            if (!snap.exists()) return;
+            
+            const data = snap.data();
+            let sm = data.starMap || {};
+            let currentStars = data.stars || 0;
+            let postOwnerUid = data.uid;
+
+            const uSnap = await getDoc(doc(db, "users", postOwnerUid));
+            let ownerStarsCount = (uSnap.exists() && uSnap.data().starsCount) ? uSnap.data().starsCount : 0;
+
+            if (sm[me.uid]) {
+                delete sm[me.uid];
+                currentStars = Math.max(0, currentStars - 1);
+                ownerStarsCount = Math.max(0, ownerStarsCount - 1);
+            } else {
+                sm[me.uid] = true;
+                currentStars += 1;
+                ownerStarsCount += 1;
+            }
+
+            await updateDoc(pRef, { stars: currentStars, starMap: sm });
+            await updateDoc(doc(db, "users", postOwnerUid), {
+                starsCount: ownerStarsCount
+            });
+        };
+
+        window.toggleComments = (pid) => {
+            const dr = document.getElementById('comments-'+pid);
+            dr.style.display = dr.style.display === 'block' ? 'none' : 'block';
+        };
+
+        window.addComment = async (pid) => {
+            if (!me) return alert("Please log in to add comments!");
+            const inp = document.getElementById('ci-'+pid);
+            const val = inp.value.trim();
+            if (!val) return;
+            
+            const pRef = doc(db, "posts", pid);
+            await updateDoc(pRef, {
+                comments: arrayUnion({ uid: me.uid, username: me.username, txt: val, time: Date.now() })
+            });
+            inp.value = '';
+        };
+
+        window.deletePost = async (pid, ownerUid) => {
+            if(!me || me.uid !== ownerUid) return alert("Unauthorized access!");
+            if(confirm("Are you sure you want to delete this post permanently?")) {
+                try {
+                    await deleteDoc(doc(db, "posts", pid));
+                    const mySnap = await getDoc(doc(db, "users", me.uid));
+                    let currentPostsCount = (mySnap.exists() && mySnap.data().postsCount) ? mySnap.data().postsCount : 1;
+                    await updateDoc(doc(db, "users", me.uid), {
+                        postsCount: Math.max(0, currentPostsCount - 1)
+                    });
+                } catch(e) {
+                    alert("Error deleting post.");
+                }
             }
         };
 
-        window.addCom = async (id) => {
-            const i = document.getElementById('in-'+id);
-            if(!i.value.trim()) return;
-            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username || 'user', msg: i.value }) });
-            i.value = "";
+        window.deleteComment = async (pid, commentObj) => {
+            if(!me || me.uid !== commentObj.uid) return alert("Unauthorized access!");
+            if(confirm("Delete comment?")) {
+                try {
+                    const pRef = doc(db, "posts", pid);
+                    await updateDoc(pRef, {
+                        comments: arrayRemove(commentObj)
+                    });
+                } catch(e) {
+                    alert("Error deleting comment.");
+                }
+            }
         };
 
-        window.getCom = async (pid, idx) => {
-            const r = doc(db, "posts", pid); const s = await getDoc(r);
-            let c = s.data().comments; c.splice(idx, 1);
-            await updateDoc(r, { comments: c });
+        // Global Post Render Loop
+        function makePostCard(docId, p, userMap) {
+            const activeStar = (me && p.starMap && p.starMap[me.uid]) ? 'style="color:var(--primary); font-weight:bold;"' : '';
+            const commentsList = (p.comments || []).map(c => {
+                const commentDelBtn = (me && me.uid === c.uid) ? `<span style="color:var(--red); font-size:11px; cursor:pointer; margin-left:10px;" class="comment-del-trigger">Delete</span>` : '';
+                
+                const cUserData = userMap[c.uid] || {};
+                const cUserRedTick = cUserData.hasRedTick ? redTickSVG : '';
+
+                return `<div style="border-bottom:1px solid rgba(255,255,255,0.03); padding:8px 0; font-size:13px;" data-pid="${docId}" data-time="${c.time}">
+                    <strong style="cursor:pointer; display:inline-flex; align-items:center;" class="profile-nav-trigger" data-username="${c.username}">@${c.username}${cUserRedTick}</strong>: 
+                    <span style="color:var(--text-main); word-break:break-word;">${c.txt}</span>
+                    ${commentDelBtn}
+                </div>`;
+            }).join('');
+
+            const isMyPost = (me && me.uid === p.uid);
+            const deletePostActionBtn = isMyPost ? `<button class="action-btn post-delete-trigger" data-pid="${docId}" data-owner="${p.uid}" style="margin-left:auto; color:var(--red);"><svg class="del-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
+            const editPostActionBtn = isMyPost ? `<button class="action-btn post-edit-trigger" data-pid="${docId}" style="color:var(--primary); margin-left:10px;"><svg class="edit-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : '';
+
+            const uData = userMap[p.uid] || {};
+            const uPic = uData.pic || defaultAvtr;
+            const hasRedTick = uData.hasRedTick ? redTickSVG : '';
+
+            // Enhanced Dynamic Media Presentation Architecture (Aspect Ratio 4:3 Carousel Framework)
+            let mediaSectionHtml = '';
+            if(p.images && p.images.length > 0) {
+                let slidesHtml = p.images.map(imgStr => `
+                    <div class="post-media-slide">
+                        <img src="${imgStr}" alt="Post Photo">
+                    </div>
+                `).join('');
+
+                let prevBtnHtml = p.images.length > 1 ? `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${docId}', -1)">&#10094;</div>` : '';
+                let nextBtnHtml = p.images.length > 1 ? `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${docId}', 1)">&#10095;</div>` : '';
+                let counterHtml = p.images.length > 1 ? `<div class="carousel-counter" id="counter-${docId}">1 / ${p.images.length}</div>` : '';
+
+                mediaSectionHtml = `
+                    <div class="post-media-container" id="carousel-container-${docId}">
+                        <div class="post-media-slider" id="slider-${docId}" data-current-index="0" data-total-slides="${p.images.length}">
+                            ${slidesHtml}
+                        </div>
+                        ${prevBtnHtml}
+                        ${nextBtnHtml}
+                        ${counterHtml}
+                    </div>
+                `;
+            }
+
+            // Enhanced Dynamic Clickable Icon Links System Presentation Generation Logic
+            let linksSectionHtml = '';
+            if(p.links && p.links.length > 0) {
+                let dynamicIconLinksButtons = p.links.map(linkUrl => {
+                    let domainStr = "Link";
+                    try {
+                        let parsedUrlObj = new URL(linkUrl);
+                        domainStr = parsedUrlObj.hostname.replace('www.', '');
+                        if(domainStr.length > 18) domainStr = domainStr.substring(0, 15) + '...';
+                    } catch(urlErr){}
+                    
+                    return `
+                        <a href="${linkUrl}" target="_blank" class="post-link-icon-btn" title="${linkUrl}">
+                            🔗
+                        </a>
+                    `;
+                }).join('');
+
+                linksSectionHtml = `<div class="post-links-wrapper">${dynamicIconLinksButtons}</div>`;
+            }
+
+            // Detection matching framework targeting hashtags
+            let beautifullyFormattedText = p.txt || '';
+            beautifullyFormattedText = beautifullyFormattedText.replace(/(#[^\s#]+)/g, `<span style="color:var(--primary); font-weight:600;">$1</span>`);
+
+            return `
+            <div class="card" style="margin-bottom:20px;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <img src="${uPic}" class="p-pic profile-nav-trigger" data-uid="${p.uid}" data-username="${p.username}" style="cursor:pointer;">
+                    <div class="user-info">
+                        <strong style="cursor:pointer; display:flex; align-items:center;" class="profile-nav-trigger" data-uid="${p.uid}" data-username="${p.username}">@${p.username}${hasRedTick}</strong>
+                        <span class="post-time">${timeAgo(p.time)}</span>
+                    </div>
+                    ${editPostActionBtn}
+                    ${deletePostActionBtn}
+                </div>
+                <p style="margin:12px 0 6px 0; font-size:15px; line-height:1.4;">${beautifulFormattedText}</p>
+                ${linksSectionHtml}
+                ${mediaSectionHtml}
+                <div class="action-bar">
+                    <button class="action-btn post-star-trigger" data-pid="${docId}" ${activeStar}>${iconStar} <span>${p.stars || 0}</span></button>
+                    <button class="action-btn post-comments-toggle" data-pid="${docId}">${iconComment} <span>${p.comments ? p.comments.length : 0}</span></button>
+                </div>
+                <div id="comments-${docId}" class="comment-drawer">
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <input type="text" id="ci-${docId}" placeholder="Write a comment..." style="margin:0; padding:8px 12px; font-size:13px;">
+                        <button class="btn-primary post-comment-submit" data-pid="${docId}" style="width:auto; padding:0 15px; font-size:13px;">Send</button>
+                    </div>
+                    <div id="cl-${docId}">${commentsList}</div>
+                </div>
+            </div>`;
+        }
+
+        // Core Image Slider Mechanics Shifting Framework Engine Router Routine
+        window.shiftCarousel = (docId, direction) => {
+            const slider = document.getElementById(`slider-${docId}`);
+            if(!slider) return;
+            
+            let currentIndex = parseInt(slider.getAttribute('data-current-index') || '0');
+            let totalSlides = parseInt(slider.getAttribute('data-total-slides') || '1');
+            
+            currentIndex += direction;
+            
+            if(currentIndex < 0) currentIndex = totalSlides - 1;
+            if(currentIndex >= totalSlides) currentIndex = 0;
+            
+            slider.setAttribute('data-current-index', currentIndex);
+            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+            
+            const counter = document.getElementById(`counter-${docId}`);
+            if(counter) {
+                counter.innerText = `${currentIndex + 1} / ${totalSlides}`;
+            }
         };
 
-        window.findUser = async () => {
-            let qStr = document.getElementById('sq').value;
-            if(!qStr || !qStr.trim()) return;
-            qStr = qStr.toLowerCase().trim();
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
-            if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
+        // Realtime Global Posts Query Hub Architecture
+        function startRealtimeFeeds() {
+            const q = query(collection(db, "posts"), orderBy("time", "desc"));
+            onSnapshot(q, async (snapshot) => {
+                const postsData = [];
+                const uidsNeeded = new Set();
+                
+                let currentBatchPostIds = "";
+
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    postsData.push({ id: doc.id, ...d });
+                    if(d.uid) uidsNeeded.add(d.uid);
+                    if(d.comments) {
+                        d.comments.forEach(c => { if(c.uid) uidsNeeded.add(c.uid); });
+                    }
+                    currentBatchPostIds += doc.id + "_";
+                });
+
+                // Fetch details of users inside user log map block
+                const userMap = {};
+                if(uidsNeeded.size > 0) {
+                    const userQueries = Array.from(uidsNeeded).map(uid => getDoc(doc(db, "users", uid)));
+                    const userSnaps = await Promise.all(userQueries);
+                    userSnaps.forEach(snap => {
+                        if(snap.exists()) {
+                            userMap[snap.id] = snap.data();
+                        }
+                    });
+                }
+
+                // Shuffle protection framework setup logs algorithm logic verification check
+                if(lastFetchedPostIds !== currentBatchPostIds || !feedShuffleOrder) {
+                    lastFetchedPostIds = currentBatchPostIds;
+                    feedShuffleOrder = postsData.map((_, idx) => idx);
+                    for (let i = feedShuffleOrder.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [feedShuffleOrder[i], feedShuffleOrder[j]] = [feedShuffleOrder[j], feedShuffleOrder[i]];
+                    }
+                }
+
+                // Render dynamic feed logic
+                const feedContainer = document.getElementById('feed');
+                if(feedContainer) {
+                    let finalFeedHtml = "";
+                    feedShuffleOrder.forEach(originalIndex => {
+                        const p = postsData[originalIndex];
+                        if(p) {
+                            finalFeedHtml += makePostCard(p.id, p, userMap);
+                        }
+                    });
+                    feedContainer.innerHTML = finalFeedHtml;
+                }
+
+                // Render profile posts list view block data logic
+                renderProfileFeed(postsData, userMap);
+            });
+        }
+
+        function renderProfileFeed(allPosts, userMap) {
+            const uFeed = document.getElementById('u-feed');
+            if(!uFeed || document.getElementById('profile-view').style.display === 'none') return;
+            
+            let targetUid = uFeed.getAttribute('data-target-uid');
+            if(!targetUid && me) targetUid = me.uid;
+            if(!targetUid) return;
+
+            const filtered = allPosts.filter(p => p.uid === targetUid).sort((a,b) => b.time - a.time);
+            
+            let html = "";
+            filtered.forEach(p => {
+                html += makePostCard(p.id, p, userMap);
+            });
+            uFeed.innerHTML = html || '<p style="text-align:center; color:var(--text-muted); padding:20px;">No posts yet.</p>';
+        }
+
+        // Globalized Dynamic Router System Controller Core Engine Setup Handler UI
+        window.navTo = async (view, isOwnProfile = true, targetUserObj = null) => {
+            const searchRow = document.getElementById('search-row');
+            if(searchRow) searchRow.style.display = 'none';
+
+            if (view === 'home') {
+                document.getElementById('home-view').style.display = 'block';
+                document.getElementById('profile-view').style.display = 'none';
+                window.scrollTo(0,0);
+            } else if (view === 'profile') {
+                document.getElementById('home-view').style.display = 'none';
+                document.getElementById('profile-view').style.display = 'block';
+                window.scrollTo(0,0);
+
+                const uFeed = document.getElementById('u-feed');
+
+                if (isOwnProfile && me) {
+                    uFeed.removeAttribute('data-target-uid');
+                    document.getElementById('u-img').src = me.pic || defaultAvtr;
+                    document.getElementById('u-name').innerHTML = `@${me.username}${me.hasRedTick ? redTickSVG : ''}`;
+                    document.getElementById('my-controls').style.display = 'block';
+                    
+                    document.getElementById('s-stars').innerText = me.starsCount || 0;
+                    document.getElementById('s-posts').innerText = me.postsCount || 0;
+
+                } else if (targetUserObj) {
+                    uFeed.setAttribute('data-target-uid', targetUserObj.uid);
+                    document.getElementById('u-img').src = targetUserObj.pic || defaultAvtr;
+                    document.getElementById('u-name').innerHTML = `@${targetUserObj.username}${targetUserObj.hasRedTick ? redTickSVG : ''}`;
+                    document.getElementById('my-controls').style.display = 'none';
+
+                    document.getElementById('s-stars').innerText = targetUserObj.starsCount || 0;
+                    document.getElementById('s-posts').innerText = targetUserObj.postsCount || 0;
+                }
+                
+                // Triggers immediate user view profile synchronization loop pipeline
+                const qDocs = await getDocs(query(collection(db, "posts"), orderBy("time", "desc")));
+                const postsData = [];
+                const uids = new Set();
+                qDocs.forEach(d => {
+                    const p = d.data();
+                    postsData.push({id: d.id, ...p});
+                    if(p.uid) uids.add(p.uid);
+                });
+                const userMap = {};
+                if(uids.size > 0) {
+                    const snaps = await Promise.all(Array.from(uids).map(id => getDoc(doc(db, "users", id))));
+                    snaps.forEach(s => { if(s.exists()) userMap[s.id] = s.data(); });
+                }
+                renderProfileFeed(postsData, userMap);
+            }
         };
 
-        window.findUserByUname = async (un) => {
-            if(!un) return;
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", un.toLowerCase().trim())));
-            if(!s.empty) navTo('profile', false, s.docs[0].data());
-        };
+        // Click delegation orchestration setup
+        document.addEventListener('click', async (e) => {
+            const trigger = e.target.closest('.profile-nav-trigger');
+            if(trigger) {
+                e.preventDefault();
+                const uid = trigger.getAttribute('data-uid');
+                const username = trigger.getAttribute('data-username');
+                
+                if(me && uid === me.uid) {
+                    navTo('profile', true);
+                    return;
+                }
 
-        window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
-        
-        window.toggleSearch = () => { 
-            const r = document.getElementById('search-row'); 
-            const box = document.getElementById('search-suggestions-box');
-            if(r.style.display === 'block') {
-                r.style.display = 'none';
-                box.style.display = 'none';
-                box.innerHTML = '';
+                if(uid) {
+                    const snap = await getDoc(doc(db, "users", uid));
+                    if(snap.exists()) {
+                        navTo('profile', false, { uid, ...snap.data() });
+                    }
+                } else if(username) {
+                    const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                    const res = await getDocs(q);
+                    if(!res.empty) {
+                        const snap = res.docs[0];
+                        navTo('profile', false, { uid: snap.id, ...snap.data() });
+                    }
+                }
+                return;
+            }
+
+            const starTrigger = e.target.closest('.post-star-trigger');
+            if(starTrigger) {
+                const pid = starTrigger.getAttribute('data-pid');
+                toggleStar(pid, e);
+                return;
+            }
+
+            const commentsToggle = e.target.closest('.post-comments-toggle');
+            if(commentsToggle) {
+                const pid = commentsToggle.getAttribute('data-pid');
+                toggleComments(pid);
+                return;
+            }
+
+            const commentSubmit = e.target.closest('.post-comment-submit');
+            if(commentSubmit) {
+                const pid = commentSubmit.getAttribute('data-pid');
+                addComment(pid);
+                return;
+            }
+
+            const postDeleteTrigger = e.target.closest('.post-delete-trigger');
+            if(postDeleteTrigger) {
+                const pid = postDeleteTrigger.getAttribute('data-pid');
+                const owner = postDeleteTrigger.getAttribute('data-owner');
+                deletePost(pid, owner);
+                return;
+            }
+
+            const commentDelTrigger = e.target.closest('.comment-del-trigger');
+            if(commentDelTrigger) {
+                const cDiv = commentDelTrigger.closest('[data-pid]');
+                const pid = cDiv.getAttribute('data-pid');
+                const time = parseInt(cDiv.getAttribute('data-time'));
+                const username = cDiv.querySelector('.profile-nav-trigger').getAttribute('data-username');
+                
+                deleteComment(pid, { uid: me.uid, username, time });
+                return;
+            }
+
+            const postEditTrigger = e.target.closest('.post-edit-trigger');
+            if(postEditTrigger) {
+                const pid = postEditTrigger.getAttribute('data-pid');
+                const pRef = doc(db, "posts", pid);
+                const snap = await getDoc(pRef);
+                if(snap.exists() && snap.data().uid === me.uid) {
+                    const currentTxt = snap.data().txt || "";
+                    const newTxt = prompt("Edit your post text content description:", currentTxt);
+                    if(newTxt !== null) {
+                        if(newTxt.trim().length > 110) {
+                            alert("Post content exceeds max limit of 110 characters!");
+                            return;
+                        }
+                        await updateDoc(pRef, { txt: newTxt.trim() });
+                    }
+                }
+                return;
+            }
+        });
+
+        // Search engine core controller methods routines
+        window.toggleSearch = () => {
+            const row = document.getElementById('search-row');
+            if(!row) return;
+            if(row.style.display === 'block') {
+                row.style.display = 'none';
             } else {
-                r.style.display = 'block';
+                row.style.display = 'block';
                 document.getElementById('sq').focus();
             }
         };
 
-        window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
-        
-        window.setPostModal = (s) => {
-            document.getElementById('post-modal').style.display = s?'flex':'none';
-            if(!s) {
-                // Clear states when modal closing
-                document.getElementById('postInput').value = "";
-                document.getElementById('photoSelector').value = "";
-                document.getElementById('previewContainer').innerHTML = "";
-                selectedBase64Images = [];
-                updateWordCount();
-            }
-        };
-        
-        window.sharePost = async (text, username) => {
-            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
-            const shareUrl = window.location.href;
-            if (navigator.share) {
-                try { await navigator.share({ title: 'The Jaya Post', text: shareText, url: shareUrl }); } catch (err) {}
-            } else {
-                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                alert("Link & Text copied!");
-            }
-        };
-
-        window.logout = () => { signOut(auth); location.reload(); };
-
-        const postInput = document.getElementById('postInput');
-        const wordCountDisplay = document.getElementById('word-count');
-        const WORD_LIMIT = 110;
-
-        const updateWordCount = () => {
-            const val = postInput.value;
+        window.findUser = async () => {
+            const qVal = document.getElementById('sq').value.trim().toLowerCase();
+            if(!qVal) return;
             
-            const linksInText = extractLinks(val);
-            let filteredTextForCounter = val;
-            linksInText.forEach(lk => {
-                filteredTextForCounter = filteredTextForCounter.replace(lk, '');
-            });
-
-            const words = filteredTextForCounter.match(/\S+/g) || []; 
-            if (words.length > WORD_LIMIT) {
-                const trimmedText = filteredTextForCounter.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
-                
-                postInput.value = trimmedText + (linksInText.length > 0 ? " " + linksInText.join(" ") : "");
-                const finalWords = trimmedText.match(/\S+/g) || [];
-                wordCountDisplay.innerText = `${finalWords.length} / ${WORD_LIMIT} words`;
-                wordCountDisplay.style.color = "var(--red)";
+            const q = query(collection(db, "users"), where("username", "==", qVal));
+            const res = await getDocs(q);
+            if(!res.empty) {
+                const snap = res.docs[0];
+                document.getElementById('sq').value = '';
+                navTo('profile', false, { uid: snap.id, ...snap.data() });
             } else {
-                wordCountDisplay.innerText = `${words.length} / ${WORD_LIMIT} words`;
-                wordCountDisplay.style.color = "var(--text-muted)";
+                alert("User @" + qVal + " not found!");
             }
         };
 
-        postInput.addEventListener('input', updateWordCount);
-        postInput.addEventListener('keyup', updateWordCount);
-        postInput.addEventListener('change', updateWordCount);
+        window.checkEditUsername = async () => {
+            if(!me) return;
+            const uDocRef = doc(db, "users", me.uid);
+            const uSnap = await getDoc(uDocRef);
+            if(!uSnap.exists()) return;
 
+            const uData = uSnap.data();
+            const lastEditTime = uData.lastUsernameEditTime || 0;
+            const cooldownPeriod = 30 * 24 * 60 * 60 * 1000; // 30 days calculation bounding window log
+            const timePassed = Date.now() - lastEditTime;
+
+            if(timePassed < cooldownPeriod) {
+                const daysLeft = Math.ceil((cooldownPeriod - timePassed) / (24 * 60 * 60 * 1000));
+                alert(`You can only edit your username once every 30 days. Please wait ${daysLeft} more days.`);
+                return;
+            }
+
+            const newUName = prompt("Enter your new unique username choice:", me.username);
+            if(!newUName) return;
+            const sanitizedNewName = newUName.trim().toLowerCase();
+            if(sanitizedNewName === me.username) return;
+
+            if(!/^[a-z0-9_]{3,15}$/.test(sanitizedNewName)) {
+                alert("Username must be between 3-15 chars, containing letters, numbers, or underscores only.");
+                return;
+            }
+
+            const checkQ = await getDocs(query(collection(db, "users"), where("username", "==", sanitizedNewName)));
+            if(!checkQ.empty) {
+                alert("This username is already claimed by another user!");
+                return;
+            }
+
+            if(confirm(`Are you sure you want to change your username to @${sanitizedNewName}? This locks it for 30 days.`)) {
+                await updateDoc(uDocRef, {
+                    username: sanitizedNewName,
+                    lastUsernameEditTime: Date.now()
+                });
+                
+                // Updates name snapshot across state values locally
+                me.username = sanitizedNewName;
+                document.getElementById('u-name').innerHTML = `@${sanitizedNewName}${me.hasRedTick ? redTickSVG : ''}`;
+                alert("Username successfully updated!");
+            }
+        };
+
+        // Realtime Typeahead Autocomplete Search Suggestions Engine
+        let suggestionTimeout = null;
         const searchInput = document.getElementById('sq');
         const suggestionsBox = document.getElementById('search-suggestions-box');
 
-        // Optimization: Added Debouncing so Firebase isn't queried on every single keystroke
-        let searchDebounceTimer;
-        searchInput.addEventListener('input', async () => {
-            clearTimeout(searchDebounceTimer);
-            let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
-            
-            if(!val || val.length === 0) {
+        searchInput.addEventListener('input', () => {
+            clearTimeout(suggestionTimeout);
+            const queryVal = searchInput.value.trim().toLowerCase();
+
+            if(!queryVal) {
                 suggestionsBox.style.display = 'none';
                 suggestionsBox.innerHTML = '';
                 return;
             }
 
-            searchDebounceTimer = setTimeout(async () => {
+            suggestionTimeout = setTimeout(async () => {
                 try {
-                    const q = query(
-                        collection(db, "users"), 
-                        orderBy("username"), 
-                        where("username", ">=", val), 
-                        where("username", "<=", val + "\uf8ff")
-                    );
-                    
-                    const snap = await getDocs(q);
-                    
-                    if(snap.empty) {
+                    const allUsersSnap = await getDocs(collection(db, "users"));
+                    const matches = [];
+
+                    allUsersSnap.forEach(docSnap => {
+                        const userData = docSnap.data();
+                        if(userData.username && userData.username.includes(queryVal)) {
+                            matches.push({ uid: docSnap.id, ...userData });
+                        }
+                    });
+
+                    if(matches.length === 0) {
                         suggestionsBox.style.display = 'none';
                         suggestionsBox.innerHTML = '';
                         return;
@@ -1584,8 +1668,7 @@
                     suggestionsBox.innerHTML = '';
                     suggestionsBox.style.display = 'block';
 
-                    snap.forEach(docSnap => {
-                        const uData = docSnap.data();
+                    matches.slice(0, 5).forEach(uData => {
                         const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
                         
                         const searchItemRedTick = uData.hasRedTick ? redTickSVG : '';
@@ -1618,6 +1701,23 @@
                 suggestionsBox.style.display = 'none';
             }
         });
+
+        // NEW SAFE GLOBAL TOGGLE EVENT LISTENER FOR 4:3 TO ORIGINAL SIZE OVERLAY VIEW
+        document.addEventListener('click', (e) => {
+            const clickedImg = e.target.closest('.post-media-slide img');
+            if (clickedImg) {
+                // If it already has the overlay class, remove it to return back to 4:3 layout place
+                if (clickedImg.classList.contains('original-size-overlay')) {
+                    clickedImg.classList.remove('original-size-overlay');
+                } else {
+                    // Otherwise apply full screen view mode layout parameters hierarchy overlay class
+                    clickedImg.classList.add('original-size-overlay');
+                }
+            }
+        });
+
+        // Initialize core feeds
+        startRealtimeFeeds();
     </script>
 </body>
 </html>
