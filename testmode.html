@@ -449,6 +449,15 @@
             border-radius: 10px;
             display: none;
         }
+        
+        .unread-pulse {
+            animation: pulseRed 1.5s infinite;
+        }
+        @keyframes pulseRed {
+            0% { transform: scale(1); box-shadow: 0 0 5px var(--red); }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px var(--red); }
+            100% { transform: scale(1); box-shadow: 0 0 5px var(--red); }
+        }
 
         .chat-modal-overlay {
             display: none;
@@ -494,7 +503,6 @@
             margin-bottom: 10px;
             cursor: pointer;
             position: relative;
-            transition: all 0.3s ease;
         }
 
         .chat-user-item img {
@@ -563,12 +571,38 @@
         .msg-bubble.received { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); align-self: flex-start; border-bottom-left-radius: 2px; }
 
         .msg-meta { font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 5px; display: flex; justify-content: flex-end; gap: 5px; }
-        .msg-options { position: absolute; top: 0; right: -25px; display: none; cursor: pointer; color: var(--text-muted); }
-        .msg-bubble:hover .msg-options { display: block; }
+        .msg-options { position: absolute; top: 0; right: -25px; cursor: pointer; color: var(--text-muted); }
         .msg-edited-tag { font-size: 9px; font-style: italic; color: #ffeb3b; }
         
         .msg-image { width: 100%; max-width: 200px; border-radius: 10px; margin-top: 5px; cursor: pointer; }
         .download-btn { font-size: 11px; background: var(--primary); color: #000; padding: 2px 8px; border-radius: 5px; text-decoration: none; display: inline-block; margin-top: 5px;}
+
+        .msg-actions-menu {
+            position: absolute;
+            top: 20px;
+            right: -10px;
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            min-width: 150px;
+        }
+        .msg-actions-menu button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: inherit;
+        }
+        .msg-actions-menu button:hover { background: rgba(0, 229, 255, 0.1); color: var(--primary); }
+        .msg-actions-menu button:last-child { border-bottom: none; }
 
         .chat-input-area {
             display: flex;
@@ -1103,7 +1137,7 @@
 
         window.showViewers = function() { isViewerPaused = true; const slide = currentViewingStory.slides[currentSlideIndex]; const listContent = document.getElementById('viewers-list-content'); if (slide.viewedBy.length === 0) listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; else listContent.innerHTML = slide.viewedBy.map(v => { const vTick = v.hasRedTick || v.redTick ? '<svg viewBox="0 0 24 24" class="red-tick-svg" style="width:14px;height:14px;" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : ''; return `<div class="viewer-item"><img src="${v.avatar}"><span style="display:flex;align-items:center;">@${v.username}${vTick}</span></div>`; }).join(''); document.getElementById('viewers-list-panel').style.display = 'block'; }
         window.hideViewers = function() { document.getElementById('viewers-list-panel').style.display = 'none'; isViewerPaused = false; }
-        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
+        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
         window.closeStatusViewer = function() { document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; document.getElementById('viewer-body-render').innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null; }
 
         // ==========================================
@@ -1114,7 +1148,6 @@
         let activeChatTarget = null;
         let unsubscribeMessages = null;
         let allUsersCache = [];
-        window.lastInboxChats = []; // Dynamic storage global variable to track items for updates
 
         window.initChatSystem = function() {
             // Listen to incoming chats for inbox
@@ -1145,21 +1178,21 @@
 
             // Fetch all users for search
             window.getDoc(window.doc(window.db, "meta", "dummy")).catch(async () => {
+                // Fallback to full collection if rules allow
                 window.onSnapshot(window.collection(window.db, "users"), (snap) => {
                     allUsersCache = [];
                     snap.forEach(d => { if(d.id !== window.currentUserProfile.uid) allUsersCache.push({...d.data(), uid: d.id}); });
-                    if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats);
                 });
             });
         }
 
-        window.openChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'flex'; if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats); }
+        window.openChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'flex'; }
         window.closeChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'none'; document.getElementById('chat-user-search').value = ""; }
 
         window.handleUserSearch = function() {
             const val = document.getElementById('chat-user-search').value.toLowerCase();
             const list = document.getElementById('chat-inbox-list');
-            if(!val) { renderInbox(window.lastInboxChats); return; }
+            if(!val) { list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>Type to search users...</div>"; return; }
             
             const results = allUsersCache.filter(u => u.username && u.username.toLowerCase().includes(val));
             list.innerHTML = results.map(u => {
@@ -1170,89 +1203,67 @@
                     <div>
                         <div style="font-weight:bold; display:flex; align-items:center;">@${u.username}${tick}</div>
                     </div>
-                    <button class="connect-btn" onclick='connectUser("${u.uid}", "${u.username}", "${u.pic}", ${u.hasRedTick||u.redTick||false})'>Connect</button>
+                    <button class="connect-btn" onclick='connectUser("${u.uid}", "${u.username}", "${u.pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}", ${u.hasRedTick||u.redTick||false})'>Connect</button>
                 </div>`;
             }).join('');
         }
 
         function renderInbox(chats) {
             const list = document.getElementById('chat-inbox-list');
-            if(!list || document.getElementById('chat-user-search').value.trim() !== "") return; 
+            if(document.getElementById('chat-user-search').value.trim() !== "") return; // Don't overwrite search
             if(chats.length === 0) { list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>No active chats yet.</div>"; return; }
             
-            window.lastInboxChats = chats;
             chats.sort((a,b) => b.lastUpdated - a.lastUpdated);
             
-            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
-            
+            // LocalStorage to Cache Profiles & Guarantee Auto-Appearing List (Features 1 & 3)
+            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_profiles') || '{}');
+
             list.innerHTML = chats.map(c => {
                 const isUnread = (c.lastSender !== window.currentUserProfile.uid && !c.seen);
                 const otherUid = c.participants.find(p => p !== window.currentUserProfile.uid);
                 
-                let otherUser = allUsersCache.find(u => u.uid === otherUid) || localProfiles[otherUid];
-                
-                if(!otherUser) {
-                    otherUser = {username: "User", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", hasRedTick: false, redTick: false};
-                    // Dynamic Profile Tracker Fallback
-                    window.getDoc(window.doc(window.db, "users", otherUid)).then(snap => {
-                        if(snap.exists()) {
-                            const uData = snap.data();
-                            const cacheObj = {
-                                uid: otherUid,
-                                username: uData.username || "User",
-                                pic: uData.pic || uData.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                                hasRedTick: uData.hasRedTick || uData.redTick || uData.verified || false,
-                                redTick: uData.hasRedTick || uData.redTick || uData.verified || false
-                            };
-                            let currentCache = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
-                            currentCache[otherUid] = cacheObj;
-                            localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(currentCache));
-                            if(document.getElementById('chat-user-search').value.trim() === "") {
-                                renderInbox(window.lastInboxChats);
-                            }
-                        }
-                    }).catch(e => console.error("Error routing missing profile:", e));
+                let otherUser = allUsersCache.find(u => u.uid === otherUid);
+                if (otherUser) {
+                    // Update Cache
+                    localProfiles[otherUid] = { username: otherUser.username, pic: otherUser.pic, redTick: otherUser.redTick, hasRedTick: otherUser.hasRedTick };
                 } else {
-                    if (!localProfiles[otherUid] && allUsersCache.find(u => u.uid === otherUid)) {
-                        localProfiles[otherUid] = {
-                            uid: otherUid, username: otherUser.username, pic: otherUser.pic,
-                            hasRedTick: otherUser.hasRedTick || otherUser.redTick || false,
-                            redTick: otherUser.hasRedTick || otherUser.redTick || false
-                        };
-                        localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(localProfiles));
-                    }
+                    // Fallback to cache if user data isn't loaded yet
+                    otherUser = localProfiles[otherUid] || {username: "User", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", redTick: false};
                 }
-
+                
                 const tick = (otherUser.hasRedTick || otherUser.redTick) ? `<svg class="red-tick-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
-                const unreadIndicatorStyle = isUnread ? 'border: 1px solid var(--primary); box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);' : '';
                 
                 return `
-                <div class="chat-user-item" style="${unreadIndicatorStyle}" onclick='openChatRoom("${c.id}", "${otherUid}", "${otherUser.username}", "${otherUser.pic}", ${otherUser.hasRedTick||otherUser.redTick||false})'>
-                    <img src="${otherUser.pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
+                <div class="chat-user-item" onclick='openChatRoom("${c.id}", "${otherUid}", "${otherUser.username}", "${otherUser.pic}", ${otherUser.hasRedTick||otherUser.redTick||false})'>
+                    <img src="${otherUser.pic}">
                     <div style="flex:1;">
                         <div style="font-weight:bold; display:flex; align-items:center;">@${otherUser.username}${tick}</div>
                         <div style="font-size:12px; color: ${isUnread ? 'var(--primary)' : 'var(--text-muted)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                             ${c.lastMessage || 'Connected'}
                         </div>
                     </div>
-                    ${isUnread ? '<div style="width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow: 0 0 10px var(--primary);"></div>' : ''}
+                    ${isUnread ? '<div class="unread-pulse" style="width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);"></div>' : ''}
                 </div>`;
             }).join('');
+
+            // Save back to LocalStorage
+            localStorage.setItem('thejaya_chat_profiles', JSON.stringify(localProfiles));
         }
 
         window.connectUser = async function(uid, username, pic, redTick) {
-            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
-            localProfiles[uid] = { uid, username, pic, hasRedTick: redTick, redTick: redTick };
-            localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(localProfiles));
-
             const chatId = window.currentUserProfile.uid < uid ? `${window.currentUserProfile.uid}_${uid}` : `${uid}_${window.currentUserProfile.uid}`;
             const chatRef = window.doc(window.db, "chats", chatId);
             const snap = await window.getDoc(chatRef);
+            
+            // Cache user data locally immediately so it auto-appears
+            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_profiles') || '{}');
+            localProfiles[uid] = { username, pic, redTick, hasRedTick: redTick };
+            localStorage.setItem('thejaya_chat_profiles', JSON.stringify(localProfiles));
+
             if(!snap.exists()) {
                 await window.setDoc(chatRef, {
                     participants: [window.currentUserProfile.uid, uid],
-                    lastMessage: "Connected",
-                    lastSender: window.currentUserProfile.uid,
+                    lastMessage: "",
                     lastUpdated: Date.now(),
                     seen: true
                 });
@@ -1288,17 +1299,17 @@
             if(unsubscribeMessages) unsubscribeMessages();
             activeChatId = null;
             activeChatTarget = null;
-            if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats);
         }
 
         function renderMessages(msgs) {
             const feed = document.getElementById('chat-messages-feed');
             feed.innerHTML = msgs.map(m => {
+                // Ignore if deleted for me
                 if(m.deletedFor && m.deletedFor.includes(window.currentUserProfile.uid)) return '';
                 
                 const isMe = m.sender === window.currentUserProfile.uid;
                 const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const canEdit = isMe && (Date.now() - m.timestamp < 600000) && m.type === 'text'; // 10 mins limit
+                const canEdit = isMe && (Date.now() - m.timestamp < 600000) && m.type === 'text'; // 10 mins (600,000 ms)
                 
                 let contentHtml = '';
                 if(m.type === 'image') {
@@ -1316,7 +1327,12 @@
                         ${isMe ? `<span style="color:${m.seen ? '#00e5ff' : '#888'}">✓✓</span>` : ''}
                     </div>
                     <div class="msg-options">
-                        <span onclick="triggerMsgOptions('${m.id}', ${canEdit})">⋮</span>
+                        <span style="padding: 5px; font-weight: bold;" onclick="toggleMsgMenu('${m.id}', event)">⋮</span>
+                        <div class="msg-actions-menu" id="menu-${m.id}">
+                            <button onclick="doDeleteForMe('${m.id}')">Delete for Me</button>
+                            ${isMe ? `<button onclick="doDeleteForEveryone('${m.id}')">Delete for Everyone</button>` : ''}
+                            ${canEdit ? `<button onclick="doEditMessage('${m.id}')">Edit (10m Limit)</button>` : ''}
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -1329,6 +1345,46 @@
                     window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, last.id), { seen: true });
                 }
             }
+        }
+
+        // Global click listener to close all message dropdowns
+        document.addEventListener('click', function(e) {
+            if(!e.target.closest('.msg-options')) {
+                document.querySelectorAll('.msg-actions-menu').forEach(m => m.style.display = 'none');
+            }
+        });
+
+        window.toggleMsgMenu = function(id, event) {
+            event.stopPropagation();
+            document.querySelectorAll('.msg-actions-menu').forEach(m => m.style.display = 'none');
+            document.getElementById('menu-' + id).style.display = 'flex';
+        }
+
+        window.doDeleteForMe = function(msgId) {
+            window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
+                deletedFor: [window.currentUserProfile.uid]
+            });
+        }
+
+        window.doDeleteForEveryone = function(msgId) {
+            if(confirm("Are you sure you want to permanently delete this message for everyone?")) {
+                window.deleteDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId));
+            }
+        }
+
+        window.doEditMessage = async function(msgId) {
+            // Using DB fetch to avoid quote-escaping issues in strings directly
+            const msgDoc = await window.getDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId));
+            if(msgDoc.exists()) {
+                const oldText = msgDoc.data().text;
+                const newText = prompt("Edit your message:", oldText);
+                if(newText !== null && newText.trim() !== "") {
+                    window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
+                        text: newText.trim(), edited: true
+                    });
+                }
+            }
+            document.getElementById('menu-' + msgId).style.display = 'none';
         }
 
         window.sendChatMessage = async function() {
@@ -1369,42 +1425,6 @@
             input.value = "";
         }
 
-        window.triggerMsgOptions = function(msgId, canEdit) {
-            let actions = "Choose Action:\n1. Delete for Me\n2. Delete for Everyone";
-            if(canEdit) actions += "\n3. Edit (Text only within 10 mins)";
-            
-            const choice = prompt(actions);
-            if(choice == "1") {
-                const msgDocRef = window.doc(window.db, `chats/${activeChatId}/messages`, msgId);
-                window.getDoc(msgDocRef).then(snap => {
-                    if(snap.exists()) {
-                        let currentDeletedFor = snap.data().deletedFor || [];
-                        if(!currentDeletedFor.includes(window.currentUserProfile.uid)) {
-                            currentDeletedFor.push(window.currentUserProfile.uid);
-                            window.updateDoc(msgDocRef, { deletedFor: currentDeletedFor });
-                        }
-                    }
-                }).catch(e => console.error(e));
-            } else if(choice == "2") {
-                window.deleteDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId)).then(() => {
-                    window.updateDoc(window.doc(window.db, "chats", activeChatId), {
-                        lastMessage: "🗑️ Message deleted"
-                    }).catch(e => {});
-                });
-            } else if(choice == "3" && canEdit) {
-                const newText = prompt("Enter new message:");
-                if(newText && newText.trim() !== "") {
-                    window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
-                        text: newText.trim(), edited: true
-                    }).then(() => {
-                        window.updateDoc(window.doc(window.db, "chats", activeChatId), {
-                            lastMessage: newText.trim()
-                        }).catch(e => {});
-                    });
-                }
-            }
-        }
-
         // ==========================================
         // CALLING SYSTEM (WEBRTC SIGNALING OUTLINE)
         // ==========================================
@@ -1438,6 +1458,7 @@
                 window.onSnapshot(callDoc, (doc) => {
                     if(doc.exists() && doc.data().status === 'answered') {
                         document.getElementById('call-status-text').innerText = "Connected";
+                        // Setup WebRTC connection here in full prod
                     } else if (!doc.exists() || doc.data().status === 'ended') {
                         endCall(false);
                     }
@@ -1450,6 +1471,7 @@
             window.onSnapshot(myCallDoc, (doc) => {
                 if(doc.exists() && doc.data().status === 'ringing') {
                     const data = doc.data();
+                    // 60 seconds expire
                     if(Date.now() - data.timestamp > 60000) { window.deleteDoc(myCallDoc); return; }
                     document.getElementById('incoming-call-alert').style.display = 'flex';
                     document.getElementById('incoming-caller-avatar').src = data.callerPic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
@@ -1479,7 +1501,9 @@
             if(peerConnection) { peerConnection.close(); peerConnection = null; }
             
             if(updateDb) {
+                // Clear my call doc
                 window.deleteDoc(window.doc(window.db, "calls", window.currentUserProfile.uid)).catch(e=>{});
+                // Clear target's call doc
                 if(activeChatTarget) window.deleteDoc(window.doc(window.db, "calls", activeChatTarget.uid)).catch(e=>{});
             }
         }
