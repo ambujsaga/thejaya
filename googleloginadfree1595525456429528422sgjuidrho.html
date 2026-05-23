@@ -8,6 +8,9 @@
     <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
     <link rel="manifest" href="manifest.json">
 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
      <style>
         /* --- DESKTOP OPTIMIZATION (UPDATED FOR COOL DESKTOP VIEW) --- */
         @media (min-width: 768px) {
@@ -601,6 +604,23 @@
             border: 1px solid rgba(0, 229, 255, 0.3);
         }
         .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
+        .pic-edit-wrapper { position: relative; display: inline-block; }
+        .pic-edit-btn {
+            position: absolute; bottom: 0; right: 0; background: var(--primary); color: #000;
+            border-radius: 50%; width: 32px; height: 32px; display: none; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: var(--neon-shadow); border: 2px solid var(--card-bg); z-index: 10;
+            transition: transform 0.2s;
+        }
+        .pic-edit-btn:hover { transform: scale(1.1); }
+        #crop-modal {
+            display: none; position: fixed; inset: 0; background: rgba(3, 10, 26, 0.95);
+            backdrop-filter: blur(8px); z-index: 4000; align-items: center; justify-content: center; flex-direction: column; padding: 20px;
+        }
+        .crop-container { width: 100%; max-width: 400px; height: 400px; background: #000; margin-bottom: 20px; border-radius: 12px; overflow: hidden; }
+        .crop-actions { display: flex; gap: 15px; width: 100%; max-width: 400px; }
+        .crop-actions button { flex: 1; border-radius: 14px; padding: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -682,7 +702,15 @@
                     <div style="width:24px;"></div>
                 </div>
                 <div style="text-align:center;">
-                    <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
+                    
+                    <div class="pic-edit-wrapper">
+                        <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
+                        <label id="edit-pic-btn" class="pic-edit-btn" for="profile-pic-upload" title="Update Profile Picture">
+                            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </label>
+                        <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePicSelect(this)">
+                    </div>
+
                     <h2 id="u-name" style="margin:15px 0; display: flex; align-items: center; justify-content: center;">@username</h2>
                     
                     <div id="red-tick-controls" style="margin-bottom: 15px;"></div>
@@ -715,6 +743,17 @@
         <a href="status.html" class="bits-btn" title="status">Status</a>
         <div id="fab-btn" class="fab" onclick="requireLogin(() => setPostModal(true))">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+    </div>
+
+    <div id="crop-modal">
+        <h3 style="color: white; margin-bottom: 15px; font-weight: 800; font-size: 22px;">Crop Profile Picture</h3>
+        <div class="crop-container">
+            <img id="crop-image" src="" style="max-width: 100%; display: block;">
+        </div>
+        <div class="crop-actions">
+            <button class="btn-cancel" onclick="closeCropModal()" style="background: rgba(255,255,255,0.1); color: white; border: none;">Cancel</button>
+            <button class="btn-primary" id="save-crop-btn" onclick="saveCroppedPic()">Done & Upload</button>
         </div>
     </div>
 
@@ -778,11 +817,11 @@
         });
 
         const conf = { 
-            apiKey: "AIzaSyAnpAuGPUKwptzhZmxtlt8LgS094tQ4ZGQ",
-            authDomain: "the-jaya-by-ree.firebaseapp.com",
-            databaseURL: "https://the-jaya-by-ree-default-rtdb.firebaseio.com",
-            projectId: "the-jaya-by-ree",
-            storageBucket: "the-jaya-by-ree.firebasestorage.app",
+            apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
+  authDomain: "links-62592.firebaseapp.com",
+  databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
+  projectId: "links-62592",
+  storageBucket: "links-62592.firebasestorage.app",
         };
         
         const app = initializeApp(conf);
@@ -843,7 +882,7 @@
                 if(dSnap.exists()) {
                     me = dSnap.data();
                     
-                    if(u.photoURL && me.pic !== u.photoURL) {
+                    if(u.photoURL && me.pic !== u.photoURL && !me.pic.startsWith('data:image')) {
                         me.pic = u.photoURL;
                         await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
                     }
@@ -969,10 +1008,11 @@
                         hasRedTick: false
                     });
                 } else {
-                    await updateDoc(doc(db, "users", user.uid), {
-                        pic: user.photoURL || defaultAvtr,
-                        email: user.email
-                    });
+                    const updateData = { email: user.email };
+                    if (user.photoURL && !dSnap.data().pic.startsWith('data:image')) {
+                        updateData.pic = user.photoURL;
+                    }
+                    await updateDoc(doc(db, "users", user.uid), updateData);
                 }
             } catch (err) {
                 alert("Google Sign-In Error: " + err.message);
@@ -994,6 +1034,84 @@
             } else cb();
         };
 
+        // --- NEW CROPPER LOGIC ---
+        let profileCropper = null;
+
+        window.handleProfilePicSelect = (input) => {
+            if(input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('crop-modal').style.display = 'flex';
+                    const image = document.getElementById('crop-image');
+                    image.src = e.target.result;
+                    
+                    if(profileCropper) { profileCropper.destroy(); }
+                    
+                    profileCropper = new Cropper(image, {
+                        aspectRatio: 1, // Fix square crop
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        background: false
+                    });
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+            input.value = ""; 
+        };
+
+        window.closeCropModal = () => {
+            document.getElementById('crop-modal').style.display = 'none';
+            if(profileCropper) profileCropper.destroy();
+        };
+
+        window.saveCroppedPic = async () => {
+            if(!profileCropper || !auth.currentUser) return;
+            
+            const btn = document.getElementById('save-crop-btn');
+            const ogText = btn.innerText;
+            btn.innerText = "Uploading...";
+            btn.disabled = true;
+
+            try {
+                // Resize for DB limits - keeping size below 1MB purely
+                const canvas = profileCropper.getCroppedCanvas({ width: 400, height: 400 });
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+                // Update Profile Photo in user DB
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { pic: compressedBase64 });
+                
+                // Realtime update across all existing posts to reflect the new pic immediately
+                const q = query(collection(db, "posts"), where("uid", "==", auth.currentUser.uid));
+                const snap = await getDocs(q);
+                const updatePromises = [];
+                snap.forEach((dSnap) => {
+                    updatePromises.push(updateDoc(doc(db, "posts", dSnap.id), { pic: compressedBase64 }));
+                });
+                await Promise.all(updatePromises);
+
+                if (me) me.pic = compressedBase64;
+                
+                // Realtime visual UI updates everywhere
+                document.getElementById('u-img').src = compressedBase64;
+                document.getElementById('head-pic').src = compressedBase64;
+                
+                // Force reload current view list
+                if(document.getElementById('home-view').style.display === 'block') {
+                    loadFeed("feed", null);
+                } else {
+                    loadFeed("u-feed", auth.currentUser.uid);
+                }
+
+                closeCropModal();
+                alert("Profile picture updated perfectly!");
+            } catch(err) {
+                alert("Error updating picture: " + err.message);
+            } finally {
+                btn.innerText = ogText;
+                btn.disabled = false;
+            }
+        };
+
         window.navTo = (v, isMe = true, other = null) => {
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
@@ -1009,6 +1127,10 @@
                 const user = isMe ? me : other;
                 document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
                 
+                // Toggle edit pencil based on ownership
+                const editPicBtn = document.getElementById('edit-pic-btn');
+                if (editPicBtn) editPicBtn.style.display = isMe ? 'flex' : 'none';
+
                 // Show Name and Red Tick if active
                 const tickDisplay = user.hasRedTick ? redTickSVG : '';
                 document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
@@ -1456,7 +1578,7 @@
             i.value = "";
         };
 
-        window.getCom = async (pid, idx) => {
+        window.delCom = async (pid, idx) => {
             const r = doc(db, "posts", pid); const s = await getDoc(r);
             let c = s.data().comments; c.splice(idx, 1);
             await updateDoc(r, { comments: c });
