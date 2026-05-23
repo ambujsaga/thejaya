@@ -494,6 +494,7 @@
             margin-bottom: 10px;
             cursor: pointer;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         .chat-user-item img {
@@ -1102,7 +1103,7 @@
 
         window.showViewers = function() { isViewerPaused = true; const slide = currentViewingStory.slides[currentSlideIndex]; const listContent = document.getElementById('viewers-list-content'); if (slide.viewedBy.length === 0) listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; else listContent.innerHTML = slide.viewedBy.map(v => { const vTick = v.hasRedTick || v.redTick ? '<svg viewBox="0 0 24 24" class="red-tick-svg" style="width:14px;height:14px;" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : ''; return `<div class="viewer-item"><img src="${v.avatar}"><span style="display:flex;align-items:center;">@${v.username}${vTick}</span></div>`; }).join(''); document.getElementById('viewers-list-panel').style.display = 'block'; }
         window.hideViewers = function() { document.getElementById('viewers-list-panel').style.display = 'none'; isViewerPaused = false; }
-        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
+        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
         window.closeStatusViewer = function() { document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; document.getElementById('viewer-body-render').innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null; }
 
         // ==========================================
@@ -1113,6 +1114,7 @@
         let activeChatTarget = null;
         let unsubscribeMessages = null;
         let allUsersCache = [];
+        window.lastInboxChats = []; // Dynamic storage global variable to track items for updates
 
         window.initChatSystem = function() {
             // Listen to incoming chats for inbox
@@ -1143,21 +1145,21 @@
 
             // Fetch all users for search
             window.getDoc(window.doc(window.db, "meta", "dummy")).catch(async () => {
-                // Fallback to full collection if rules allow (Simplified for the scope)
                 window.onSnapshot(window.collection(window.db, "users"), (snap) => {
                     allUsersCache = [];
                     snap.forEach(d => { if(d.id !== window.currentUserProfile.uid) allUsersCache.push({...d.data(), uid: d.id}); });
+                    if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats);
                 });
             });
         }
 
-        window.openChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'flex'; }
+        window.openChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'flex'; if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats); }
         window.closeChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'none'; document.getElementById('chat-user-search').value = ""; }
 
         window.handleUserSearch = function() {
             const val = document.getElementById('chat-user-search').value.toLowerCase();
             const list = document.getElementById('chat-inbox-list');
-            if(!val) { list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>Type to search users...</div>"; return; }
+            if(!val) { renderInbox(window.lastInboxChats); return; }
             
             const results = allUsersCache.filter(u => u.username && u.username.toLowerCase().includes(val));
             list.innerHTML = results.map(u => {
@@ -1175,38 +1177,82 @@
 
         function renderInbox(chats) {
             const list = document.getElementById('chat-inbox-list');
-            if(document.getElementById('chat-user-search').value.trim() !== "") return; // Don't overwrite search
+            if(!list || document.getElementById('chat-user-search').value.trim() !== "") return; 
             if(chats.length === 0) { list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>No active chats yet.</div>"; return; }
             
+            window.lastInboxChats = chats;
             chats.sort((a,b) => b.lastUpdated - a.lastUpdated);
+            
+            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
+            
             list.innerHTML = chats.map(c => {
                 const isUnread = (c.lastSender !== window.currentUserProfile.uid && !c.seen);
                 const otherUid = c.participants.find(p => p !== window.currentUserProfile.uid);
-                const otherUser = allUsersCache.find(u => u.uid === otherUid) || {username: "User", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png"};
+                
+                let otherUser = allUsersCache.find(u => u.uid === otherUid) || localProfiles[otherUid];
+                
+                if(!otherUser) {
+                    otherUser = {username: "User", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", hasRedTick: false, redTick: false};
+                    // Dynamic Profile Tracker Fallback
+                    window.getDoc(window.doc(window.db, "users", otherUid)).then(snap => {
+                        if(snap.exists()) {
+                            const uData = snap.data();
+                            const cacheObj = {
+                                uid: otherUid,
+                                username: uData.username || "User",
+                                pic: uData.pic || uData.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                                hasRedTick: uData.hasRedTick || uData.redTick || uData.verified || false,
+                                redTick: uData.hasRedTick || uData.redTick || uData.verified || false
+                            };
+                            let currentCache = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
+                            currentCache[otherUid] = cacheObj;
+                            localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(currentCache));
+                            if(document.getElementById('chat-user-search').value.trim() === "") {
+                                renderInbox(window.lastInboxChats);
+                            }
+                        }
+                    }).catch(e => console.error("Error routing missing profile:", e));
+                } else {
+                    if (!localProfiles[otherUid] && allUsersCache.find(u => u.uid === otherUid)) {
+                        localProfiles[otherUid] = {
+                            uid: otherUid, username: otherUser.username, pic: otherUser.pic,
+                            hasRedTick: otherUser.hasRedTick || otherUser.redTick || false,
+                            redTick: otherUser.hasRedTick || otherUser.redTick || false
+                        };
+                        localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(localProfiles));
+                    }
+                }
+
                 const tick = (otherUser.hasRedTick || otherUser.redTick) ? `<svg class="red-tick-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
+                const unreadIndicatorStyle = isUnread ? 'border: 1px solid var(--primary); box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);' : '';
                 
                 return `
-                <div class="chat-user-item" onclick='openChatRoom("${c.id}", "${otherUid}", "${otherUser.username}", "${otherUser.pic}", ${otherUser.hasRedTick||otherUser.redTick||false})'>
-                    <img src="${otherUser.pic}">
+                <div class="chat-user-item" style="${unreadIndicatorStyle}" onclick='openChatRoom("${c.id}", "${otherUid}", "${otherUser.username}", "${otherUser.pic}", ${otherUser.hasRedTick||otherUser.redTick||false})'>
+                    <img src="${otherUser.pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
                     <div style="flex:1;">
                         <div style="font-weight:bold; display:flex; align-items:center;">@${otherUser.username}${tick}</div>
                         <div style="font-size:12px; color: ${isUnread ? 'var(--primary)' : 'var(--text-muted)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                             ${c.lastMessage || 'Connected'}
                         </div>
                     </div>
-                    ${isUnread ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--primary);"></div>' : ''}
+                    ${isUnread ? '<div style="width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow: 0 0 10px var(--primary);"></div>' : ''}
                 </div>`;
             }).join('');
         }
 
         window.connectUser = async function(uid, username, pic, redTick) {
+            let localProfiles = JSON.parse(localStorage.getItem('thejaya_chat_users_cache') || '{}');
+            localProfiles[uid] = { uid, username, pic, hasRedTick: redTick, redTick: redTick };
+            localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(localProfiles));
+
             const chatId = window.currentUserProfile.uid < uid ? `${window.currentUserProfile.uid}_${uid}` : `${uid}_${window.currentUserProfile.uid}`;
             const chatRef = window.doc(window.db, "chats", chatId);
             const snap = await window.getDoc(chatRef);
             if(!snap.exists()) {
                 await window.setDoc(chatRef, {
                     participants: [window.currentUserProfile.uid, uid],
-                    lastMessage: "",
+                    lastMessage: "Connected",
+                    lastSender: window.currentUserProfile.uid,
                     lastUpdated: Date.now(),
                     seen: true
                 });
@@ -1242,17 +1288,17 @@
             if(unsubscribeMessages) unsubscribeMessages();
             activeChatId = null;
             activeChatTarget = null;
+            if(window.lastInboxChats.length > 0) renderInbox(window.lastInboxChats);
         }
 
         function renderMessages(msgs) {
             const feed = document.getElementById('chat-messages-feed');
             feed.innerHTML = msgs.map(m => {
-                // Ignore if deleted for me
                 if(m.deletedFor && m.deletedFor.includes(window.currentUserProfile.uid)) return '';
                 
                 const isMe = m.sender === window.currentUserProfile.uid;
                 const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const canEdit = isMe && (Date.now() - m.timestamp < 600000) && m.type === 'text'; // 10 mins
+                const canEdit = isMe && (Date.now() - m.timestamp < 600000) && m.type === 'text'; // 10 mins limit
                 
                 let contentHtml = '';
                 if(m.type === 'image') {
@@ -1307,7 +1353,6 @@
         window.sendChatImage = async function(input) {
             if(!input.files || input.files.length === 0) return;
             const file = input.files[0];
-            // Auto compress below 1MB utilizing existing logic
             const base64 = await compressImage(file); 
             
             const msgRef = window.collection(window.db, `chats/${activeChatId}/messages`);
@@ -1330,16 +1375,31 @@
             
             const choice = prompt(actions);
             if(choice == "1") {
-                window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
-                    deletedFor: [window.currentUserProfile.uid]
-                });
+                const msgDocRef = window.doc(window.db, `chats/${activeChatId}/messages`, msgId);
+                window.getDoc(msgDocRef).then(snap => {
+                    if(snap.exists()) {
+                        let currentDeletedFor = snap.data().deletedFor || [];
+                        if(!currentDeletedFor.includes(window.currentUserProfile.uid)) {
+                            currentDeletedFor.push(window.currentUserProfile.uid);
+                            window.updateDoc(msgDocRef, { deletedFor: currentDeletedFor });
+                        }
+                    }
+                }).catch(e => console.error(e));
             } else if(choice == "2") {
-                window.deleteDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId));
+                window.deleteDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId)).then(() => {
+                    window.updateDoc(window.doc(window.db, "chats", activeChatId), {
+                        lastMessage: "🗑️ Message deleted"
+                    }).catch(e => {});
+                });
             } else if(choice == "3" && canEdit) {
                 const newText = prompt("Enter new message:");
-                if(newText) {
+                if(newText && newText.trim() !== "") {
                     window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
-                        text: newText, edited: true
+                        text: newText.trim(), edited: true
+                    }).then(() => {
+                        window.updateDoc(window.doc(window.db, "chats", activeChatId), {
+                            lastMessage: newText.trim()
+                        }).catch(e => {});
                     });
                 }
             }
@@ -1378,7 +1438,6 @@
                 window.onSnapshot(callDoc, (doc) => {
                     if(doc.exists() && doc.data().status === 'answered') {
                         document.getElementById('call-status-text').innerText = "Connected";
-                        // Setup WebRTC connection here in full prod
                     } else if (!doc.exists() || doc.data().status === 'ended') {
                         endCall(false);
                     }
@@ -1391,7 +1450,6 @@
             window.onSnapshot(myCallDoc, (doc) => {
                 if(doc.exists() && doc.data().status === 'ringing') {
                     const data = doc.data();
-                    // 60 seconds expire
                     if(Date.now() - data.timestamp > 60000) { window.deleteDoc(myCallDoc); return; }
                     document.getElementById('incoming-call-alert').style.display = 'flex';
                     document.getElementById('incoming-caller-avatar').src = data.callerPic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
@@ -1421,9 +1479,7 @@
             if(peerConnection) { peerConnection.close(); peerConnection = null; }
             
             if(updateDb) {
-                // Clear my call doc
                 window.deleteDoc(window.doc(window.db, "calls", window.currentUserProfile.uid)).catch(e=>{});
-                // Clear target's call doc
                 if(activeChatTarget) window.deleteDoc(window.doc(window.db, "calls", activeChatTarget.uid)).catch(e=>{});
             }
         }
@@ -1432,7 +1488,6 @@
             const btn = document.getElementById('speaker-btn');
             const video = document.getElementById('remote-video');
             btn.classList.toggle('active');
-            // Simplified speaker logic (browser limitations on setting output device without strict permissions)
             if(video.volume > 0) video.volume = 1; 
         }
 
