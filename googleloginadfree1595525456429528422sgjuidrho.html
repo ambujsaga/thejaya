@@ -331,8 +331,12 @@
 
         // Agar check status verify nahi hota hai toh redirect and warnings process generate karein
         if (!currentUser) {
-            alert("aap pahle Thejaya app par login kariye");
-            window.location.href = "index.html";
+            alert("Aap pahle The Jaya app par login kariye!");
+            // Replace ka use kiya hai taaki user back button daba kar stuck na ho - jhan jhat free!
+            window.location.replace("index.html"); 
+        } else {
+            // Login wale user ke liye bina kisi rukawat ke Jaya Chats access
+            console.log("Jaya Chats Authenticated for User:", currentUser.username);
         }
 
         // Globals Config tracking
@@ -345,7 +349,9 @@
 
         // On document fully prepared layout run listeners
         document.addEventListener("DOMContentLoaded", () => {
-            loadChatFeedRooms();
+            if(currentUser) {
+                loadChatFeedRooms();
+            }
             
             // Listen for global outside click setups to close context option sheet elements
             document.addEventListener('click', (e) => {
