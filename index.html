@@ -513,11 +513,13 @@
             overflow: hidden;
             background: #020712;
             border: 1px solid rgba(0, 229, 255, 0.1);
+            transition: padding-top 0.3s ease;
         }
         .post-media-slider {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
+            align-items: flex-start;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .post-media-slide {
@@ -529,7 +531,31 @@
             width: 100%;
             height: 100%;
             object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            transition: object-fit 0.3s ease, height 0.3s ease;
         }
+
+        /* --- EXPANDED ORIGINAL SIZE CSS FOR LONG PRESS TOGGLE --- */
+        .post-media-container.expanded {
+            padding-top: 0 !important;
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slider {
+            position: relative !important;
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slide {
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slide img {
+            position: relative !important;
+            height: auto !important;
+            object-fit: contain !important; /* show full original image without cropping */
+            max-height: 90vh; /* Viewing limit */
+        }
+
         .carousel-btn {
             position: absolute;
             top: 50%;
@@ -844,10 +870,10 @@
 
         const conf = { 
             apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
-  authDomain: "links-62592.firebaseapp.com",
-  databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
-  projectId: "links-62592",
-  storageBucket: "links-62592.firebasestorage.app",
+            authDomain: "links-62592.firebaseapp.com",
+            databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
+            projectId: "links-62592",
+            storageBucket: "links-62592.firebasestorage.app",
         };
         
         const app = initializeApp(conf);
@@ -867,6 +893,45 @@
         let postCropper = null;
         let pendingCropFiles = [];
         let currentCropIndex = 0;
+
+        // NEW Globals for Long Press & Tap functionality
+        window.longPressTimer = null;
+        window.isLongPress = false;
+
+        window.startLongPress = (e, pid) => {
+            window.isLongPress = false;
+            window.longPressTimer = setTimeout(() => {
+                window.isLongPress = true;
+                const container = document.getElementById('media-container-' + pid);
+                if(container && !container.classList.contains('expanded')) {
+                    container.classList.add('expanded');
+                }
+            }, 400); // 400ms duration triggers long press
+        };
+
+        window.cancelLongPress = () => {
+            if (window.longPressTimer) {
+                clearTimeout(window.longPressTimer);
+                window.longPressTimer = null;
+            }
+        };
+
+        window.handleImageClick = (pid) => {
+            // Cancel any pending timer
+            window.cancelLongPress();
+            
+            // If the user just completed a long press, skip this synthetic click event
+            if(window.isLongPress) {
+                window.isLongPress = false;
+                return;
+            }
+
+            // Normal Tap: if the image is expanded, return it to 4:3 format
+            const container = document.getElementById('media-container-' + pid);
+            if(container && container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+            }
+        };
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
 
@@ -1297,7 +1362,7 @@
                 if (postCropper) { postCropper.destroy(); }
                 
                 postCropper = new Cropper(image, {
-                    aspectRatio: 4 / 3, // EXCLUSIVE 4:3 Crop restriction as requested
+                    aspectRatio: 4 / 3, // EXCLUSIVE 4:3 Crop restriction for the UI preview
                     viewMode: 1,
                     autoCropArea: 1,
                     background: false
@@ -1309,23 +1374,42 @@
         window.confirmPostCrop = () => {
             if(!postCropper) return;
             
-            // Retaining original max size limits to avoid DB crash
-            const canvas = postCropper.getCroppedCanvas({
-                maxWidth: 1200,
-                maxHeight: 900 
-            });
+            // UPDATED: To preserve the ORIGINAL size while honoring the visual UI crop step 
+            // and saving compression, we bypass the destructive cropper canvas entirely 
+            // and safely compress and save the original full aspect ratio image.
             
-            const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
-            selectedBase64Images.push(compressedDataUrl);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                
+                // Max safe DB limit compression calculation
+                const maxDim = 1200;
+                if(w > maxDim || h > maxDim) {
+                    if(w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                    else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                }
+                
+                canvas.width = w; 
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+                
+                selectedBase64Images.push(compressedDataUrl);
 
-            const previewContainer = document.getElementById("previewContainer");
-            const wrp = document.createElement("div");
-            wrp.className = "preview-img-wrapper";
-            wrp.innerHTML = `<img src="${compressedDataUrl}">`;
-            previewContainer.appendChild(wrp);
+                const previewContainer = document.getElementById("previewContainer");
+                const wrp = document.createElement("div");
+                wrp.className = "preview-img-wrapper";
+                wrp.innerHTML = `<img src="${compressedDataUrl}">`;
+                previewContainer.appendChild(wrp);
 
-            currentCropIndex++;
-            showPostCropModalForCurrent();
+                currentCropIndex++;
+                window.showPostCropModalForCurrent();
+            };
+            // Read from the original source file loaded into the UI modal
+            img.src = document.getElementById('post-crop-image').src;
         };
 
         window.cancelPostCropping = () => {
@@ -1439,23 +1523,35 @@
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
-                    // 4:3 Carousel Generator System Injection
+                    // 4:3 Carousel Generator System Injection (With Long Press Toggle System)
                     let imagesHtml = "";
                     if (p.images && p.images.length > 0) {
                         const count = p.images.length;
-                        imagesHtml += `<div class="post-media-container">`;
+                        imagesHtml += `<div id="media-container-${p.id}" class="post-media-container">`;
                         
                         if(count > 1) {
                             imagesHtml += `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${p.id}', -1)">❮</div>`;
                             imagesHtml += `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${p.id}', 1)">❯</div>`;
                             imagesHtml += `<div id="counter-${p.id}" class="carousel-counter">1 / ${count}</div>`;
                         } else {
-                            imagesHtml += `<div class="carousel-counter">1 / 1</div>`;
+                            imagesHtml += `<div class="carousel-counter" style="display:none;">1 / 1</div>`;
                         }
                         
                         imagesHtml += `<div id="slider-${p.id}" class="post-media-slider" data-index="0" data-total="${count}">`;
                         p.images.forEach(imgBase64 => {
-                            imagesHtml += `<div class="post-media-slide"><img src="${imgBase64}" onerror="this.parentNode.style.display='none'"></div>`;
+                            imagesHtml += `<div class="post-media-slide">
+                                <img src="${imgBase64}" 
+                                     onerror="this.parentNode.style.display='none'"
+                                     onmousedown="startLongPress(event, '${p.id}')"
+                                     onmouseup="cancelLongPress()"
+                                     onmouseleave="cancelLongPress()"
+                                     ontouchstart="startLongPress(event, '${p.id}')"
+                                     ontouchend="cancelLongPress()"
+                                     onclick="handleImageClick('${p.id}')"
+                                     oncontextmenu="event.preventDefault();"
+                                     style="cursor: pointer;"
+                                >
+                            </div>`;
                         });
                         imagesHtml += `</div></div>`;
                     }
