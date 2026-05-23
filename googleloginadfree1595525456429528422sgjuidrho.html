@@ -621,6 +621,17 @@
         .crop-container { width: 100%; max-width: 400px; height: 400px; background: #000; margin-bottom: 20px; border-radius: 12px; overflow: hidden; }
         .crop-actions { display: flex; gap: 15px; width: 100%; max-width: 400px; }
         .crop-actions button { flex: 1; border-radius: 14px; padding: 12px; font-weight: bold; }
+
+        /* --- HASHTAG & MENTION STYLES --- */
+        .hashtag { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: bold; }
+        .hashtag:hover { text-decoration: underline; }
+        .mention { color: var(--star); cursor: pointer; text-decoration: none; font-weight: bold; }
+        .mention:hover { text-decoration: underline; }
+        .post-suggestions {
+            position: absolute; top: 100%; left: 0; width: 100%; background: rgba(6, 17, 39, 0.98); 
+            border: 1px solid var(--primary); border-radius: 12px; max-height: 150px; overflow-y: auto; 
+            z-index: 6000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; backdrop-filter: blur(10px);
+        }
     </style>
 </head>
 <body>
@@ -686,7 +697,7 @@
         <div id="search-row">
             <div class="search-wrapper">
                 <div class="search-input-group">
-                    <input type="text" id="sq" placeholder="Search @username..." autocomplete="off">
+                    <input type="text" id="sq" placeholder="Search @username or #tag..." autocomplete="off">
                     <button onclick="findUser()" class="btn-primary" style="width: auto;">Go</button>
                 </div>
                 <div id="search-suggestions-box" class="search-suggestions"></div>
@@ -772,7 +783,10 @@
     <div id="post-modal">
         <div class="card">
             <h3>New Post</h3>
-            <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
+            <div style="position: relative; width: 100%;">
+                <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
+                <div id="post-suggestions" class="post-suggestions"></div>
+            </div>
             
             <div class="upload-row">
                 <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
@@ -855,6 +869,24 @@
         let currentCropIndex = 0;
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+
+        // NEW global variables for Hashtag filtering and Autocomplete Cache
+        window.currentHashtagFilter = null;
+        window.allLoadedPosts = [];
+
+        window.formatPostText = (txt) => {
+            if(!txt) return "";
+            let safeTxt = txt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            safeTxt = safeTxt.replace(/@([a-zA-Z0-9_]+)/g, '<span class="mention" onclick="requireLogin(() => findUserByUname(\'$1\'))">@$1</span>');
+            safeTxt = safeTxt.replace(/#([a-zA-Z0-9_]+)/g, '<span class="hashtag" onclick="searchHashtag(\'$1\')">#$1</span>');
+            return safeTxt;
+        };
+
+        window.searchHashtag = (tag) => {
+            document.getElementById('sq').value = '#' + tag;
+            window.currentHashtagFilter = tag;
+            navTo('home');
+        };
 
         // Optimized Loader Fix: Instantly hides after a tiny micro-delay instead of freezing for 3 seconds
         window.addEventListener('load', () => {
@@ -1130,6 +1162,14 @@
         };
 
         window.navTo = (v, isMe = true, other = null) => {
+            if (v === 'home') {
+                let searchBar = document.getElementById('sq');
+                if(!searchBar.value || !searchBar.value.trim().startsWith('#')) {
+                    window.currentHashtagFilter = null;
+                    searchBar.value = '';
+                }
+            }
+
             document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
             document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
             
@@ -1337,6 +1377,8 @@
                     currentSnapshotIds += d.id + ",";
                 });
 
+                window.allLoadedPosts = rawPosts;
+
                 let finalPostsToRender = [];
 
                 if (uid) {
@@ -1348,6 +1390,10 @@
                 } else {
                     const fourteenDaysAgo = Date.now() - 1209600000;
                     let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
+
+                    if(window.currentHashtagFilter) {
+                        activeFeedPosts = activeFeedPosts.filter(p => p.text.toLowerCase().includes('#' + window.currentHashtagFilter.toLowerCase()));
+                    }
 
                     const fifteenMinsAgo = Date.now() - 900000; 
                     let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
@@ -1430,7 +1476,7 @@
                                 ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${p.id}')" style="cursor:pointer;">${iconDelete}</div>` : ''}
                             </div>
                         </div>
-                        <p style="margin: 0; line-height:1.5;">${p.text}</p>
+                        <p style="margin: 0; line-height:1.5;">${formatPostText(p.text)}</p>
                         ${imagesHtml}
                         ${linksHtml}
                         <div class="action-bar">
@@ -1447,7 +1493,7 @@
                         <div id="drawer-${p.id}" class="comment-drawer">
                             <div id="list-${p.id}">${(p.comments || []).map((c, i) => `
                                 <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${c.msg}</span>
+                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${formatPostText(c.msg)}</span>
                                     ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${p.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
                                 </div>`).join('')}</div>
                             <div style="display:flex; gap:8px; margin-top:15px;">
@@ -1638,7 +1684,15 @@
             let qStr = document.getElementById('sq').value;
             if(!qStr || !qStr.trim()) return;
             qStr = qStr.toLowerCase().trim();
-            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr)));
+
+            if (qStr.startsWith('#')) {
+                window.currentHashtagFilter = qStr.substring(1);
+                navTo('home');
+                return;
+            }
+
+            window.currentHashtagFilter = null;
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr.replace('@',''))));
             if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
         };
 
@@ -1646,6 +1700,7 @@
             if(!un) return;
             const s = await getDocs(query(collection(db, "users"), where("username", "==", un.toLowerCase().trim())));
             if(!s.empty) navTo('profile', false, s.docs[0].data());
+            else alert("User not found!");
         };
 
         window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
@@ -1672,6 +1727,7 @@
                 document.getElementById('postInput').value = "";
                 document.getElementById('photoSelector').value = "";
                 document.getElementById('previewContainer').innerHTML = "";
+                document.getElementById('post-suggestions').style.display = 'none';
                 selectedBase64Images = [];
                 updateWordCount();
             }
@@ -1721,6 +1777,75 @@
         postInput.addEventListener('keyup', updateWordCount);
         postInput.addEventListener('change', updateWordCount);
 
+        // --- NEW AUTOCOMPLETE SUGGESTIONS IN POST CREATION ---
+        const postSuggestionsBox = document.getElementById('post-suggestions');
+        
+        function replaceCurrentWordInTextarea(replacement) {
+            let cursor = postInput.selectionStart;
+            let textBeforeCursor = postInput.value.substring(0, cursor);
+            let textAfterCursor = postInput.value.substring(cursor);
+            let words = textBeforeCursor.split(/\s+/);
+            words.pop();
+            let newTextBefore = words.join(' ') + (words.length > 0 ? ' ' : '') + replacement + ' ';
+            postInput.value = newTextBefore + textAfterCursor;
+            postInput.focus();
+            postInput.selectionStart = newTextBefore.length;
+            postInput.selectionEnd = newTextBefore.length;
+            postSuggestionsBox.style.display = 'none';
+            updateWordCount();
+        }
+
+        postInput.addEventListener('input', async (e) => {
+            let cursor = postInput.selectionStart;
+            let textBeforeCursor = postInput.value.substring(0, cursor);
+            let words = textBeforeCursor.split(/\s+/);
+            let currentWord = words[words.length - 1];
+            
+            if (currentWord.startsWith('@') && currentWord.length > 1) {
+                let searchUn = currentWord.substring(1).toLowerCase();
+                const q = query(collection(db, "users"), orderBy("username"), where("username", ">=", searchUn), where("username", "<=", searchUn + "\uf8ff"));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    postSuggestionsBox.innerHTML = '';
+                    postSuggestionsBox.style.display = 'block';
+                    snap.forEach(docSnap => {
+                        let uData = docSnap.data();
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span>@${uData.username}</span>`;
+                        item.onclick = () => replaceCurrentWordInTextarea('@' + uData.username);
+                        postSuggestionsBox.appendChild(item);
+                    });
+                } else {
+                    postSuggestionsBox.style.display = 'none';
+                }
+            } else if (currentWord.startsWith('#') && currentWord.length > 1) {
+                let searchTag = currentWord.substring(1).toLowerCase();
+                let tags = new Set();
+                (window.allLoadedPosts || []).forEach(p => {
+                    let matches = p.text.toLowerCase().match(/#(\w+)/g);
+                    if(matches) matches.forEach(m => tags.add(m.substring(1)));
+                });
+                let matchedTags = Array.from(tags).filter(t => t.startsWith(searchTag));
+                
+                if (matchedTags.length > 0) {
+                    postSuggestionsBox.innerHTML = '';
+                    postSuggestionsBox.style.display = 'block';
+                    matchedTags.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span style="color:var(--primary);">#${t}</span>`;
+                        item.onclick = () => replaceCurrentWordInTextarea('#' + t);
+                        postSuggestionsBox.appendChild(item);
+                    });
+                } else {
+                    postSuggestionsBox.style.display = 'none';
+                }
+            } else {
+                postSuggestionsBox.style.display = 'none';
+            }
+        });
+
         const searchInput = document.getElementById('sq');
         const suggestionsBox = document.getElementById('search-suggestions-box');
 
@@ -1731,12 +1856,43 @@
             let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
             
             if(!val || val.length === 0) {
+                window.currentHashtagFilter = null;
+                if(document.getElementById('home-view').style.display === 'block') loadFeed("feed", null);
                 suggestionsBox.style.display = 'none';
                 suggestionsBox.innerHTML = '';
                 return;
             }
 
             searchDebounceTimer = setTimeout(async () => {
+                if (val.startsWith('#')) {
+                    let searchTag = val.substring(1);
+                    let tags = new Set();
+                    (window.allLoadedPosts || []).forEach(p => {
+                        let matches = p.text.toLowerCase().match(/#(\w+)/g);
+                        if(matches) matches.forEach(m => tags.add(m.substring(1)));
+                    });
+                    
+                    let matchedTags = Array.from(tags).filter(t => t.startsWith(searchTag));
+                    if(matchedTags.length === 0) {
+                        suggestionsBox.style.display = 'none'; return;
+                    }
+                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.style.display = 'block';
+                    
+                    matchedTags.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span style="display:flex; align-items:center; color: var(--primary);">#${t}</span>`;
+                        item.addEventListener('click', () => {
+                            searchInput.value = '#' + t;
+                            suggestionsBox.style.display = 'none';
+                            window.findUser();
+                        });
+                        suggestionsBox.appendChild(item);
+                    });
+                    return;
+                }
+
                 try {
                     const q = query(
                         collection(db, "users"), 
@@ -1789,420 +1945,10 @@
             if (e.target !== searchInput && e.target !== suggestionsBox) {
                 suggestionsBox.style.display = 'none';
             }
-        });
-        /* ========================= HASHTAG + MENTION SYSTEM UPDATE =========================
-   ⚠️ IMPORTANT:
-   Is code ko EXACT same jagah add karo.
-   Purana koi feature delete/change mat karo.
-   Sirf neeche wale blocks ADD karne hain.
-=================================================================================== */
-
-
-/* ========================= 1. ADD THESE GLOBAL VARIABLES ========================= */
-/* isko:
-   let selectedBase64Images = [];
-   ke niche add karo
-*/
-
-let globalHashtags = [];
-let globalMentions = [];
-
-
-/* ========================= 2. ADD THESE CSS STYLES ========================= */
-/* </style> ke JUST upar add karo */
-
-.hashtag-link,
-.mention-link {
-    color: var(--primary);
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.hashtag-link:hover,
-.mention-link:hover {
-    text-decoration: underline;
-    opacity: 0.85;
-}
-
-.hashtag-suggestion {
-    padding: 10px 14px;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    color: var(--primary);
-    font-weight: bold;
-    transition: 0.2s;
-}
-
-.hashtag-suggestion:hover {
-    background: rgba(0,229,255,0.12);
-}
-
-.search-tag-chip {
-    background: rgba(0,229,255,0.08);
-    border: 1px solid rgba(0,229,255,0.2);
-    color: var(--primary);
-    padding: 7px 12px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.search-tag-chip:hover {
-    background: rgba(0,229,255,0.18);
-}
-
-
-/* ========================= 3. ADD SEARCH HELPER FUNCTIONS ========================= */
-/* window.shiftCarousel ke niche add karo */
-
-function extractHashtags(text) {
-    const matches = text.match(/#[a-zA-Z0-9_]+/g);
-    return matches ? [...new Set(matches.map(t => t.toLowerCase()))] : [];
-}
-
-function extractMentions(text) {
-    const matches = text.match(/@[a-zA-Z0-9_]+/g);
-    return matches ? [...new Set(matches.map(t => t.toLowerCase()))] : [];
-}
-
-function convertTagsAndMentions(text) {
-
-    if (!text) return "";
-
-    let converted = text;
-
-    // Hashtags
-    converted = converted.replace(
-        /#([a-zA-Z0-9_]+)/g,
-        `<span class="hashtag-link" onclick="openHashtagSearch('#$1')">#$1</span>`
-    );
-
-    // Mentions
-    converted = converted.replace(
-        /@([a-zA-Z0-9_]+)/g,
-        `<span class="mention-link" onclick="openMentionProfile('$1')">@$1</span>`
-    );
-
-    return converted;
-}
-
-window.openHashtagSearch = async (tag) => {
-
-    document.getElementById("sq").value = tag;
-    toggleSearch();
-
-    const feed = document.getElementById("feed");
-    feed.innerHTML = `<div class="card">Searching ${tag}...</div>`;
-
-    const qy = query(
-        collection(db, "posts"),
-        orderBy("time", "desc")
-    );
-
-    const snap = await getDocs(qy);
-
-    feed.innerHTML = "";
-
-    snap.forEach(d => {
-
-        const p = d.data();
-
-        const tags = p.hashtags || [];
-
-        if (tags.includes(tag.toLowerCase())) {
-
-            renderSinglePost(feed, {
-                id: d.id,
-                ...p
-            });
-        }
-    });
-};
-
-window.openMentionProfile = async (username) => {
-
-    const clean = username.toLowerCase().replace("@", "");
-
-    const qy = query(
-        collection(db, "users"),
-        where("username", "==", clean)
-    );
-
-    const snap = await getDocs(qy);
-
-    if (!snap.empty) {
-        navTo('profile', false, snap.docs[0].data());
-    } else {
-        alert("User not found!");
-    }
-};
-
-
-/* ========================= 4. LIVE HASHTAG + MENTION SUGGESTION ========================= */
-/* document.getElementById('guest-trigger').onclick = showGuestFeed;
-   ke niche add karo
-*/
-
-document.getElementById("postInput").addEventListener("input", async (e) => {
-
-    const val = e.target.value;
-    const cursorText = val.split(" ").pop();
-
-    let box = document.getElementById("search-suggestions-box");
-
-    // HASHTAG SUGGESTION
-    if (cursorText.startsWith("#")) {
-
-        const tagSearch = cursorText.toLowerCase();
-
-        const qy = query(collection(db, "posts"));
-        const snap = await getDocs(qy);
-
-        let allTags = [];
-
-        snap.forEach(docx => {
-            const arr = docx.data().hashtags || [];
-            allTags.push(...arr);
-        });
-
-        allTags = [...new Set(allTags)];
-
-        const filtered = allTags.filter(t =>
-            t.startsWith(tagSearch)
-        );
-
-        box.innerHTML = "";
-
-        filtered.slice(0, 8).forEach(tag => {
-
-            const div = document.createElement("div");
-            div.className = "hashtag-suggestion";
-            div.innerText = tag;
-
-            div.onclick = () => {
-                e.target.value =
-                    val.replace(cursorText, tag + " ");
-                box.style.display = "none";
-            };
-
-            box.appendChild(div);
-        });
-
-        box.style.display = filtered.length ? "block" : "none";
-    }
-
-    // MENTION SUGGESTION
-    else if (cursorText.startsWith("@")) {
-
-        const usernameSearch = cursorText
-            .replace("@", "")
-            .toLowerCase();
-
-        const qy = query(collection(db, "users"));
-        const snap = await getDocs(qy);
-
-        box.innerHTML = "";
-
-        snap.forEach(d => {
-
-            const user = d.data();
-
-            if (
-                user.username
-                .toLowerCase()
-                .startsWith(usernameSearch)
-            ) {
-
-                const div = document.createElement("div");
-                div.className = "suggestion-item";
-
-                div.innerHTML = `
-                    <img src="${user.pic || defaultAvtr}">
-                    <span>@${user.username}</span>
-                `;
-
-                div.onclick = () => {
-
-                    e.target.value =
-                        val.replace(
-                            cursorText,
-                            "@" + user.username + " "
-                        );
-
-                    box.style.display = "none";
-                };
-
-                box.appendChild(div);
+            if (e.target !== postInput && e.target !== postSuggestionsBox) {
+                postSuggestionsBox.style.display = 'none';
             }
         });
-
-        box.style.display =
-            box.innerHTML.trim() !== ""
-            ? "block"
-            : "none";
-    }
-
-    else {
-        box.style.display = "none";
-    }
-});
-
-
-/* ========================= 5. MODIFY doPost() FUNCTION ========================= */
-/* doPost() ke andar
-   addDoc(collection(db, "posts"), {
-   ke andar YE fields add karo
-*/
-
-hashtags: extractHashtags(txt),
-mentions: extractMentions(txt),
-
-
-/* ========================= 6. MODIFY POST TEXT RENDER ========================= */
-/* Jaha bhi:
-   ${p.text}
-   ya
-   <p>${p.text}</p>
-
-   use ho raha hai
-
-   usko replace karo:
-*/
-
-${convertTagsAndMentions(p.text)}
-
-
-/* ========================= 7. ADD renderSinglePost FUNCTION ========================= */
-/* loadFeed function ke niche add karo */
-
-function renderSinglePost(container, p) {
-
-    const userPic = (p.pic && p.pic !== "" && p.pic !== "null")
-        ? p.pic
-        : defaultAvtr;
-
-    const postRedTick = p.hasRedTick ? redTickSVG : '';
-
-    let imagesHtml = "";
-
-    if (p.images && p.images.length > 0) {
-
-        imagesHtml += `
-        <div class="post-media-container">
-
-            <div id="slider-${p.id}"
-                 class="post-media-slider"
-                 data-index="0"
-                 data-total="${p.images.length}">
-        `;
-
-        p.images.forEach(img => {
-
-            imagesHtml += `
-                <div class="post-media-slide">
-                    <img src="${img}">
-                </div>
-            `;
-        });
-
-        imagesHtml += `</div></div>`;
-    }
-
-    const div = document.createElement("div");
-
-    div.className = "card";
-
-    div.innerHTML = `
-        <div style="display:flex; gap:12px;">
-            <img src="${userPic}" class="p-pic">
-
-            <div class="user-info">
-                <b>
-                    @${p.username || "user"}
-                    ${postRedTick}
-                </b>
-
-                <span class="post-time">
-                    ${timeAgo(p.time)}
-                </span>
-            </div>
-        </div>
-
-        <p style="margin-top:12px;">
-            ${convertTagsAndMentions(p.text || "")}
-        </p>
-
-        ${imagesHtml}
-    `;
-
-    container.appendChild(div);
-}
-
-
-/* ========================= 8. MODIFY SEARCH BAR PLACEHOLDER ========================= */
-/* Search @username...
-   ko replace karo:
-*/
-
-Search #hashtag or @username...
-
-
-/* ========================= 9. MODIFY findUser() FUNCTION ========================= */
-/* pura old findUser() replace karo */
-
-window.findUser = async () => {
-
-    const val = document.getElementById("sq")
-        .value
-        .trim()
-        .toLowerCase();
-
-    if (!val) return;
-
-    // HASHTAG SEARCH
-    if (val.startsWith("#")) {
-        openHashtagSearch(val);
-        return;
-    }
-
-    // USER SEARCH
-    const username = val.replace("@", "");
-
-    const qy = query(
-        collection(db, "users"),
-        where("username", "==", username)
-    );
-
-    const snap = await getDocs(qy);
-
-    if (!snap.empty) {
-        navTo('profile', false, snap.docs[0].data());
-    } else {
-        alert("No user found!");
-    }
-};
-
-
-/* ========================= DONE =========================
-
-✅ #hashtags clickable
-✅ hashtag search system
-✅ hashtag suggestions
-✅ @mention clickable
-✅ mention suggestions
-✅ mention profile open
-✅ search bar upgraded
-✅ all old features safe
-✅ Firebase compatible
-✅ no old method changed
-
-=================================================================================== */
     </script>
 </body>
 </html>
