@@ -225,7 +225,7 @@
 
         // 20 second ka timer logic
         var timeLeft = 20;
-        timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
+        timerText.innerText = 'It will stop in ' + timeLeft + ' seconds';
 
         var countdown = setInterval(function() {
             timeLeft--;
@@ -238,7 +238,7 @@
                 }
             } else {
                 // Timer ka text update karna
-                timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
+                timerText.innerText = 'It will stop in ' + timeLeft + ' seconds';
             }
         }, 1000); // Har 1 second (1000 ms) baad update hoga
 
