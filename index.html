@@ -676,24 +676,6 @@
 
     <div id="auth-section" style="display:none; text-align:center; padding-top:40px;">
         <h1 class="logo" style="font-size:45px; margin-bottom: 15px;">The Jaya</h1>
-        
-        <div class="auth-card">
-            <div class="auth-tabs">
-                <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
-                <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Signup</div>
-            </div>
-
-            <form id="login-form" onsubmit="handleAuthSubmit(event, 'login')">
-                <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required>
-                <input type="password" id="login-pass" name="password" placeholder="Password" autocomplete="current-password" required>
-                <button type="submit" class="btn-primary" style="margin-top: 10px;">Login Account</button>
-            </form>
-
-            <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
-                <input type="text" id="signup-username" name="username" placeholder="Choose Username" autocomplete="username" required>
-                <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
-                <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
-            </form>
 
             <button onclick="loginWithGoogle()" class="btn-google">
                 <img src="https://i.ibb.co/60NscvDM/vecteezy-google-lens-icon-logo-symbol-22484503.png" style="width:18px; height:18px;"> Sign in with Google
