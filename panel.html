@@ -20,17 +20,23 @@
         .btn-primary { background: var(--primary); }
         .btn-danger { background: var(--danger); }
         input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 5px; border: none; }
+        svg { fill: currentColor; } /* Ensures SVGs inherit the text color */
         
         /* Screens */
-        #login-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #login-screen { position: relative; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #login-box { background: var(--panel-bg); padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
+        
+        /* Login Back Button */
+        .login-back-btn { position: absolute; top: 20px; left: 20px; background: var(--panel-bg); color: var(--text-color); border: none; border-radius: 5px; padding: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; text-decoration: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .login-back-btn svg { width: 24px; height: 24px; }
         
         /* Main Panel */
         #main-panel { display: flex; flex-direction: column; height: 100vh; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--panel-bg); }
         .header-left, .header-right { display: flex; gap: 15px; align-items: center; }
         .header-title { font-size: 1.2rem; font-weight: bold; }
-        .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .icon-btn { background: none; border: none; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 5px; }
+        .icon-btn svg { width: 24px; height: 24px; }
         .edit-active { color: #ffc107; }
 
         /* Grid */
@@ -40,7 +46,8 @@
         .app-name { font-size: 0.8rem; word-break: break-word; }
 
         /* Floating Add Button */
-        #add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; font-size: 2rem; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        #add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        #add-btn svg { width: 32px; height: 32px; }
 
         /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
@@ -51,6 +58,9 @@
 <body>
 
     <div id="login-screen">
+        <a href="index.html" class="login-back-btn" title="Back to Home">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </a>
         <div id="login-box">
             <h2>Thejaya Panel</h2>
             <p>Enter 8-digit password</p>
@@ -62,19 +72,27 @@
     <div id="main-panel" class="hidden">
         <header>
             <div class="header-left">
-                <button class="icon-btn" id="btn-back">⬅</button>
+                <button class="icon-btn" id="btn-back" title="Lock Panel">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
                 <span class="header-title">Thejaya Panel</span>
             </div>
             <div class="header-right">
-                <button class="icon-btn" id="btn-edit" title="Edit Mode">✏️</button>
-                <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+                <button class="icon-btn" id="btn-edit" title="Edit Mode">
+                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </button>
+                <button class="icon-btn" id="btn-settings" title="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </button>
             </div>
         </header>
 
         <div id="app-grid">
             </div>
 
-        <button id="add-btn">+</button>
+        <button id="add-btn" title="Add App">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
     </div>
 
     <div id="app-modal" class="modal hidden">
@@ -86,7 +104,7 @@
             <input type="text" id="app-name" placeholder="App Name (e.g., YouTube)">
             <input type="url" id="app-link" placeholder="Link (e.g., https://youtube.com)">
             <div class="modal-actions">
-                <button class="btn btn-danger" id="btn-delete" class="hidden">Delete</button>
+                <button class="btn btn-danger hidden" id="btn-delete">Delete</button>
                 <button class="btn" id="btn-cancel-app" style="background:#555;">Cancel</button>
                 <button class="btn btn-primary" id="btn-save-app">Done</button>
             </div>
@@ -110,7 +128,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Tumhara Firebase Config
+        // Your Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCOdF10p3WVV5XDE8jnzttzw3VnZJU-bXU",
             authDomain: "game-b37ee.firebaseapp.com",
@@ -150,11 +168,11 @@
                 mainPanel.classList.remove('hidden');
                 loadApps();
             } else {
-                alert("Incorrect Password or not 8 digits!");
+                alert("Incorrect password or it is not exactly 8 digits.");
             }
         });
 
-        // 2. BACK BUTTON
+        // 2. BACK BUTTON (Lock panel)
         document.getElementById('btn-back').addEventListener('click', () => {
             mainPanel.classList.add('hidden');
             loginScreen.classList.remove('hidden');
@@ -164,7 +182,7 @@
         // 3. EDIT MODE TOGGLE
         document.getElementById('btn-edit').addEventListener('click', (e) => {
             isEditMode = !isEditMode;
-            e.target.classList.toggle('edit-active');
+            e.currentTarget.classList.toggle('edit-active');
             if(isEditMode) {
                 alert("Edit Mode ON: Click any icon to edit or delete it.");
             }
@@ -256,7 +274,7 @@
             const link = document.getElementById('app-link').value;
 
             if (!name || !link || !base64Image) {
-                alert("Please provide name, link, and photo!");
+                alert("Please provide a name, link, and photo.");
                 return;
             }
 
@@ -275,7 +293,7 @@
         // Delete App
         document.getElementById('btn-delete').addEventListener('click', () => {
             const id = document.getElementById('app-id').value;
-            if (confirm("Are you sure you want to delete this icon?")) {
+            if (confirm("Are you sure you want to delete this link?")) {
                 remove(ref(db, 'apps/' + id));
                 appModal.classList.add('hidden');
             }
@@ -300,25 +318,25 @@
 
             // Required conditions
             if (email !== "ambujewns404@gmail.com") {
-                alert("Unauthorized Email!");
+                alert("Unauthorized email address.");
                 return;
             }
             if (oldPass !== currentPassword) {
-                alert("Old password incorrect!");
+                alert("Old password is incorrect.");
                 return;
             }
             if (newPass.length !== 8) {
-                alert("New password must be exactly 8 digits!");
+                alert("New password must be exactly 8 digits.");
                 return;
             }
 
             // Update password in DB
             set(ref(db, 'admin/password'), newPass).then(() => {
                 currentPassword = newPass;
-                alert("Password changed successfully!");
+                alert("Password updated successfully.");
                 settingsModal.classList.add('hidden');
             }).catch((err) => {
-                alert("Error changing password: " + err.message);
+                alert("Error updating password: " + err.message);
             });
         });
     </script>
