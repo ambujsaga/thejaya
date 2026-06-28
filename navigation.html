@@ -186,6 +186,65 @@
 
         window.onload = type;
     </script>
+    <script>
+    // 5 second (5000 milliseconds) ka delay set kar rahe hain
+    setTimeout(function() {
+        
+        // Popup ka main container (Div) create karna
+        var popup = document.createElement('div');
+        
+        // Popup ki styling taaki wo screen ke beech mein (center) dikhe
+        popup.style.position = 'fixed';
+        popup.style.top = '50%';
+        popup.style.left = '50%';
+        popup.style.transform = 'translate(-50%, -50%)';
+        popup.style.backgroundColor = '#ffffff';
+        popup.style.padding = '30px';
+        popup.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+        popup.style.zIndex = '99999'; // Sabse upar dikhane ke liye
+        popup.style.borderRadius = '10px';
+        popup.style.textAlign = 'center';
+        popup.style.fontFamily = 'Arial, sans-serif';
+        popup.style.width = '300px';
+
+        // Popup ke andar ka text aur Link add karna
+        var message = document.createElement('h3');
+        message.innerHTML = 'Naye page par jaane ke liye <a href="panel.html" target="_blank" style="color: blue; text-decoration: underline;">panel</a> par click karein.';
+        message.style.margin = '0 0 15px 0';
+        popup.appendChild(message);
+
+        // Timer show karne ke liye text
+        var timerText = document.createElement('p');
+        timerText.style.fontWeight = 'bold';
+        timerText.style.color = '#ff0000';
+        timerText.style.margin = '0';
+        popup.appendChild(timerText);
+
+        // Popup ko website (body) mein add karna
+        document.body.appendChild(popup);
+
+        // 20 second ka timer logic
+        var timeLeft = 20;
+        timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
+
+        var countdown = setInterval(function() {
+            timeLeft--;
+            
+            // Jab timer 0 ho jaye
+            if (timeLeft <= 0) {
+                clearInterval(countdown); // Timer rokna
+                if (document.body.contains(popup)) {
+                    document.body.removeChild(popup); // Popup ko gayab (remove) karna
+                }
+            } else {
+                // Timer ka text update karna
+                timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
+            }
+        }, 1000); // Har 1 second (1000 ms) baad update hoga
+
+    }, 5000); // 5000 ms = 5 seconds baad popup aayega
+</script>
+
 
 </body>
 </html>
