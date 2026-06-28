@@ -209,7 +209,7 @@
 
         // Popup ke andar ka text aur Link add karna
         var message = document.createElement('h3');
-        message.innerHTML = 'You can't access this panel contact CEO<a href="panel.html" target="_blank" style="color: blue; text-decoration: underline;">panel</a> par click karein.';
+        message.innerHTML = 'Naye page par jaane ke liye <a href="panel.html" target="_blank" style="color: blue; text-decoration: underline;">panel</a> par click karein.';
         message.style.margin = '0 0 15px 0';
         popup.appendChild(message);
 
@@ -225,7 +225,7 @@
 
         // 20 second ka timer logic
         var timeLeft = 20;
-        timerText.innerText = 'It will stop in' + timeLeft + ' seconds';
+        timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
 
         var countdown = setInterval(function() {
             timeLeft--;
@@ -238,13 +238,13 @@
                 }
             } else {
                 // Timer ka text update karna
-                timerText.innerText = 'It will stop in ' + timeLeft + ' seconds';
+                timerText.innerText = 'Yeh alert ' + timeLeft + ' seconds mein band ho jayega...';
             }
         }, 1000); // Har 1 second (1000 ms) baad update hoga
 
     }, 5000); // 5000 ms = 5 seconds baad popup aayega
-</script>
-
+    </script>
+    
 
 </body>
 </html>
