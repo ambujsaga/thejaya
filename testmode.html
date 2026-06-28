@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Jaya - Status Room & Connect</title>
+    <title>The Jaya - Status Room</title>
     <style>
         :root { 
             --primary: #00e5ff; 
@@ -58,6 +58,7 @@
             fill: #ff4444;
         }
 
+        /* NEW RED TICK CSS IMPORTED FROM INDEX */
         .red-tick-svg {
             width: 16px;
             height: 16px;
@@ -68,6 +69,7 @@
             display: inline-block;
         }
 
+        /* --- STORIES TRAY COMPONENT --- */
         .stories-tray {
             display: flex;
             gap: 15px;
@@ -91,7 +93,7 @@
             width: 65px;
             height: 65px;
             border-radius: 50%;
-            border: 3px solid var(--text-muted); 
+            border: 3px solid var(--text-muted); /* Default grey for seen */
             padding: 2px;
             transition: all 0.3s ease;
         }
@@ -121,6 +123,7 @@
             justify-content: center;
         }
 
+        /* --- CONTROL CARD PANEL --- */
         .card {
             background: var(--card-bg);
             border-radius: 24px;
@@ -216,6 +219,7 @@
             box-shadow: var(--neon-shadow);
         }
 
+        /* --- FULLSCREEN ULTRA VIEW MODAL --- */
         .status-viewer {
             display: none;
             position: fixed;
@@ -308,6 +312,7 @@
             word-break: break-word;
         }
 
+        /* --- VIEWER NAVIGATION & COUNTER --- */
         .viewer-nav-area {
             position: absolute;
             top: 70px;
@@ -339,6 +344,7 @@
             box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
         }
 
+        /* --- VIEWER LIST MODAL --- */
         .viewers-list-modal {
             display: none;
             position: absolute;
@@ -378,6 +384,7 @@
             object-fit: cover;
         }
 
+        /* --- FLOATING BUTTONS (HOME PAGE) --- */
         .floating-actions {
             position: fixed;
             bottom: 25px;
@@ -412,226 +419,6 @@
             font-size: 12px;
             padding: 8px 16px;
             border-radius: 20px;
-        }
-
-        /* ---------------------------------------------------- */
-        /* NEW CHAT & CALL CSS ADDITIONS                        */
-        /* ---------------------------------------------------- */
-        
-        .chat-fab {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: var(--bg);
-            border: none;
-            font-size: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--neon-shadow);
-            cursor: pointer;
-            z-index: 101;
-        }
-
-        .unread-badge {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--red);
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .chat-modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 10000;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            background: var(--card-bg);
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-        }
-
-        .chat-search-bar {
-            width: 100%;
-            padding: 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            background: rgba(255,255,255,0.05);
-            color: white;
-            outline: none;
-        }
-
-        .chat-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-        }
-
-        .chat-user-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .chat-user-item img {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .chat-user-item .connect-btn {
-            margin-left: auto;
-            background: var(--primary);
-            color: #000;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* Active Chat Room UI */
-        .chat-room {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 10001;
-            flex-direction: column;
-        }
-
-        .room-header {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: var(--card-bg);
-            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-            gap: 10px;
-        }
-
-        .room-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 15px;
-        }
-
-        .room-actions svg { width: 24px; height: 24px; fill: var(--primary); cursor: pointer; }
-
-        .messages-feed {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .msg-bubble {
-            max-width: 75%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            position: relative;
-            word-wrap: break-word;
-        }
-        
-        .msg-bubble.sent { background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.3); align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-bubble.received { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); align-self: flex-start; border-bottom-left-radius: 2px; }
-
-        .msg-meta { font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 5px; display: flex; justify-content: flex-end; gap: 5px; }
-        
-        /* UPDATED MSG OPTIONS UI */
-        .msg-options { position: absolute; top: 5px; right: 5px; display: none; cursor: pointer; color: var(--text-main); font-weight: bold; padding: 2px 8px; background: rgba(0,0,0,0.5); border-radius: 10px; z-index: 10; }
-        .msg-bubble:hover .msg-options { display: block; }
-        .msg-action-menu { display: none; position: absolute; right: 0; top: 25px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 8px; z-index: 100; flex-direction: column; overflow: hidden; min-width: 140px; box-shadow: var(--neon-shadow); }
-        .msg-action-menu button { background: none; border: none; color: white; padding: 10px 15px; text-align: left; cursor: pointer; width: 100%; border-bottom: 1px solid rgba(0, 229, 255, 0.2); font-size: 13px; font-weight: 500; }
-        .msg-action-menu button:hover { background: var(--primary); color: #000; }
-        .msg-action-menu button:last-child { border-bottom: none; }
-        
-        .msg-edited-tag { font-size: 9px; font-style: italic; color: #ffeb3b; }
-        
-        .msg-image { width: 100%; max-width: 200px; border-radius: 10px; margin-top: 5px; cursor: pointer; }
-        .download-btn { font-size: 11px; background: var(--primary); color: #000; padding: 2px 8px; border-radius: 5px; text-decoration: none; display: inline-block; margin-top: 5px;}
-
-        /* NEW UNREAD SIGNAL CSS */
-        .unread-indicator { background: var(--primary); color: #000; font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; margin-left: 10px; display: inline-block; box-shadow: 0 0 8px rgba(0, 229, 255, 0.6); }
-
-        .chat-input-area {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            background: var(--card-bg);
-            border-top: 1px solid rgba(0, 229, 255, 0.2);
-            align-items: center;
-        }
-
-        .chat-input-area input[type="text"] { margin-bottom: 0; flex: 1; }
-        .chat-attach-btn { background: none; border: none; color: var(--primary); cursor: pointer; }
-        .chat-send-btn { background: var(--primary); border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; cursor: pointer; }
-
-        /* Call Screen UI */
-        .call-screen {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 10005;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 40px 20px;
-        }
-
-        .call-video-container { position: absolute; inset: 0; z-index: 0; }
-        .call-video-container video { width: 100%; height: 100%; object-fit: cover; }
-        .local-video { position: absolute; bottom: 120px; right: 20px; width: 100px; height: 150px; border-radius: 10px; border: 2px solid var(--primary); z-index: 2; background: #222;}
-
-        .call-info { z-index: 1; text-align: center; margin-top: 50px; }
-        .call-info img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px; }
-
-        .call-controls { z-index: 1; display: flex; gap: 30px; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 30px; }
-        .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px;}
-        .btn-cut { background: var(--red); color: white; }
-        .btn-speaker { background: rgba(255,255,255,0.2); color: white; }
-        .btn-speaker.active { background: var(--primary); color: black; }
-        
-        .incoming-call-modal {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--card-bg);
-            border: 1px solid var(--primary);
-            padding: 15px 25px;
-            border-radius: 20px;
-            z-index: 10006;
-            box-shadow: 0 0 20px rgba(0,229,255,0.4);
-            align-items: center;
-            gap: 15px;
         }
     </style>
 </head>
@@ -676,11 +463,6 @@
             </div>
         </div>
     </div>
-
-    <button class="chat-fab" onclick="openChatMainModal()">
-        <svg style="width:30px;height:30px;fill:currentColor" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-        <span class="unread-badge" id="global-unread-badge">!</span>
-    </button>
 
     <div class="floating-actions">
         <a href="thejayabit.html" class="float-btn bits-btn">Bits</a>
@@ -732,72 +514,6 @@
         </div>
     </div>
 
-    <div class="chat-modal-overlay" id="chat-main-modal">
-        <div class="chat-header">
-            <h3>Chats</h3>
-            <button class="action-btn" onclick="closeChatMainModal()">
-                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
-            </button>
-        </div>
-        <div style="padding: 15px;">
-            <input type="text" class="chat-search-bar" id="chat-user-search" placeholder="Search username to connect..." oninput="handleUserSearch()">
-        </div>
-        <div class="chat-list" id="chat-inbox-list">
-            </div>
-    </div>
-
-    <div class="chat-room" id="active-chat-room">
-        <div class="room-header">
-            <button class="action-btn" onclick="closeActiveChat()">
-                <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="2"/><polyline points="12 19 5 12 12 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </button>
-            <img id="chat-target-avatar" src="" class="p-pic" style="width:40px;height:40px;">
-            <strong id="chat-target-username-container" style="display:flex; align-items:center;"></strong>
-            <div class="room-actions">
-                <svg onclick="initiateCall('voice')" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                <svg onclick="initiateCall('video')" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7" stroke="currentColor" stroke-width="2" fill="none"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-        </div>
-        
-        <div class="messages-feed" id="chat-messages-feed" onclick="closeAllMenus(event)"></div>
-        
-        <div class="chat-input-area">
-            <label class="chat-attach-btn">
-                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:currentColor"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                <input type="file" id="chat-image-upload" accept="image/*" style="display:none;" onchange="sendChatImage(this)">
-            </label>
-            <input type="text" id="chat-msg-input" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-            <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
-        </div>
-    </div>
-
-    <div class="call-screen" id="call-screen-modal">
-        <div class="call-video-container">
-            <video id="remote-video" autoplay playsinline></video>
-            <video id="local-video" class="local-video" autoplay playsinline muted></video>
-        </div>
-        <div class="call-info" id="call-info-ui">
-            <img id="call-avatar" src="">
-            <h2 id="call-username">Calling...</h2>
-            <p id="call-status-text">Connecting...</p>
-        </div>
-        <div class="call-controls">
-            <button class="call-btn btn-speaker" id="speaker-btn" onclick="toggleSpeaker()">🔊</button>
-            <button class="call-btn btn-cut" onclick="endCall()">📞</button>
-        </div>
-    </div>
-
-    <div class="incoming-call-modal" id="incoming-call-alert">
-        <img id="incoming-caller-avatar" src="" style="width:40px;height:40px;border-radius:50%;">
-        <div>
-            <div id="incoming-caller-name" style="font-weight:bold;">User</div>
-            <div style="font-size:12px;color:var(--primary);">Incoming Call...</div>
-        </div>
-        <button style="background:#4CAF50;color:#fff;border:none;padding:8px 15px;border-radius:10px;cursor:pointer;" onclick="answerCall()">Accept</button>
-        <button style="background:var(--red);color:#fff;border:none;padding:8px 15px;border-radius:10px;cursor:pointer;" onclick="endCall()">Decline</button>
-    </div>
-
-
     <template id="red-tick-svg">
         <svg class="red-tick" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
@@ -807,7 +523,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, setDoc, onSnapshot, deleteDoc, updateDoc, query, where, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
@@ -823,16 +539,10 @@
 
         window.db = db;
         window.doc = doc;
-        window.getDoc = getDoc;
         window.setDoc = setDoc;
-        window.updateDoc = updateDoc;
         window.collection = collection;
         window.onSnapshot = onSnapshot;
         window.deleteDoc = deleteDoc;
-        window.query = query;
-        window.where = where;
-        window.addDoc = addDoc;
-        window.orderBy = orderBy;
 
         let activeSessionUser = null;
 
@@ -842,9 +552,8 @@
                     const userSnap = await getDoc(doc(db, "users", user.uid));
                     if (userSnap.exists()) {
                         activeSessionUser = userSnap.data();
-                        activeSessionUser.uid = user.uid; // ensure uid is present
+                        activeSessionUser.uid = user.uid; // Added to strictly assign UID to session
                         initializeStatusEngine();
-                        window.initChatSystem(); // INJECTED INIT FOR CHAT
                     } else {
                         throwAuthError();
                     }
@@ -877,9 +586,6 @@
     </script>
 
     <script>
-        // ==========================================
-        // EXISTING STATUS CODE (UNTOUCHED)
-        // ==========================================
         const PHOTO_LIMIT = 10;
         const VIDEO_LIMIT = 5;
         const EXPIRATION_TIME = 24 * 60 * 60 * 1000;
@@ -901,11 +607,36 @@
                 });
                 const now = Date.now();
                 liveDatabase.forEach(story => {
+                    story.slides.forEach(slide => {
+                        if (!slide.viewedBy) slide.viewedBy = [];
+                    });
                     story.slides = story.slides.filter(slide => (now - slide.timestamp) < EXPIRATION_TIME);
                 });
                 window.globalStories = liveDatabase.filter(story => story.slides.length > 0);
                 localStorage.setItem('thejaya_stories_db_live', JSON.stringify(window.globalStories));
                 window.renderStoriesTray();
+
+                // Live view counter and list update for the owner
+                if (currentViewingStory) {
+                    const updatedStory = window.globalStories.find(s => s.uid === currentViewingStory.uid);
+                    if (updatedStory) {
+                        currentViewingStory = updatedStory; // Local state sync
+                        
+                        if (window.currentUserProfile && currentViewingStory.uid === window.currentUserProfile.uid) {
+                            const currentLiveSlide = currentViewingStory.slides[currentSlideIndex];
+                            if (currentLiveSlide) {
+                                const viewCountEl = document.getElementById('view-count-text');
+                                if (viewCountEl) viewCountEl.innerText = currentLiveSlide.viewedBy.length;
+                                
+                                if (document.getElementById('viewers-list-panel').style.display === 'block') {
+                                    window.showViewers();
+                                }
+                            }
+                        }
+                    } else {
+                        closeStatusViewer(); 
+                    }
+                }
             });
         };
 
@@ -1037,7 +768,10 @@
                 const isCurrentUser = (window.currentUserProfile && userStory.uid === window.currentUserProfile.uid);
                 let hasUnseen = false;
                 if(!isCurrentUser && window.currentUserProfile) {
-                    hasUnseen = userStory.slides.some(slide => !slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid));
+                    hasUnseen = userStory.slides.some(slide => {
+                        const viewedArray = slide.viewedBy || [];
+                        return !viewedArray.some(v => v.uid === window.currentUserProfile.uid);
+                    });
                 }
                 const tickHtml = (userStory.hasRedTick || userStory.redTick) ? `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
                 node.innerHTML = `<div class="story-ring ${hasUnseen ? 'unseen' : ''}"><img src="${userStory.avatar}" alt="user"></div><div class="story-username">@${userStory.username} ${tickHtml}</div>`;
@@ -1070,16 +804,35 @@
             progressBar.style.width = "0%";
             isViewerPaused = false;
             const slide = currentViewingStory.slides[currentSlideIndex];
+            
+            // Safety fix: Agar array undefined ho to crash se bachane ke liye
+            if (!slide.viewedBy) slide.viewedBy = [];
+
             const isOwner = (window.currentUserProfile && currentViewingStory.uid === window.currentUserProfile.uid);
             document.getElementById('status-counter-display').innerText = `${currentSlideIndex + 1} / ${currentViewingStory.slides.length}`;
 
             if (!isOwner && window.currentUserProfile) {
                 const alreadyViewed = slide.viewedBy.some(v => v.uid === window.currentUserProfile.uid);
-                if (!alreadyViewed) { slide.viewedBy.push({ uid: window.currentUserProfile.uid, username: window.currentUserProfile.username, avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png", hasRedTick: window.currentUserProfile.hasRedTick || window.currentUserProfile.redTick || false }); syncToDatabase(); }
+                if (!alreadyViewed) { 
+                    slide.viewedBy.push({ 
+                        uid: window.currentUserProfile.uid, 
+                        username: window.currentUserProfile.username, 
+                        avatar: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png", 
+                        hasRedTick: window.currentUserProfile.hasRedTick || window.currentUserProfile.redTick || false 
+                    }); 
+                    syncToDatabase(); 
+                }
             }
 
-            if (isOwner) { document.getElementById('delete-status-btn').style.display = 'flex'; document.getElementById('view-count-btn').style.display = 'flex'; document.getElementById('view-count-text').innerText = slide.viewedBy.length; } 
-            else { document.getElementById('delete-status-btn').style.display = 'none'; document.getElementById('view-count-btn').style.display = 'none'; }
+            if (isOwner) { 
+                document.getElementById('delete-status-btn').style.display = 'flex'; 
+                document.getElementById('view-count-btn').style.display = 'flex'; 
+                document.getElementById('view-count-text').innerText = slide.viewedBy.length; 
+            } 
+            else { 
+                document.getElementById('delete-status-btn').style.display = 'none'; 
+                document.getElementById('view-count-btn').style.display = 'none'; 
+            }
 
             let playbackTimeoutLimit = slide.duration;
             if (slide.type === 'text') { const textBlock = document.createElement('div'); textBlock.className = 'viewer-text'; textBlock.innerText = slide.content; renderTarget.appendChild(textBlock); } 
@@ -1110,407 +863,44 @@
             }
         }
 
-        window.showViewers = function() { isViewerPaused = true; const slide = currentViewingStory.slides[currentSlideIndex]; const listContent = document.getElementById('viewers-list-content'); if (slide.viewedBy.length === 0) listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; else listContent.innerHTML = slide.viewedBy.map(v => { const vTick = v.hasRedTick || v.redTick ? '<svg viewBox="0 0 24 24" class="red-tick-svg" style="width:14px;height:14px;" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : ''; return `<div class="viewer-item"><img src="${v.avatar}"><span style="display:flex;align-items:center;">@${v.username}${vTick}</span></div>`; }).join(''); document.getElementById('viewers-list-panel').style.display = 'block'; }
+        window.showViewers = function() { 
+            isViewerPaused = true; 
+            const slide = currentViewingStory.slides[currentSlideIndex]; 
+            const listContent = document.getElementById('viewers-list-content'); 
+            
+            // Safety Fallback for Views
+            const viewsArray = slide.viewedBy || [];
+
+            if (viewsArray.length === 0) {
+                listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; 
+            } else {
+                listContent.innerHTML = viewsArray.map(v => { 
+                    const vTick = v.hasRedTick || v.redTick ? '<svg viewBox="0 0 24 24" class="red-tick-svg" style="width:14px;height:14px;" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : ''; 
+                    return `<div class="viewer-item"><img src="${v.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"><span style="display:flex;align-items:center;">@${v.username}${vTick}</span></div>`; 
+                }).join(''); 
+            }
+            document.getElementById('viewers-list-panel').style.display = 'block'; 
+        }
+
         window.hideViewers = function() { document.getElementById('viewers-list-panel').style.display = 'none'; isViewerPaused = false; }
-        async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
-        window.closeStatusViewer = function() { document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; document.getElementById('viewer-body-render').innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null; }
-
-        // ==========================================
-        // NEW CONNECT & CHAT SYSTEM LOGIC
-        // ==========================================
         
-        let activeChatId = null;
-        let activeChatTarget = null;
-        let unsubscribeMessages = null;
-        let allUsersCache = [];
-
-        window.initChatSystem = function() {
-            // Load Instant Local Storage Cache First for Inbox to avoid empty feed
-            const savedInbox = localStorage.getItem('thejaya_chat_inbox_' + window.currentUserProfile.uid);
-            const savedUsers = localStorage.getItem('thejaya_chat_users_cache');
-            if(savedUsers) allUsersCache = JSON.parse(savedUsers);
-            if(savedInbox && allUsersCache.length > 0) renderInbox(JSON.parse(savedInbox));
-
-            // Listen to incoming chats for inbox
-            const chatsRef = window.collection(window.db, "chats");
-            window.onSnapshot(chatsRef, (snapshot) => {
-                let myChats = [];
-                let totalUnread = 0;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if(data.participants && data.participants.includes(window.currentUserProfile.uid)) {
-                        data.id = doc.id;
-                        myChats.push(data);
-                        if(data.lastSender !== window.currentUserProfile.uid && !data.seen) {
-                            totalUnread++;
-                        }
-                    }
-                });
-                
-                // Save updated chat to persistent local storage 
-                localStorage.setItem('thejaya_chat_inbox_' + window.currentUserProfile.uid, JSON.stringify(myChats));
-
-                // Update global badge
-                const badge = document.getElementById('global-unread-badge');
-                if(totalUnread > 0) { badge.style.display = 'block'; badge.innerText = totalUnread; }
-                else { badge.style.display = 'none'; }
-                
-                renderInbox(myChats);
-                
-                // Real-time listen for calls
-                listenForCalls();
-            });
-
-            // Fetch all users for search and cache reference
-            window.getDoc(window.doc(window.db, "meta", "dummy")).catch(async () => {
-                window.onSnapshot(window.collection(window.db, "users"), (snap) => {
-                    allUsersCache = [];
-                    snap.forEach(d => { if(d.id !== window.currentUserProfile.uid) allUsersCache.push({...d.data(), uid: d.id}); });
-                    localStorage.setItem('thejaya_chat_users_cache', JSON.stringify(allUsersCache));
-                });
-            });
+        async function syncToDatabase() { 
+            if(!currentViewingStory) return; 
+            const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); 
+            try { 
+                if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); 
+                else await window.setDoc(userDocRef, currentViewingStory); 
+            } catch(e) { console.error("Error updating story state:", e); } 
         }
-
-        window.openChatMainModal = function() { 
-            document.getElementById('chat-main-modal').style.display = 'flex'; 
-            // Re-render inbox from storage incase real-time lag
-            const savedInbox = localStorage.getItem('thejaya_chat_inbox_' + window.currentUserProfile.uid);
-            if (savedInbox && document.getElementById('chat-user-search').value.trim() === "") {
-                renderInbox(JSON.parse(savedInbox));
-            }
+        
+        window.closeStatusViewer = function() { 
+            document.getElementById('status-player-modal').style.display = 'none'; 
+            document.getElementById('viewers-list-panel').style.display = 'none'; 
+            document.getElementById('viewer-body-render').innerHTML = ""; 
+            clearInterval(progressAnimationInterval); 
+            clearTimeout(storyPlaybackTimer); 
+            currentViewingStory = null; 
         }
-        window.closeChatMainModal = function() { document.getElementById('chat-main-modal').style.display = 'none'; document.getElementById('chat-user-search').value = ""; }
-
-        window.handleUserSearch = function() {
-            const val = document.getElementById('chat-user-search').value.toLowerCase();
-            const list = document.getElementById('chat-inbox-list');
-            if(!val) { 
-                const savedInbox = localStorage.getItem('thejaya_chat_inbox_' + window.currentUserProfile.uid);
-                if (savedInbox) renderInbox(JSON.parse(savedInbox));
-                else list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>No active chats yet.</div>";
-                return; 
-            }
-            
-            const results = allUsersCache.filter(u => u.username && u.username.toLowerCase().includes(val));
-            list.innerHTML = results.map(u => {
-                const tick = (u.hasRedTick || u.redTick) ? `<svg class="red-tick-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
-                return `
-                <div class="chat-user-item">
-                    <img src="${u.pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
-                    <div>
-                        <div style="font-weight:bold; display:flex; align-items:center;">@${u.username}${tick}</div>
-                    </div>
-                    <button class="connect-btn" onclick='connectUser("${u.uid}", "${u.username}", "${u.pic}", ${u.hasRedTick||u.redTick||false})'>Connect</button>
-                </div>`;
-            }).join('');
-        }
-
-        function renderInbox(chats) {
-            const list = document.getElementById('chat-inbox-list');
-            if(document.getElementById('chat-user-search').value.trim() !== "") return; // Don't overwrite search
-            if(chats.length === 0) { list.innerHTML = "<div style='color:var(--text-muted);text-align:center;'>No active chats yet. Search a user to connect.</div>"; return; }
-            
-            chats.sort((a,b) => b.lastUpdated - a.lastUpdated);
-            list.innerHTML = chats.map(c => {
-                const isUnread = (c.lastSender !== window.currentUserProfile.uid && !c.seen);
-                const otherUid = c.participants.find(p => p !== window.currentUserProfile.uid);
-                // Utilizing the local cache or default details, avoiding empty records
-                let otherUser = allUsersCache.find(u => u.uid === otherUid);
-                if (!otherUser && c.participantDetails && c.participantDetails[otherUid]) {
-                    otherUser = c.participantDetails[otherUid]; 
-                } else if (!otherUser) {
-                    otherUser = {username: "Loading...", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png"};
-                }
-
-                const tick = (otherUser.hasRedTick || otherUser.redTick) ? `<svg class="red-tick-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
-                
-                return `
-                <div class="chat-user-item" onclick='openChatRoom("${c.id}", "${otherUid}", "${otherUser.username}", "${otherUser.pic}", ${otherUser.hasRedTick||otherUser.redTick||false})'>
-                    <img src="${otherUser.pic}">
-                    <div style="flex:1;">
-                        <div style="font-weight:bold; display:flex; align-items:center;">
-                            @${otherUser.username}${tick}
-                            ${isUnread ? '<span class="unread-indicator">New</span>' : ''}
-                        </div>
-                        <div style="font-size:12px; color: ${isUnread ? 'var(--primary)' : 'var(--text-muted)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            ${c.lastMessage || 'Connected'}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        window.connectUser = async function(uid, username, pic, redTick) {
-            const chatId = window.currentUserProfile.uid < uid ? `${window.currentUserProfile.uid}_${uid}` : `${uid}_${window.currentUserProfile.uid}`;
-            const chatRef = window.doc(window.db, "chats", chatId);
-            const snap = await window.getDoc(chatRef);
-            if(!snap.exists()) {
-                // Ensure profile details are stored in the chat document so the receiver has it immediately
-                await window.setDoc(chatRef, {
-                    participants: [window.currentUserProfile.uid, uid],
-                    participantDetails: {
-                        [window.currentUserProfile.uid]: { username: window.currentUserProfile.username, pic: window.currentUserProfile.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png", redTick: window.currentUserProfile.hasRedTick || window.currentUserProfile.redTick || false },
-                        [uid]: { username: username, pic: pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png", redTick: redTick }
-                    },
-                    lastMessage: "",
-                    lastUpdated: Date.now(),
-                    seen: true
-                });
-            }
-            openChatRoom(chatId, uid, username, pic, redTick);
-            document.getElementById('chat-user-search').value = ""; // Clear search
-        }
-
-        window.openChatRoom = function(chatId, targetUid, username, pic, redTick) {
-            activeChatId = chatId;
-            activeChatTarget = { uid: targetUid, username, pic, redTick };
-            
-            document.getElementById('chat-target-avatar').src = pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-            const tickHtml = redTick ? `<svg class="red-tick-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>` : '';
-            document.getElementById('chat-target-username-container').innerHTML = `@${username}${tickHtml}`;
-            
-            document.getElementById('active-chat-room').style.display = 'flex';
-            
-            // Mark chat as seen when opened
-            window.updateDoc(window.doc(window.db, "chats", chatId), { seen: true });
-
-            // Listen to messages
-            const q = window.query(window.collection(window.db, `chats/${chatId}/messages`));
-            unsubscribeMessages = window.onSnapshot(q, (snapshot) => {
-                let msgs = [];
-                snapshot.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                msgs.sort((a,b) => a.timestamp - b.timestamp);
-                renderMessages(msgs);
-            });
-        }
-
-        window.closeActiveChat = function() {
-            document.getElementById('active-chat-room').style.display = 'none';
-            if(unsubscribeMessages) unsubscribeMessages();
-            activeChatId = null;
-            activeChatTarget = null;
-        }
-
-        window.closeAllMenus = function(e) {
-            if(!e.target.closest('.msg-options')) {
-                document.querySelectorAll('.msg-action-menu').forEach(el => el.style.display = 'none');
-            }
-        }
-
-        function renderMessages(msgs) {
-            const feed = document.getElementById('chat-messages-feed');
-            feed.innerHTML = msgs.map(m => {
-                // Ignore if deleted for me
-                if(m.deletedFor && m.deletedFor.includes(window.currentUserProfile.uid)) return '';
-                
-                const isMe = m.sender === window.currentUserProfile.uid;
-                const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const canEdit = isMe && (Date.now() - m.timestamp < 600000) && m.type === 'text'; // Exact 10 mins
-                
-                let contentHtml = '';
-                if(m.type === 'image') {
-                    contentHtml = `<img src="${m.text}" class="msg-image"><br><a href="${m.text}" download="Thejaya_Image.jpg" class="download-btn">Download</a>`;
-                } else {
-                    contentHtml = `<span>${m.text}</span>`;
-                }
-                
-                const safeText = m.type === 'text' ? m.text.replace(/'/g, "\\'") : '';
-
-                return `
-                <div class="msg-bubble ${isMe ? 'sent' : 'received'}">
-                    ${contentHtml}
-                    <div class="msg-meta">
-                        ${m.edited ? '<span class="msg-edited-tag">(edited)</span>' : ''}
-                        <span>${time}</span>
-                        ${isMe ? `<span style="color:${m.seen ? '#00e5ff' : '#888'}">✓✓</span>` : ''}
-                    </div>
-                    <div class="msg-options">
-                        <span onclick="toggleMsgMenu('${m.id}')">⋮</span>
-                        <div class="msg-action-menu" id="menu-${m.id}">
-                            ${canEdit ? `<button onclick="editMsg('${m.id}', '${safeText}')">Edit (10m Limit)</button>` : ''}
-                            <button onclick="deleteForMe('${m.id}')">Delete for Me</button>
-                            ${isMe ? `<button onclick="deleteForEveryone('${m.id}')">Delete for Everyone</button>` : ''}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-            feed.scrollTop = feed.scrollHeight;
-            
-            // Mark last message seen if not me
-            if(msgs.length > 0) {
-                const last = msgs[msgs.length-1];
-                if(last.sender !== window.currentUserProfile.uid && !last.seen) {
-                    window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, last.id), { seen: true });
-                }
-            }
-        }
-
-        window.toggleMsgMenu = function(msgId) {
-            document.querySelectorAll('.msg-action-menu').forEach(el => {
-                if(el.id !== 'menu-' + msgId) el.style.display = 'none';
-            });
-            const menu = document.getElementById('menu-' + msgId);
-            if(menu) menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        window.editMsg = function(msgId, oldText) {
-            const newText = prompt("Edit your message:", oldText);
-            if(newText && newText !== oldText) {
-                window.updateDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId), {
-                    text: newText, edited: true
-                });
-                window.updateDoc(window.doc(window.db, "chats", activeChatId), { lastMessage: newText });
-            }
-            window.toggleMsgMenu(msgId);
-        }
-
-        window.deleteForMe = async function(msgId) {
-            if(confirm("Are you sure you want to delete this for yourself?")) {
-                const msgRef = window.doc(window.db, `chats/${activeChatId}/messages`, msgId);
-                const snap = await window.getDoc(msgRef);
-                if(snap.exists()) {
-                    let deletedFor = snap.data().deletedFor || [];
-                    if(!deletedFor.includes(window.currentUserProfile.uid)) deletedFor.push(window.currentUserProfile.uid);
-                    await window.updateDoc(msgRef, { deletedFor: deletedFor });
-                }
-            }
-        }
-
-        window.deleteForEveryone = function(msgId) {
-            if(confirm("Are you sure you want to delete this message for everyone?")) {
-                window.deleteDoc(window.doc(window.db, `chats/${activeChatId}/messages`, msgId));
-            }
-        }
-
-
-        window.sendChatMessage = async function() {
-            const inp = document.getElementById('chat-msg-input');
-            const text = inp.value.trim();
-            if(!text || !activeChatId) return;
-            inp.value = "";
-            
-            const msgRef = window.collection(window.db, `chats/${activeChatId}/messages`);
-            await window.addDoc(msgRef, {
-                sender: window.currentUserProfile.uid,
-                text: text,
-                type: 'text',
-                timestamp: Date.now(),
-                seen: false
-            });
-            window.updateDoc(window.doc(window.db, "chats", activeChatId), {
-                lastMessage: text, lastSender: window.currentUserProfile.uid, lastUpdated: Date.now(), seen: false
-            });
-        }
-
-        window.sendChatImage = async function(input) {
-            if(!input.files || input.files.length === 0) return;
-            const file = input.files[0];
-            const base64 = await compressImage(file); 
-            
-            const msgRef = window.collection(window.db, `chats/${activeChatId}/messages`);
-            await window.addDoc(msgRef, {
-                sender: window.currentUserProfile.uid,
-                text: base64,
-                type: 'image',
-                timestamp: Date.now(),
-                seen: false
-            });
-            window.updateDoc(window.doc(window.db, "chats", activeChatId), {
-                lastMessage: "📷 Image", lastSender: window.currentUserProfile.uid, lastUpdated: Date.now(), seen: false
-            });
-            input.value = "";
-        }
-
-
-        // ==========================================
-        // CALLING SYSTEM (WEBRTC SIGNALING OUTLINE)
-        // ==========================================
-        let localStream = null;
-        let peerConnection = null;
-        const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
-
-        window.initiateCall = async function(type) {
-            if(!activeChatTarget) return;
-            document.getElementById('call-screen-modal').style.display = 'flex';
-            document.getElementById('call-username').innerText = activeChatTarget.username;
-            document.getElementById('call-avatar').src = activeChatTarget.pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-            document.getElementById('call-status-text').innerText = "Ringing...";
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
-                document.getElementById('local-video').srcObject = localStream;
-                
-                // Signal to DB
-                const callDoc = window.doc(window.db, "calls", activeChatTarget.uid);
-                await window.setDoc(callDoc, {
-                    caller: window.currentUserProfile.uid,
-                    callerName: window.currentUserProfile.username,
-                    callerPic: window.currentUserProfile.pic,
-                    type: type,
-                    status: 'ringing',
-                    timestamp: Date.now()
-                });
-
-                // Listen for answer
-                window.onSnapshot(callDoc, (doc) => {
-                    if(doc.exists() && doc.data().status === 'answered') {
-                        document.getElementById('call-status-text').innerText = "Connected";
-                    } else if (!doc.exists() || doc.data().status === 'ended') {
-                        endCall(false);
-                    }
-                });
-            } catch(e) { alert("Microphone/Camera access denied!"); endCall(); }
-        }
-
-        function listenForCalls() {
-            const myCallDoc = window.doc(window.db, "calls", window.currentUserProfile.uid);
-            window.onSnapshot(myCallDoc, (doc) => {
-                if(doc.exists() && doc.data().status === 'ringing') {
-                    const data = doc.data();
-                    // 60 seconds expire
-                    if(Date.now() - data.timestamp > 60000) { window.deleteDoc(myCallDoc); return; }
-                    document.getElementById('incoming-call-alert').style.display = 'flex';
-                    document.getElementById('incoming-caller-avatar').src = data.callerPic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-                    document.getElementById('incoming-caller-name').innerText = "@" + data.callerName;
-                } else {
-                    document.getElementById('incoming-call-alert').style.display = 'none';
-                }
-            });
-        }
-
-        window.answerCall = async function() {
-            document.getElementById('incoming-call-alert').style.display = 'none';
-            document.getElementById('call-screen-modal').style.display = 'flex';
-            document.getElementById('call-status-text').innerText = "Connected";
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('local-video').srcObject = localStream;
-                window.updateDoc(window.doc(window.db, "calls", window.currentUserProfile.uid), { status: 'answered' });
-            } catch(e) { alert("Device access denied"); endCall(); }
-        }
-
-        window.endCall = function(updateDb = true) {
-            document.getElementById('call-screen-modal').style.display = 'none';
-            document.getElementById('incoming-call-alert').style.display = 'none';
-            if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-            if(peerConnection) { peerConnection.close(); peerConnection = null; }
-            
-            if(updateDb) {
-                // Clear my call doc
-                window.deleteDoc(window.doc(window.db, "calls", window.currentUserProfile.uid)).catch(e=>{});
-                // Clear target's call doc
-                if(activeChatTarget) window.deleteDoc(window.doc(window.db, "calls", activeChatTarget.uid)).catch(e=>{});
-            }
-        }
-
-        window.toggleSpeaker = function() {
-            const btn = document.getElementById('speaker-btn');
-            const video = document.getElementById('remote-video');
-            btn.classList.toggle('active');
-            if(video.volume > 0) video.volume = 1; 
-        }
-
     </script>
 </body>
 </html>
