@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Jaya</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
+    <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
+    <link rel="manifest" href="manifest.json">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+     <style>
+        /* --- DESKTOP OPTIMIZATION (UPDATED FOR COOL DESKTOP VIEW) --- */
+        @media (min-width: 768px) {
+            .container { 
+                max-width: 650px !important; 
+                margin: 40px auto !important; 
+                padding: 0 15px;
+            }
+            header { 
+                padding: 15px 15% !important; 
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            }
+            .logo { font-size: 28px; }
+            
+            /* Enhanced modern look for desktop cards */
+            .card { 
+                padding: 25px !important; 
+                border-radius: 24px !important; 
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease !important; 
+                background: linear-gradient(145deg, rgba(8, 22, 51, 0.8), rgba(4, 13, 31, 0.85)) !important;
+                border: 1px solid rgba(0, 229, 255, 0.15) !important;
+            }
+            .card:hover { 
+                border-color: var(--primary) !important; 
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 229, 255, 0.15), 0 5px 15px rgba(0,0,0,0.4) !important;
+            }
+            input, textarea { font-size: 16px; }
+            .fab { right: 10% !important; bottom: 50px !important; width: 70px !important; height: 70px !important; }
+            .bits-btn { right: 10.5% !important; bottom: 135px !important; width: 50px !important; height: 50px !important; }
+            .more-btn { left: 10% !important; bottom: 50px !important; width: 50px !important; height: 50px !important; }
+            .p-pic { width: 50px; height: 50px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+            #post-modal .container { max-width: 500px; }
+            
+            /* Centering row modifications */
+            #search-row {
+                padding: 15px 15% !important;
+            }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--card-bg); border-radius: 10px; border: 1px solid var(--primary); }
+
+        :root { 
+            --primary: #00e5ff; 
+            --bg: #030a1a; 
+            --card-bg: rgba(6, 17, 39, 0.7); 
+            --text-main: #ffffff; 
+            --text-muted: #8a99b3;
+            --star: #ffd700; 
+            --red: #ff4444; 
+            --neon-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            --gold-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+        }
+
+        body.light-mode {
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #1c1e21;
+            --text-muted: #65676b;
+            --primary: #008ad3;
+            --neon-shadow: 0 4px 12px rgba(0, 138, 211, 0.2);
+            --gold-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding-bottom: 100px; 
+            overflow-x: hidden; 
+            transition: background 0.3s ease;
+        }
+
+        header { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(0, 229, 255, 0.15); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+        }
+
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary); cursor: pointer; text-shadow: var(--neon-shadow); }
+        .container { width: 95%; max-width: 500px; margin: 15px auto; }
+        
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            border: 1px solid rgba(0, 229, 255, 0.1); 
+            margin-bottom: 20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+         .card p {
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        input, textarea { 
+            width: 100%; 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 12px; 
+            color: var(--text-main); 
+            box-sizing: border-box; 
+            outline: none; 
+            margin-bottom: 10px;
+        }
+        
+        button { cursor: pointer; border: none; border-radius: 12px; padding: 10px 15px; font-weight: bold; }
+        .btn-primary { background: var(--primary); color: #fff; width: 100%; box-shadow: var(--neon-shadow); }
+        
+        .btn-google {
+            background: #ffffff;
+            color: #000000;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .fab { 
+            position: fixed; bottom: 35px; right: 25px; 
+            width: 60px; height: 60px; 
+            background: var(--primary); 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #fff; 
+            box-shadow: var(--neon-shadow); 
+            z-index: 2000; cursor: pointer; 
+        }
+
+        .bits-btn {
+            position: fixed;
+            bottom: 110px;
+            right: 32px;
+            width: 45px;
+            height: 45px;
+            background: var(--card-bg);
+            border: 1px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            box-shadow: var(--neon-shadow);
+            z-index: 2000;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .bits-btn:hover { background: var(--primary); color: #fff; }
+
+        /* --- LEFT SIDE DOTS MENU --- */
+        .more-btn {
+            position: fixed;
+            bottom: 35px;
+            left: 25px;
+            width: 50px;
+            height: 50px;
+            background: transparent; 
+            border: none;             
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            z-index: 2000;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.3s;
+            box-shadow: none;         
+        }
+
+        .more-btn:hover { 
+            background: transparent; 
+            color: #fff; 
+        }
+
+        .p-pic { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #1c1e21; }
+        .user-info { display: flex; flex-direction: column; justify-content: center; }
+        .post-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        
+        .action-bar { display: flex; justify-content: space-around; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; margin-top: 15px; }
+        .action-btn { background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; position: relative; }
+        
+        svg { width: 20px; height: 20px; fill: currentColor; }
+        .del-icon { width: 18px; height: 18px; fill: var(--red); opacity: 0.7; transition: 0.3s; }
+        .del-icon:hover { opacity: 1; }
+        .edit-icon { width: 18px; height: 18px; fill: var(--primary); opacity: 0.7; transition: 0.3s; }
+        .edit-icon:hover { opacity: 1; }
+
+        .comment-drawer { display: none; margin-top: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 15px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .stats-card { background: rgba(0, 229, 255, 0.05); padding: 15px; border-radius: 18px; border: 1px solid var(--primary); text-align: center; }
+        .stat-val { display: block; font-size: 28px; font-weight: 800; color: var(--primary); }
+
+        /* --- UPDATED SEARCH BAR CONTAINER & DROPDOWN --- */
+        #search-row { display: none; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--primary); position: relative; }
+        .search-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; }
+        .search-input-group { display: flex; gap: 10px; width: 100%; }
+        .search-suggestions { 
+            position: absolute; 
+            top: 52px; 
+            left: 0; 
+            width: calc(100% - 60px); 
+            background: rgba(6, 17, 39, 0.98); 
+            border: 1px solid var(--primary); 
+            border-radius: 12px; 
+            max-height: 220px; 
+            overflow-y: auto; 
+            z-index: 5000; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        .suggestion-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px 15px; 
+            cursor: pointer; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover { background: rgba(0, 229, 255, 0.15); }
+        .suggestion-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--primary); }
+        .suggestion-item span { color: var(--text-main); font-weight: 600; font-size: 14px; display: flex; align-items: center; }
+
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid var(--primary);
+        }
+
+        #loader-screen {
+            position: fixed; inset: 0; background: #030a1a;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .loader-visual { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; }
+        .planet { width: 40px; height: 40px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 40px var(--primary), inset 0 0 15px rgba(255,255,255,0.8); animation: pulse 2s ease-in-out infinite; }
+        .orbit { position: absolute; width: 100px; height: 100px; border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 50%; animation: spin 3s linear infinite; }
+        .loading-text { text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .loading-text .logo { font-size: 32px; letter-spacing: 5px; margin: 0; background: linear-gradient(90deg, #fff, var(--primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200%; animation: shine 3s linear infinite; }
+        .progress-bar { width: 150px; height: 2px; background: rgba(255,255,255,0.1); margin-top: 15px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 101%; background: var(--primary); animation: loadFill 2.5s ease-in-out forwards; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes shine { 100% { background-position: 200%; } }
+        @keyframes loadFill { 0% { width: 0%; } 100% { width: 100%; } }
+
+        #custom-install-btn {
+            display: none;
+            background: var(--primary);
+            color: #030a1a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 10px;
+            box-shadow: var(--neon-shadow);
+        }
+
+        /* Tabs UI Style */
+        .auth-card { max-width: 360px; margin: auto; padding: 20px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(0, 229, 255, 0.2); }
+        .auth-tabs { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .auth-tab { padding: 10px; color: var(--text-muted); cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); text-shadow: var(--neon-shadow); }
+        .verify-box { margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(0, 229, 255, 0.05); border: 1px dashed var(--primary); font-size: 13px; }
+        
+        /* New Links UI Container Styling */
+        .post-links-wrapper { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 5px; }
+        .post-link-icon-btn { display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 229, 255, 0.1); color: var(--primary); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; width: 32px; height: 32px; font-size: 14px; text-decoration: none; transition: 0.2s ease; }
+        .post-link-icon-btn:hover { background: var(--primary); color: #030a1a; box-shadow: var(--neon-shadow); }
+
+        /* --- MODERN & COOL POST MODAL SYSTEM --- */
+        #post-modal {
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(3, 10, 26, 0.85); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 3000; 
+            align-items: center; 
+            justify-content: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        #post-modal .card {
+            background: linear-gradient(135deg, rgba(6, 17, 39, 0.95), rgba(3, 10, 26, 0.98));
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 28px;
+            padding: 25px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.1);
+            animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            margin-bottom: 0px !important;
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(25px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        #post-modal h3 {
+            margin: 0 0 15px 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #ffffff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #post-modal textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            color: var(--text-main);
+            font-size: 15px;
+            line-height: 1.5;
+            resize: none;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            margin-bottom: 5px;
+        }
+
+        #post-modal textarea:focus {
+            background: rgba(0, 229, 255, 0.02);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.15), inset 0 0 10px rgba(0, 229, 255, 0.05);
+        }
+
+        .modal-actions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .modal-top-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-bottom-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        #post-modal button, #post-modal .ai-notes-link button {
+            border-radius: 14px;
+            padding: 12px 15px;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        #post-modal button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-cancel:hover {
+            background: rgba(255, 44, 44, 0.1);
+            color: #ff4444;
+            border-color: rgba(255, 44, 44, 0.2);
+        }
+
+        .btn-paste {
+            background: rgba(0, 229, 255, 0.05);
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+        }
+        .btn-paste:hover {
+            background: rgba(0, 229, 255, 0.12);
+        }
+
+        .ai-notes-link {
+            text-decoration: none;
+            display: block;
+            width: 100%;
+        }
+
+        .btn-ai-notes {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(0, 138, 211, 0.12));
+            color: #ffffff;
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.05);
+        }
+        .btn-ai-notes:hover {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(0, 138, 211, 0.22));
+            border-color: var(--primary);
+            box-shadow: var(--neon-shadow);
+        }
+
+        /* --- STAR PARTICLE ANIMATION CSS --- */
+        .star-particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 14px;
+            z-index: 9999;
+            color: var(--star);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+            animation: explodeParticle 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes explodeParticle {
+            0% {
+                transform: translate(0, 0) scale(1.5) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x), var(--y)) scale(0.3) rotate(var(--r));
+                opacity: 0;
+            }
+        }
+
+        /* --- RED TICK CSS --- */
+        .red-tick-svg {
+            width: 18px;
+            height: 18px;
+            color: #ff4444;
+            margin-left: 5px;
+            vertical-align: middle;
+            filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.4));
+            display: inline-block;
+        }
+        
+        .tick-toggle-btn {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+        .tick-toggle-btn:hover {
+            background: #ff4444;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
+        }
+
+        /* --- NEW STYLES FOR ASPECT RATIO 4:3 PHOTO POSTS & CAROUSEL --- */
+        .post-media-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* Strict 4:3 Aspect Ratio Box */
+            margin-top: 12px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #020712;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            transition: padding-top 0.3s ease;
+        }
+        .post-media-slider {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: flex-start;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .post-media-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .post-media-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Keeps image beautifully centered without breaking ratio */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            transition: object-fit 0.3s ease, height 0.3s ease;
+        }
+
+        /* --- EXPANDED ORIGINAL SIZE CSS FOR LONG PRESS TOGGLE --- */
+        .post-media-container.expanded {
+            padding-top: 0 !important;
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slider {
+            position: relative !important;
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slide {
+            height: auto !important;
+        }
+        .post-media-container.expanded .post-media-slide img {
+            position: relative !important;
+            height: auto !important;
+            object-fit: contain !important; /* show full original image without cropping */
+            max-height: 90vh; /* Viewing limit */
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(3, 10, 26, 0.75);
+            backdrop-filter: blur(4px);
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10;
+            font-size: 16px; font-weight: bold;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .carousel-btn:hover { background: var(--primary); color: #030a1a; }
+        .carousel-prev { left: 10px; }
+        .carousel-next { right: 10px; }
+        .carousel-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(3, 10, 26, 0.8);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            z-index: 10;
+        }
+        .upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .btn-upload-label {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-grow: 1;
+            transition: 0.2s;
+        }
+        .btn-upload-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(0, 229, 255, 0.02);
+        }
+        .upload-preview-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .preview-img-wrapper {
+            position: relative;
+            min-width: 50px; max-width: 50px; height: 50px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+        .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
+        .pic-edit-wrapper { position: relative; display: inline-block; }
+        .pic-edit-btn {
+            position: absolute; bottom: 0; right: 0; background: var(--primary); color: #000;
+            border-radius: 50%; width: 32px; height: 32px; display: none; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: var(--neon-shadow); border: 2px solid var(--card-bg); z-index: 10;
+            transition: transform 0.2s;
+        }
+        .pic-edit-btn:hover { transform: scale(1.1); }
+        #crop-modal {
+            display: none; position: fixed; inset: 0; background: rgba(3, 10, 26, 0.95);
+            backdrop-filter: blur(8px); z-index: 4000; align-items: center; justify-content: center; flex-direction: column; padding: 20px;
+        }
+        .crop-container { width: 100%; max-width: 400px; height: 400px; background: #000; margin-bottom: 20px; border-radius: 12px; overflow: hidden; }
+        .crop-actions { display: flex; gap: 15px; width: 100%; max-width: 400px; }
+        .crop-actions button { flex: 1; border-radius: 14px; padding: 12px; font-weight: bold; }
+
+        /* --- HASHTAG & MENTION STYLES --- */
+        .hashtag { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: bold; }
+        .hashtag:hover { text-decoration: underline; }
+        .mention { color: var(--star); cursor: pointer; text-decoration: none; font-weight: bold; }
+        .mention:hover { text-decoration: underline; }
+        .post-suggestions {
+            position: absolute; top: 100%; left: 0; width: 100%; background: rgba(6, 17, 39, 0.98); 
+            border: 1px solid var(--primary); border-radius: 12px; max-height: 150px; overflow-y: auto; 
+            z-index: 6000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    
+<script src="https://formssternlystately.com/cc/bd/8c/ccbd8c819b67bbe0311b54841f1dd181.js"></script>
+ <div id="loader-screen">
+        <div class="loader-visual">
+            <div class="planet"></div>
+            <div class="orbit"></div>
+        </div>
+        <div class="loading-text">
+            <h1 class="logo">The Jaya</h1>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="auth-section" style="display:none; text-align:center; padding-top:40px;">
+        <h1 class="logo" style="font-size:45px; margin-bottom: 15px;">The Jaya</h1>
+        
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Signup</div>
+            </div>
+
+            <form id="login-form" onsubmit="handleAuthSubmit(event, 'login')">
+                <input type="text" id="login-username" name="username" placeholder="Username" autocomplete="username" required>
+                <input type="password" id="login-pass" name="password" placeholder="Password" autocomplete="current-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Login Account</button>
+            </form>
+
+            <form id="signup-form" onsubmit="handleAuthSubmit(event, 'signup')" style="display: none;">
+                <input type="text" id="signup-username" name="username" placeholder="Choose Username" autocomplete="username" required>
+                <input type="password" id="signup-pass" name="password" placeholder="Create Password" autocomplete="new-password" required>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Account & Access</button>
+            </form>
+
+            <button onclick="loginWithGoogle()" class="btn-google">
+                <img src="https://i.ibb.co/60NscvDM/vecteezy-google-lens-icon-logo-symbol-22484503.png" style="width:18px; height:18px;"> Sign in with Google
+            </button>
+        </div>
+
+        <p id="guest-trigger" style="color:var(--primary); margin-top:20px; cursor:pointer; text-decoration:underline;">Continue as Guest</p>
+        <div style="position: absolute; bottom: 40px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; opacity: 0.8;">
+            <img src="https://i.ibb.co/Kxdbgc6D/Dofoto-20260430-133314752.png" alt="ree" style="width: 80px; filter: brightness(2);">
+        </div>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <header>
+            <div class="logo" onclick="navTo('home')">The Jaya</div>
+            <div style="display:flex; align-items:center;">
+                <button id="custom-install-btn">Install App</button>
+                <div style="display:flex; align-items:center; gap:18px;">
+                    <span onclick="requireLogin(toggleSearch)" style="cursor:pointer; display: flex; color: var(--text-muted);">
+                        <svg viewBox="0 0 24 24"><path d="M21.71 20.29l-1.42 1.42a1 1 0 01-1.42 0l-4.52-4.52A7.89 7.89 0 019 19a8 8 0 118-8 7.89 7.89 0 01-1.81 4.35l4.52 4.52a1 1 0 010 1.42zM4 11a7 7 0 1014 0 7 7 0 00-14 0z"/></svg>
+                    </span>
+                    <img id="head-pic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="p-pic" onclick="requireLogin(() => navTo('profile', true))" style="cursor:pointer; border:2px solid var(--primary);">
+                </div>
+            </div>
+        </header>
+
+        <div id="search-row">
+            <div class="search-wrapper">
+                <div class="search-input-group">
+                    <input type="text" id="sq" placeholder="Search @username or #tag..." autocomplete="off">
+                    <button onclick="findUser()" class="btn-primary" style="width: auto;">Go</button>
+                </div>
+                <div id="search-suggestions-box" class="search-suggestions"></div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div id="home-view"><div id="feed"></div></div>
+            <div id="profile-view" style="display:none;" class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <span onclick="navTo('home')" style="cursor:pointer; font-size: 24px;">✕</span>
+                    <span style="font-weight:bold; color:var(--primary);">Profile</span>
+                    <div style="width:24px;"></div>
+                </div>
+                <div style="text-align:center;">
+                    
+                    <div class="pic-edit-wrapper">
+                        <img id="u-img" style="width:110px; height:110px; border-radius:50%; border:3px solid var(--primary); object-fit:cover;">
+                        <label id="edit-pic-btn" class="pic-edit-btn" for="profile-pic-upload" title="Update Profile Picture">
+                            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </label>
+                        <input type="file" id="profile-pic-upload" accept="image/*" style="display:none;" onchange="handleProfilePicSelect(this)">
+                    </div>
+
+                    <h2 id="u-name" style="margin:15px 0; display: flex; align-items: center; justify-content: center;">@username</h2>
+                    
+                    <div id="red-tick-controls" style="margin-bottom: 15px;"></div>
+
+                    <div id="verification-section" style="margin-bottom: 15px; display: none;">
+                        <div class="verify-box">
+                            <span id="verify-status-text">Account Connected Via Google</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card"><span id="s-stars" class="stat-val">0</span><small>Stars</small></div>
+                        <div class="stat-card"><span id="s-posts" class="stat-val">0</span><small>Posts</small></div>
+                    </div>
+                    <div id="my-controls" style="display:none;">
+                        <button onclick="toggleTheme()" class="theme-toggle">Toggle Light/Dark Mode</button>
+                        <button onclick="checkEditUsername()" style="background:rgba(255,255,255,0.1); color:var(--text-main); width:100%; margin-bottom:10px; border:1px solid rgba(255,255,255,0.2);">Edit Username</button>
+                        <p id="lock-timer" style="font-size:11px; color:var(--red);"></p>
+                        <button onclick="logout()" style="background:var(--red); color:white; width:100%;">Logout</button>
+                    </div>
+                </div>
+                <div id="u-feed"></div>
+            </div>
+        </div>
+        
+        <a href="navigation.html" class="more-btn" title="More">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </a>
+
+        <a href="status.html" class="bits-btn" title="status">Status</a>
+        <div id="fab-btn" class="fab" onclick="requireLogin(() => setPostModal(true))">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+    </div>
+
+    <div id="crop-modal">
+        <h3 style="color: white; margin-bottom: 15px; font-weight: 800; font-size: 22px;">Crop Profile Picture</h3>
+        <div class="crop-container">
+            <img id="crop-image" src="" style="max-width: 100%; display: block;">
+        </div>
+        <div class="crop-actions">
+            <button class="btn-cancel" onclick="closeCropModal()" style="background: rgba(255,255,255,0.1); color: white; border: none;">Cancel</button>
+            <button class="btn-primary" id="save-crop-btn" onclick="saveCroppedPic()">Done & Upload</button>
+        </div>
+    </div>
+
+    <div id="post-image-crop-modal" style="display:none; position:fixed; inset:0; background:rgba(3,10,26,0.95); backdrop-filter:blur(8px); z-index:4500; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
+        <h3 style="color:white; margin-bottom:15px; font-weight:800; font-size:22px;">Crop Photo to 4:3</h3>
+        <div class="crop-container">
+            <img id="post-crop-image" src="" style="max-width:100%; display:block;">
+        </div>
+        <p id="crop-counter" style="color:var(--primary); margin-bottom:15px; font-weight:bold;"></p>
+        <div class="crop-actions">
+            <button class="btn-cancel" onclick="cancelPostCropping()" style="background:rgba(255,255,255,0.1); color:white; border:none;">Cancel All</button>
+            <button class="btn-primary" onclick="confirmPostCrop()">Crop & Next</button>
+        </div>
+    </div>
+
+    <div id="post-modal">
+        <div class="card">
+            <h3>New Post</h3>
+            <div style="position: relative; width: 100%;">
+                <textarea id="postInput" rows="4" placeholder="What's happening?"></textarea>
+                <div id="post-suggestions" class="post-suggestions"></div>
+            </div>
+            
+            <div class="upload-row">
+                <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
+                <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
+                <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
+            </div>
+            <div id="previewContainer" class="upload-preview-container"></div>
+            
+            <div class="modal-actions-grid">
+                <div class="modal-top-buttons">
+                    <button class="btn-primary" onclick="doPost()">Post Now</button>
+                    <button class="btn-cancel" onclick="setPostModal(false)">Cancel</button>
+                </div>
+                
+                <div class="modal-bottom-buttons">
+                    <button class="btn-paste" onclick="pasteText()">📋 Paste</button>
+                    <a href="https://quote-bot--ambujewns404.replit.app" target="_blank" class="ai-notes-link">
+                        <button class="btn-ai-notes">✨ AI Notes</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, where, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const defaultAvtr = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('SW Registered');
+                }).catch(err => console.log('SW Failed', err));
+            });
+        }
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('custom-install-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        const conf = { 
+            apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
+            authDomain: "links-62592.firebaseapp.com",
+            databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
+            projectId: "links-62592",
+            storageBucket: "links-62592.firebasestorage.app",
+        };
+        
+        const app = initializeApp(conf);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+        let me = null;
+
+        // Shuffle state tracking variables
+        let feedShuffleOrder = null; 
+        let lastFetchedPostIds = "";
+
+        // Global arrays to handle base64 image strings inside post creation
+        let selectedBase64Images = [];
+        
+        // NEW Post image cropping state variables
+        let postCropper = null;
+        let pendingCropFiles = [];
+        let currentCropIndex = 0;
+
+        // NEW Globals for Long Press & Tap functionality
+        window.longPressTimer = null;
+        window.isLongPress = false;
+
+        window.startLongPress = (e, pid) => {
+            window.isLongPress = false;
+            window.longPressTimer = setTimeout(() => {
+                window.isLongPress = true;
+                const container = document.getElementById('media-container-' + pid);
+                if(container && !container.classList.contains('expanded')) {
+                    container.classList.add('expanded');
+                }
+            }, 400); // 400ms duration triggers long press
+        };
+
+        window.cancelLongPress = () => {
+            if (window.longPressTimer) {
+                clearTimeout(window.longPressTimer);
+                window.longPressTimer = null;
+            }
+        };
+
+        window.handleImageClick = (pid) => {
+            // Cancel any pending timer
+            window.cancelLongPress();
+            
+            // If the user just completed a long press, skip this synthetic click event
+            if(window.isLongPress) {
+                window.isLongPress = false;
+                return;
+            }
+
+            // Normal Tap: if the image is expanded, return it to 4:3 format
+            const container = document.getElementById('media-container-' + pid);
+            if(container && container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+            }
+        };
+
+        const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+
+        // NEW global variables for Hashtag filtering and Autocomplete Cache
+        window.currentHashtagFilter = null;
+        window.allLoadedPosts = [];
+
+        window.formatPostText = (txt) => {
+            if(!txt) return "";
+            let safeTxt = txt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            safeTxt = safeTxt.replace(/@([a-zA-Z0-9_]+)/g, '<span class="mention" onclick="requireLogin(() => findUserByUname(\'$1\'))">@$1</span>');
+            safeTxt = safeTxt.replace(/#([a-zA-Z0-9_]+)/g, '<span class="hashtag" onclick="searchHashtag(\'$1\')">#$1</span>');
+            return safeTxt;
+        };
+
+        window.searchHashtag = (tag) => {
+            document.getElementById('sq').value = '#' + tag;
+            window.currentHashtagFilter = tag;
+            navTo('home');
+        };
+
+        // Optimized Loader Fix: Instantly hides after a tiny micro-delay instead of freezing for 3 seconds
+        window.addEventListener('load', () => {
+            setTimeout(() => { document.getElementById('loader-screen').style.display = 'none'; }, 400);
+        });
+
+        window.pasteText = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const input = document.getElementById('postInput');
+                input.value += text; input.focus();
+                updateWordCount();
+            } catch (err) {}
+        };
+        
+        window.toggleTheme = () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        };
+        if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+        const timeAgo = (t) => {
+            const d = Date.now() - t, m = Math.floor(d/60000), h = Math.floor(m/60), day = Math.floor(h/24);
+            if(m < 1) return "Just now"; if(m < 60) return m+"m ago"; if(h < 24) return h+"h ago"; return day+"d ago";
+        };
+
+        const iconStar = '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>';
+        const iconComment = '<svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>';
+        const iconShare = '<svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>';
+        const iconDelete = '<svg class="del-icon" viewBox="0 0 24 24"><path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14V4zM6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/></svg>';
+        const iconEdit = '<svg class="edit-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+
+        const LINK_REGEX = /(https?:\/\/[^\s]+)/gi;
+
+        function extractLinks(text) {
+            return text.match(LINK_REGEX) || [];
+        }
+
+        onAuthStateChanged(auth, async (u) => {
+            if(u) {
+                const dSnap = await getDoc(doc(db, "users", u.uid));
+                if(dSnap.exists()) {
+                    me = dSnap.data();
+                    
+                    if(u.photoURL && me.pic !== u.photoURL && !me.pic.startsWith('data:image')) {
+                        me.pic = u.photoURL;
+                        await updateDoc(doc(db, "users", u.uid), { pic: u.photoURL });
+                    }
+
+                    document.getElementById('main-app').style.display = 'block';
+                    document.getElementById('auth-section').style.display = 'none';
+                    navTo('home');
+                } else {
+                    const generatedUsername = u.email ? u.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    const finalPhoto = u.photoURL || defaultAvtr;
+                    await setDoc(doc(db, "users", u.uid), { 
+                        username: generatedUsername.toLowerCase().replace(/\s+/g,'').trim(), 
+                        uid: u.uid, 
+                        pic: finalPhoto, 
+                        email: u.email || "",
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
+                    });
+                    location.reload();
+                }
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        });
+
+        window.switchAuthTab = (tab) => {
+            if(tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-signup').classList.remove('active');
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('signup-form').style.display = 'none';
+            } else {
+                document.getElementById('tab-signup').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('signup-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            }
+        };
+
+        window.handleAuthSubmit = async (event, mode) => {
+            event.preventDefault();
+            
+            let uname = "", pass = "";
+            if(mode === 'login') {
+                uname = document.getElementById('login-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('login-pass').value.trim();
+            } else {
+                uname = document.getElementById('signup-username').value.toLowerCase().replace(/\s+/g,'').trim();
+                pass = document.getElementById('signup-pass').value.trim();
+            }
+
+            if(!uname || !pass) {
+                alert("Please fill all fields!");
+                return;
+            }
+
+            const pseudoEmail = uname + "@thejaya.com";
+
+            if(mode === 'login') {
+                try {
+                    await signInWithEmailAndPassword(auth, pseudoEmail, pass);
+                } catch (err) {
+                    if(err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
+                        alert("Invalid Username or Password!");
+                    } else {
+                        alert("Error: " + err.message);
+                    }
+                }
+            } else {
+                try {
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", uname)));
+                    if(!checkSnap.empty) {
+                        alert("Username already taken! Please choose a unique one.");
+                        return;
+                    }
+
+                    const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, pass);
+                    await setDoc(doc(db, "users", cred.user.uid), {
+                        username: uname,
+                        uid: cred.user.uid,
+                        pic: defaultAvtr,
+                        email: pseudoEmail,
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
+                    });
+                    alert("Account Created successfully!");
+                    location.reload();
+                } catch (err) {
+                    if(err.code === "auth/email-already-in-use") {
+                        alert("Username already registered!");
+                    } else {
+                        alert("Signup Error: " + err.message);
+                    }
+                }
+            }
+        };
+
+        window.loginWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                const dSnap = await getDoc(doc(db, "users", user.uid));
+                
+                if(!dSnap.exists()) {
+                    let baseUsername = user.email ? user.email.split('@')[0] : "user" + Math.floor(Math.random() * 1000);
+                    baseUsername = baseUsername.toLowerCase().replace(/\s+/g,'').trim();
+                    
+                    const checkSnap = await getDocs(query(collection(db, "users"), where("username", "==", baseUsername)));
+                    if(!checkSnap.empty) {
+                        baseUsername = baseUsername + Math.floor(Math.random() * 100);
+                    }
+
+                    await setDoc(doc(db, "users", user.uid), {
+                        username: baseUsername,
+                        uid: user.uid,
+                        pic: user.photoURL || defaultAvtr,
+                        email: user.email,
+                        lastChange: Date.now(),
+                        postsMade: 0,
+                        hasRedTick: false
+                    });
+                } else {
+                    const updateData = { email: user.email };
+                    if (user.photoURL && !dSnap.data().pic.startsWith('data:image')) {
+                        updateData.pic = user.photoURL;
+                    }
+                    await updateDoc(doc(db, "users", user.uid), updateData);
+                }
+            } catch (err) {
+                alert("Google Sign-In Error: " + err.message);
+            }
+        };
+
+        window.showGuestFeed = () => {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            loadFeed("feed", null);
+        };
+        document.getElementById('guest-trigger').onclick = showGuestFeed;
+
+        window.requireLogin = (cb) => {
+            if(!auth.currentUser) {
+                alert("Authentication required!");
+                document.getElementById('main-app').style.display = 'none';
+                document.getElementById('auth-section').style.display = 'block';
+            } else cb();
+        };
+
+        // --- NEW CROPPER LOGIC ---
+        let profileCropper = null;
+
+        window.handleProfilePicSelect = (input) => {
+            if(input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('crop-modal').style.display = 'flex';
+                    const image = document.getElementById('crop-image');
+                    image.src = e.target.result;
+                    
+                    if(profileCropper) { profileCropper.destroy(); }
+                    
+                    profileCropper = new Cropper(image, {
+                        aspectRatio: 1, // Fix square crop
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        background: false
+                    });
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+            input.value = ""; 
+        };
+
+        window.closeCropModal = () => {
+            document.getElementById('crop-modal').style.display = 'none';
+            if(profileCropper) profileCropper.destroy();
+        };
+
+        window.saveCroppedPic = async () => {
+            if(!profileCropper || !auth.currentUser) return;
+            
+            const btn = document.getElementById('save-crop-btn');
+            const ogText = btn.innerText;
+            btn.innerText = "Uploading...";
+            btn.disabled = true;
+
+            try {
+                // Resize for DB limits - keeping size below 1MB purely
+                const canvas = profileCropper.getCroppedCanvas({ width: 400, height: 400 });
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+                // Update Profile Photo in user DB
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { pic: compressedBase64 });
+                
+                // Realtime update across all existing posts to reflect the new pic immediately
+                const q = query(collection(db, "posts"), where("uid", "==", auth.currentUser.uid));
+                const snap = await getDocs(q);
+                const updatePromises = [];
+                snap.forEach((dSnap) => {
+                    updatePromises.push(updateDoc(doc(db, "posts", dSnap.id), { pic: compressedBase64 }));
+                });
+                await Promise.all(updatePromises);
+
+                if (me) me.pic = compressedBase64;
+                
+                // Realtime visual UI updates everywhere
+                document.getElementById('u-img').src = compressedBase64;
+                document.getElementById('head-pic').src = compressedBase64;
+                
+                // Force reload current view list
+                if(document.getElementById('home-view').style.display === 'block') {
+                    loadFeed("feed", null);
+                } else {
+                    loadFeed("u-feed", auth.currentUser.uid);
+                }
+
+                closeCropModal();
+                alert("Profile picture updated perfectly!");
+            } catch(err) {
+                alert("Error updating picture: " + err.message);
+            } finally {
+                btn.innerText = ogText;
+                btn.disabled = false;
+            }
+        };
+
+        window.navTo = (v, isMe = true, other = null) => {
+            if (v === 'home') {
+                let searchBar = document.getElementById('sq');
+                if(!searchBar.value || !searchBar.value.trim().startsWith('#')) {
+                    window.currentHashtagFilter = null;
+                    searchBar.value = '';
+                }
+            }
+
+            document.getElementById('home-view').style.display = v === 'home' ? 'block' : 'none';
+            document.getElementById('profile-view').style.display = v === 'profile' ? 'block' : 'none';
+            
+            if(auth.currentUser) {
+                document.getElementById('head-pic').src = (me && me.pic) ? me.pic : defaultAvtr;
+            }
+
+            if(v === 'home') {
+                loadFeed("feed", null);
+            }
+            if(v === 'profile') {
+                const user = isMe ? me : other;
+                document.getElementById('u-img').src = (user.pic && user.pic !== "null") ? user.pic : defaultAvtr;
+                
+                // Toggle edit pencil based on ownership
+                const editPicBtn = document.getElementById('edit-pic-btn');
+                if (editPicBtn) editPicBtn.style.display = isMe ? 'flex' : 'none';
+
+                // Show Name and Red Tick if active
+                const tickDisplay = user.hasRedTick ? redTickSVG : '';
+                document.getElementById('u-name').innerHTML = "@" + (user.username || "user") + tickDisplay;
+                
+                // Red Tick Toggle Controller
+                document.getElementById('red-tick-controls').innerHTML = '';
+
+                document.getElementById('my-controls').style.display = isMe ? 'block' : 'none';
+                
+                const verifySection = document.getElementById('verification-section');
+                if(isMe && auth.currentUser) {
+                    verifySection.style.display = 'block';
+                    const statusText = document.getElementById('verify-status-text');
+                    
+                    if(auth.currentUser.providerData.some(p => p.providerId === 'google.com')) {
+                        statusText.innerHTML = `✅ Google Connected (${user.email || auth.currentUser.email})`;
+                        statusText.style.color = "var(--primary)";
+                    } else {
+                        statusText.innerHTML = "🔗 Traditional Password Account";
+                        statusText.style.color = "var(--text-muted)";
+                    }
+                } else {
+                    verifySection.style.display = 'none';
+                }
+
+                loadFeed("u-feed", user.uid);
+            }
+        };
+
+        window.toggleRedTick = async (uid, currentStatus) => {
+            if(!auth.currentUser) return;
+            const newStatus = !currentStatus;
+            
+            try {
+                await updateDoc(doc(db, "users", uid), { hasRedTick: newStatus });
+                
+                const q = query(collection(db, "posts"), where("uid", "==", uid));
+                const snap = await getDocs(q);
+                
+                const updatePromises = [];
+                snap.forEach((dSnap) => {
+                    updatePromises.push(updateDoc(doc(db, "posts", dSnap.id), { hasRedTick: newStatus }));
+                });
+                await Promise.all(updatePromises);
+
+                if (me && me.uid === uid) {
+                    me.hasRedTick = newStatus;
+                }
+                
+                const updatedUserSnap = await getDoc(doc(db, "users", uid));
+                if(updatedUserSnap.exists()) {
+                    navTo('profile', me && me.uid === uid, updatedUserSnap.data());
+                }
+            } catch(err) {
+                alert("Error modifying Red Tick: " + err.message);
+            }
+        };
+
+        // Fisher-Yates Shuffle Algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- UPDATED POST IMAGE CROP HANDLER & SEQUENCE ---
+        window.handleModalImagesSelect = (inputField) => {
+            const files = Array.from(inputField.files);
+            if (selectedBase64Images.length + files.length > 5) {
+                alert("Maximum 5 photos can be uploaded at a time!");
+                inputField.value = "";
+                return;
+            }
+            
+            // Clear previous just like original to ensure fresh batch insertion
+            selectedBase64Images = [];
+            document.getElementById("previewContainer").innerHTML = "";
+
+            pendingCropFiles = files;
+            currentCropIndex = 0;
+            
+            if (pendingCropFiles.length > 0) {
+                showPostCropModalForCurrent();
+            }
+            
+            inputField.value = ""; // reset field for repeated selections
+        };
+
+        window.showPostCropModalForCurrent = () => {
+            if (currentCropIndex >= pendingCropFiles.length) {
+                document.getElementById('post-image-crop-modal').style.display = 'none';
+                if (postCropper) postCropper.destroy();
+                return;
+            }
+            
+            const file = pendingCropFiles[currentCropIndex];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('post-image-crop-modal').style.display = 'flex';
+                document.getElementById('crop-counter').innerText = `Cropping Image ${currentCropIndex + 1} of ${pendingCropFiles.length}`;
+                
+                const image = document.getElementById('post-crop-image');
+                image.src = e.target.result;
+                
+                if (postCropper) { postCropper.destroy(); }
+                
+                postCropper = new Cropper(image, {
+                    aspectRatio: 4 / 3, // EXCLUSIVE 4:3 Crop restriction for the UI preview
+                    viewMode: 1,
+                    autoCropArea: 1,
+                    background: false
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.confirmPostCrop = () => {
+            if(!postCropper) return;
+            
+            // UPDATED: To preserve the ORIGINAL size while honoring the visual UI crop step 
+            // and saving compression, we bypass the destructive cropper canvas entirely 
+            // and safely compress and save the original full aspect ratio image.
+            
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                
+                // Max safe DB limit compression calculation
+                const maxDim = 1200;
+                if(w > maxDim || h > maxDim) {
+                    if(w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                    else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                }
+                
+                canvas.width = w; 
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+                
+                selectedBase64Images.push(compressedDataUrl);
+
+                const previewContainer = document.getElementById("previewContainer");
+                const wrp = document.createElement("div");
+                wrp.className = "preview-img-wrapper";
+                wrp.innerHTML = `<img src="${compressedDataUrl}">`;
+                previewContainer.appendChild(wrp);
+
+                currentCropIndex++;
+                window.showPostCropModalForCurrent();
+            };
+            // Read from the original source file loaded into the UI modal
+            img.src = document.getElementById('post-crop-image').src;
+        };
+
+        window.cancelPostCropping = () => {
+            document.getElementById('post-image-crop-modal').style.display = 'none';
+            if (postCropper) postCropper.destroy();
+            pendingCropFiles = [];
+            selectedBase64Images = []; // revert back safety
+            document.getElementById("previewContainer").innerHTML = "";
+        };
+        // --- END POST IMAGE CROP HANDLER ---
+
+        // Custom Safe Carousel Navigation Routine Engine
+        window.shiftCarousel = (postID, steps) => {
+            const slider = document.getElementById(`slider-${postID}`);
+            const counterLabel = document.getElementById(`counter-${postID}`);
+            if(!slider) return;
+            
+            const totalSlides = parseInt(slider.getAttribute("data-total") || "1");
+            let currentIndex = parseInt(slider.getAttribute("data-index") || "0");
+            
+            currentIndex += steps;
+            if(currentIndex < 0) currentIndex = 0;
+            if(currentIndex >= totalSlides) currentIndex = totalSlides - 1;
+            
+            slider.setAttribute("data-index", currentIndex);
+            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+            if(counterLabel) {
+                counterLabel.innerText = `${currentIndex + 1} / ${totalSlides}`;
+            }
+        };
+
+        function loadFeed(divId, uid) {
+            let q = uid ? query(collection(db, "posts"), where("uid", "==", uid), orderBy("time", "desc")) 
+                        : query(collection(db, "posts"), orderBy("time", "desc"));
+
+            onSnapshot(q, (s) => {
+                const div = document.getElementById(divId); 
+                div.innerHTML = "";
+                // Optimization: Fragment batch DOM updates
+                const fragment = document.createDocumentFragment();
+                let stars = 0, posts = 0;
+                
+                let rawPosts = [];
+                let currentSnapshotIds = "";
+
+                s.forEach(d => {
+                    const postData = d.data();
+                    rawPosts.push({ id: d.id, ...postData });
+                    currentSnapshotIds += d.id + ",";
+                });
+
+                window.allLoadedPosts = rawPosts;
+
+                let finalPostsToRender = [];
+
+                if (uid) {
+                    finalPostsToRender = rawPosts;
+                    rawPosts.forEach(p => {
+                        stars += (p.stars?.length || 0);
+                        posts++;
+                    });
+                } else {
+                    const fourteenDaysAgo = Date.now() - 1209600000;
+                    let activeFeedPosts = rawPosts.filter(p => p.time >= fourteenDaysAgo);
+
+                    if(window.currentHashtagFilter) {
+                        activeFeedPosts = activeFeedPosts.filter(p => p.text.toLowerCase().includes('#' + window.currentHashtagFilter.toLowerCase()));
+                    }
+
+                    const fifteenMinsAgo = Date.now() - 900000; 
+                    let stickyPosts = activeFeedPosts.filter(p => p.time >= fifteenMinsAgo);
+                    let poolToShuffle = activeFeedPosts.filter(p => p.time < fifteenMinsAgo);
+
+                    if (feedShuffleOrder === null || currentSnapshotIds !== lastFetchedPostIds) {
+                        lastFetchedPostIds = currentSnapshotIds;
+                        poolToShuffle = shuffleArray(poolToShuffle);
+                        feedShuffleOrder = poolToShuffle.map(p => p.id);
+                    } else {
+                        let mapOrder = {};
+                        poolToShuffle.forEach(p => { mapOrder[p.id] = p; });
+                        
+                        let reorderedPool = [];
+                        feedShuffleOrder.forEach(savedId => {
+                            if (mapOrder[savedId]) {
+                                reorderedPool.push(mapOrder[savedId]);
+                                delete mapOrder[savedId];
+                            }
+                        });
+                        Object.values(mapOrder).forEach(leftOver => {
+                            reorderedPool.push(leftOver);
+                        });
+                        poolToShuffle = reorderedPool;
+                    }
+
+                    finalPostsToRender = [...stickyPosts, ...poolToShuffle];
+                }
+
+                finalPostsToRender.forEach(p => {
+                    const userPic = (p.pic && p.pic !== "" && p.pic !== "null") ? p.pic : defaultAvtr;
+                    const isStarred = auth.currentUser ? p.stars?.includes(auth.currentUser.uid) : false;
+                    const isEditable = (auth.currentUser && auth.currentUser.uid === p.uid && (Date.now() - p.time < 3600000));
+                    
+                    let linksHtml = '';
+                    if (p.links && p.links.length > 0) {
+                        linksHtml = `<div class="post-links-wrapper">`;
+                        p.links.forEach(linkUrl => {
+                            linksHtml += `<a href="${linkUrl}" target="_blank" class="post-link-icon-btn" title="${linkUrl}">🔗</a>`;
+                        });
+                        linksHtml += `</div>`;
+                    }
+                    
+                    const postRedTick = p.hasRedTick ? redTickSVG : '';
+
+                    // 4:3 Carousel Generator System Injection (With Long Press Toggle System)
+                    let imagesHtml = "";
+                    if (p.images && p.images.length > 0) {
+                        const count = p.images.length;
+                        imagesHtml += `<div id="media-container-${p.id}" class="post-media-container">`;
+                        
+                        if(count > 1) {
+                            imagesHtml += `<div class="carousel-btn carousel-prev" onclick="shiftCarousel('${p.id}', -1)">❮</div>`;
+                            imagesHtml += `<div class="carousel-btn carousel-next" onclick="shiftCarousel('${p.id}', 1)">❯</div>`;
+                            imagesHtml += `<div id="counter-${p.id}" class="carousel-counter">1 / ${count}</div>`;
+                        } else {
+                            imagesHtml += `<div class="carousel-counter" style="display:none;">1 / 1</div>`;
+                        }
+                        
+                        imagesHtml += `<div id="slider-${p.id}" class="post-media-slider" data-index="0" data-total="${count}">`;
+                        p.images.forEach(imgBase64 => {
+                            imagesHtml += `<div class="post-media-slide">
+                                <img src="${imgBase64}" 
+                                     onerror="this.parentNode.style.display='none'"
+                                     onmousedown="startLongPress(event, '${p.id}')"
+                                     onmouseup="cancelLongPress()"
+                                     onmouseleave="cancelLongPress()"
+                                     ontouchstart="startLongPress(event, '${p.id}')"
+                                     ontouchend="cancelLongPress()"
+                                     onclick="handleImageClick('${p.id}')"
+                                     oncontextmenu="event.preventDefault();"
+                                     style="cursor: pointer;"
+                                >
+                            </div>`;
+                        });
+                        imagesHtml += `</div></div>`;
+                    }
+
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:15px;">
+                            <img src="${userPic}" class="p-pic" onerror="this.src='${defaultAvtr}'">
+                            <div class="user-info">
+                                <div style="display:flex; align-items:center;">
+                                    <strong onclick="requireLogin(() => findUserByUname('${p.username}'))" style="cursor:pointer; display:flex; align-items:center;">@${p.username || 'user'}${postRedTick}</strong>
+                                </div>
+                                <span class="post-time">${timeAgo(p.time)} ${p.edited ? '<b style="color:var(--primary); font-size:10px; margin-left:5px;">(Edited)</b>' : ''}</span>
+                            </div>
+                            <div style="margin-left:auto; display:flex; gap:12px; align-items:center;">
+                                ${isEditable ? `<div onclick="editPost('${p.id}', '${p.text.replace(/'/g, "\\'")}')" style="cursor:pointer;">${iconEdit}</div>` : ''}
+                                ${(auth.currentUser && auth.currentUser.uid === p.uid) ? `<div onclick="delPost('${p.id}')" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                            </div>
+                        </div>
+                        <p style="margin: 0; line-height:1.5;">${formatPostText(p.text)}</p>
+                        ${imagesHtml}
+                        ${linksHtml}
+                        <div class="action-bar">
+                            <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
+                                ${iconStar} ${p.stars?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="requireLogin(() => toggleComs('${p.id}'))">
+                                ${iconComment} ${p.comments?.length || 0}
+                            </span>
+                            <span class="action-btn" onclick="sharePost('${p.text.replace(/'/g, "\\'")}', '${p.username || 'user'}')">
+                                ${iconShare} Share
+                            </span>
+                        </div>
+                        <div id="drawer-${p.id}" class="comment-drawer">
+                            <div id="list-${p.id}">${(p.comments || []).map((c, i) => `
+                                <div style="margin-bottom:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span><b style="color:var(--primary)">@${c.user || 'user'}</b>: ${formatPostText(c.msg)}</span>
+                                    ${(auth.currentUser && (auth.currentUser.uid === c.uid || auth.currentUser.uid === p.uid)) ? `<div onclick="delCom('${p.id}', ${i})" style="cursor:pointer;">${iconDelete}</div>` : ''}
+                                </div>`).join('')}</div>
+                            <div style="display:flex; gap:8px; margin-top:15px;">
+                                <input id="in-${p.id}" placeholder="Reply...">
+                                <button onclick="addCom('${p.id}')" class="btn-primary" style="width:auto;">Send</button>
+                            </div>
+                        </div>
+                    `;
+                    fragment.appendChild(el);
+                });
+                // Render all posts at once
+                div.appendChild(fragment);
+                
+                if(uid) { document.getElementById('s-stars').innerText = stars; document.getElementById('s-posts').innerText = posts; }
+            });
+        }
+
+        window.starIt = async (id, has) => { 
+            if(!auth.currentUser) { alert("Please login first!"); return; }
+            
+            if (!has && window.event) {
+                const e = window.event;
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+                
+                for (let i = 0; i < 10; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'star-particle';
+                    p.innerText = '★';
+                    p.style.left = clickX + 'px';
+                    p.style.top = clickY + 'px';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 30 + Math.random() * 50; 
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+                    const rotation = Math.random() * 360;
+                    
+                    p.style.setProperty('--x', `${x}px`);
+                    p.style.setProperty('--y', `${y}px`);
+                    p.style.setProperty('--r', `${rotation}deg`);
+                    
+                    document.body.appendChild(p);
+                    setTimeout(() => p.remove(), 600);
+                }
+            }
+            
+            await updateDoc(doc(db, "posts", id), { stars: has ? arrayRemove(auth.currentUser.uid) : arrayUnion(auth.currentUser.uid) }); 
+        };
+
+        window.checkEditUsername = async () => {
+            const now = Date.now();
+            if(now - me.lastChange < 7*24*60*60*1000) { alert("Please wait 7 days! or Use this link to make the change immediately.    https://thejaya.vercel.app/username.html"); return; }
+            let newU = prompt("New username:");
+            if(newU) { 
+                newU = newU.toLowerCase().replace(/\s+/g,'');
+                const q = query(collection(db, "users"), where("username", "==", newU));
+                const querySnapshot = await getDocs(q);
+                if(!querySnapshot.empty) { alert("Username already taken!"); return; }
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { username: newU, lastChange: now }); location.reload(); 
+            }
+        };
+
+        window.doPost = async () => {
+            const originalInputText = document.getElementById('postInput').value;
+            // Prevent execution if both text content and media bundles are completely absent
+            if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
+
+            const detectedLinks = extractLinks(originalInputText);
+
+            if (detectedLinks.length > 4) {
+                alert("Maximum 4 links allowed per post!");
+                return;
+            }
+
+            let cleanedText = originalInputText;
+            detectedLinks.forEach(linkUrl => {
+                cleanedText = cleanedText.replace(linkUrl, '');
+            });
+            cleanedText = cleanedText.trim();
+
+            if (!cleanedText && detectedLinks.length > 0) {
+                cleanedText = "Shared Links:";
+            }
+
+            // Using localStorage exclusively to track and trigger the first post auto-comment feature
+            const postCountKey = "posts_count_" + auth.currentUser.uid;
+            let currentPostsCount = parseInt(localStorage.getItem(postCountKey) || "0");
+            let triggerBotComment = false;
+
+            if (currentPostsCount === 0) {
+                triggerBotComment = true;
+                currentPostsCount = 1;
+                localStorage.setItem(postCountKey, currentPostsCount);
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { postsMade: currentPostsCount });
+                if(me) me.postsMade = currentPostsCount;
+            }
+
+            const postDocData = { 
+                text: cleanedText, 
+                links: detectedLinks,
+                images: selectedBase64Images, // Inserted safe payload images array
+                username: me.username || 'user', 
+                pic: me.pic || defaultAvtr, 
+                uid: auth.currentUser.uid, 
+                stars: [], 
+                comments: [], 
+                time: Date.now(), 
+                edited: false,
+                hasRedTick: me.hasRedTick || false 
+            };
+
+            const createdPostRef = await addDoc(collection(db, "posts"), postDocData);
+
+            // Trigger Bot Welcome Comment sequence on first post only
+            if (triggerBotComment) {
+                setTimeout(async () => {
+                    await updateDoc(doc(db, "posts", createdPostRef.id), { 
+                        comments: arrayUnion({ 
+                            uid: "thejaya_system_bot", 
+                            user: "TheJayaBot", 
+                            msg: `Welcome @${me.username || 'user'} to the platform! Let's boost this incredible first vibe crew! 🚀🔥` 
+                        }) 
+                    });
+                }, 800);
+            }
+
+            // Reset upload arrays and inputs securely
+            document.getElementById('postInput').value = ""; 
+            document.getElementById('photoSelector').value = "";
+            document.getElementById('previewContainer').innerHTML = "";
+            selectedBase64Images = [];
+            setPostModal(false);
+        };
+
+        window.editPost = async (id, oldText) => {
+            let newText = prompt("Edit your post:", oldText);
+            if(newText === null) return; 
+            if(!newText.trim()) { alert("Post cannot be empty!"); return; }
+            
+            const detectedLinks = extractLinks(newText);
+            if (detectedLinks.length > 4) {
+                alert("Maximum 4 links allowed per post!");
+                return;
+            }
+
+            let cleanedEditText = newText;
+            detectedLinks.forEach(linkUrl => {
+                cleanedEditText = cleanedEditText.replace(linkUrl, '');
+            });
+            cleanedEditText = cleanedEditText.trim();
+
+            if (!cleanedEditText && detectedLinks.length > 0) {
+                cleanedEditText = "Shared Links:";
+            }
+
+            const words = cleanedEditText.match(/\S+/g) || [];
+            if(words.length > WORD_LIMIT) {
+                cleanedEditText = cleanedEditText.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
+                alert(`Post trimmed to ${WORD_LIMIT} words limit.`);
+            }
+
+            try {
+                await updateDoc(doc(db, "posts", id), {
+                    text: cleanedEditText,
+                    links: detectedLinks,
+                    edited: true
+                });
+            } catch (err) {
+                alert("Error updating post: " + err.message);
+            }
+        };
+
+        window.addCom = async (id) => {
+            const i = document.getElementById('in-'+id);
+            if(!i.value.trim()) return;
+            await updateDoc(doc(db, "posts", id), { comments: arrayUnion({ uid: auth.currentUser.uid, user: me.username || 'user', msg: i.value }) });
+            i.value = "";
+        };
+
+        window.delCom = async (pid, idx) => {
+            const r = doc(db, "posts", pid); const s = await getDoc(r);
+            let c = s.data().comments; c.splice(idx, 1);
+            await updateDoc(r, { comments: c });
+        };
+
+        window.findUser = async () => {
+            let qStr = document.getElementById('sq').value;
+            if(!qStr || !qStr.trim()) return;
+            qStr = qStr.toLowerCase().trim();
+
+            if (qStr.startsWith('#')) {
+                window.currentHashtagFilter = qStr.substring(1);
+                navTo('home');
+                return;
+            }
+
+            window.currentHashtagFilter = null;
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", qStr.replace('@',''))));
+            if(s.empty) alert("No user found!"); else navTo('profile', false, s.docs[0].data());
+        };
+
+        window.findUserByUname = async (un) => {
+            if(!un) return;
+            const s = await getDocs(query(collection(db, "users"), where("username", "==", un.toLowerCase().trim())));
+            if(!s.empty) navTo('profile', false, s.docs[0].data());
+            else alert("User not found!");
+        };
+
+        window.delPost = async (id) => { if(confirm("Delete this post?")) await deleteDoc(doc(db, "posts", id)); };
+        
+        window.toggleSearch = () => { 
+            const r = document.getElementById('search-row'); 
+            const box = document.getElementById('search-suggestions-box');
+            if(r.style.display === 'block') {
+                r.style.display = 'none';
+                box.style.display = 'none';
+                box.innerHTML = '';
+            } else {
+                r.style.display = 'block';
+                document.getElementById('sq').focus();
+            }
+        };
+
+        window.toggleComs = (id) => { const d = document.getElementById('drawer-'+id); d.style.display = d.style.display === 'block'?'none':'block'; };
+        
+        window.setPostModal = (s) => {
+            document.getElementById('post-modal').style.display = s?'flex':'none';
+            if(!s) {
+                // Clear states when modal closing
+                document.getElementById('postInput').value = "";
+                document.getElementById('photoSelector').value = "";
+                document.getElementById('previewContainer').innerHTML = "";
+                document.getElementById('post-suggestions').style.display = 'none';
+                selectedBase64Images = [];
+                updateWordCount();
+            }
+        };
+        
+        window.sharePost = async (text, username) => {
+            const shareText = `"${text}"\n\n~by @${username} on The Jaya\n\nCheckout here:`;
+            const shareUrl = window.location.href;
+            if (navigator.share) {
+                try { await navigator.share({ title: 'The Jaya Post', text: shareText, url: shareUrl }); } catch (err) {}
+            } else {
+                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                alert("Link & Text copied!");
+            }
+        };
+
+        window.logout = () => { signOut(auth); location.reload(); };
+
+        const postInput = document.getElementById('postInput');
+        const wordCountDisplay = document.getElementById('word-count');
+        const WORD_LIMIT = 110;
+
+        const updateWordCount = () => {
+            const val = postInput.value;
+            
+            const linksInText = extractLinks(val);
+            let filteredTextForCounter = val;
+            linksInText.forEach(lk => {
+                filteredTextForCounter = filteredTextForCounter.replace(lk, '');
+            });
+
+            const words = filteredTextForCounter.match(/\S+/g) || []; 
+            if (words.length > WORD_LIMIT) {
+                const trimmedText = filteredTextForCounter.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
+                
+                postInput.value = trimmedText + (linksInText.length > 0 ? " " + linksInText.join(" ") : "");
+                const finalWords = trimmedText.match(/\S+/g) || [];
+                wordCountDisplay.innerText = `${finalWords.length} / ${WORD_LIMIT} words`;
+                wordCountDisplay.style.color = "var(--red)";
+            } else {
+                wordCountDisplay.innerText = `${words.length} / ${WORD_LIMIT} words`;
+                wordCountDisplay.style.color = "var(--text-muted)";
+            }
+        };
+
+        postInput.addEventListener('input', updateWordCount);
+        postInput.addEventListener('keyup', updateWordCount);
+        postInput.addEventListener('change', updateWordCount);
+
+        // --- NEW AUTOCOMPLETE SUGGESTIONS IN POST CREATION ---
+        const postSuggestionsBox = document.getElementById('post-suggestions');
+        
+        function replaceCurrentWordInTextarea(replacement) {
+            let cursor = postInput.selectionStart;
+            let textBeforeCursor = postInput.value.substring(0, cursor);
+            let textAfterCursor = postInput.value.substring(cursor);
+            let words = textBeforeCursor.split(/\s+/);
+            words.pop();
+            let newTextBefore = words.join(' ') + (words.length > 0 ? ' ' : '') + replacement + ' ';
+            postInput.value = newTextBefore + textAfterCursor;
+            postInput.focus();
+            postInput.selectionStart = newTextBefore.length;
+            postInput.selectionEnd = newTextBefore.length;
+            postSuggestionsBox.style.display = 'none';
+            updateWordCount();
+        }
+
+        postInput.addEventListener('input', async (e) => {
+            let cursor = postInput.selectionStart;
+            let textBeforeCursor = postInput.value.substring(0, cursor);
+            let words = textBeforeCursor.split(/\s+/);
+            let currentWord = words[words.length - 1];
+            
+            if (currentWord.startsWith('@') && currentWord.length > 1) {
+                let searchUn = currentWord.substring(1).toLowerCase();
+                const q = query(collection(db, "users"), orderBy("username"), where("username", ">=", searchUn), where("username", "<=", searchUn + "\uf8ff"));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    postSuggestionsBox.innerHTML = '';
+                    postSuggestionsBox.style.display = 'block';
+                    snap.forEach(docSnap => {
+                        let uData = docSnap.data();
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span>@${uData.username}</span>`;
+                        item.onclick = () => replaceCurrentWordInTextarea('@' + uData.username);
+                        postSuggestionsBox.appendChild(item);
+                    });
+                } else {
+                    postSuggestionsBox.style.display = 'none';
+                }
+            } else if (currentWord.startsWith('#') && currentWord.length > 1) {
+                let searchTag = currentWord.substring(1).toLowerCase();
+                let tags = new Set();
+                (window.allLoadedPosts || []).forEach(p => {
+                    let matches = p.text.toLowerCase().match(/#(\w+)/g);
+                    if(matches) matches.forEach(m => tags.add(m.substring(1)));
+                });
+                let matchedTags = Array.from(tags).filter(t => t.startsWith(searchTag));
+                
+                if (matchedTags.length > 0) {
+                    postSuggestionsBox.innerHTML = '';
+                    postSuggestionsBox.style.display = 'block';
+                    matchedTags.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span style="color:var(--primary);">#${t}</span>`;
+                        item.onclick = () => replaceCurrentWordInTextarea('#' + t);
+                        postSuggestionsBox.appendChild(item);
+                    });
+                } else {
+                    postSuggestionsBox.style.display = 'none';
+                }
+            } else {
+                postSuggestionsBox.style.display = 'none';
+            }
+        });
+
+        const searchInput = document.getElementById('sq');
+        const suggestionsBox = document.getElementById('search-suggestions-box');
+
+        // Optimization: Added Debouncing so Firebase isn't queried on every single keystroke
+        let searchDebounceTimer;
+        searchInput.addEventListener('input', async () => {
+            clearTimeout(searchDebounceTimer);
+            let val = searchInput.value.toLowerCase().replace(/\s+/g, '').trim();
+            
+            if(!val || val.length === 0) {
+                window.currentHashtagFilter = null;
+                if(document.getElementById('home-view').style.display === 'block') loadFeed("feed", null);
+                suggestionsBox.style.display = 'none';
+                suggestionsBox.innerHTML = '';
+                return;
+            }
+
+            searchDebounceTimer = setTimeout(async () => {
+                if (val.startsWith('#')) {
+                    let searchTag = val.substring(1);
+                    let tags = new Set();
+                    (window.allLoadedPosts || []).forEach(p => {
+                        let matches = p.text.toLowerCase().match(/#(\w+)/g);
+                        if(matches) matches.forEach(m => tags.add(m.substring(1)));
+                    });
+                    
+                    let matchedTags = Array.from(tags).filter(t => t.startsWith(searchTag));
+                    if(matchedTags.length === 0) {
+                        suggestionsBox.style.display = 'none'; return;
+                    }
+                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.style.display = 'block';
+                    
+                    matchedTags.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span style="display:flex; align-items:center; color: var(--primary);">#${t}</span>`;
+                        item.addEventListener('click', () => {
+                            searchInput.value = '#' + t;
+                            suggestionsBox.style.display = 'none';
+                            window.findUser();
+                        });
+                        suggestionsBox.appendChild(item);
+                    });
+                    return;
+                }
+
+                try {
+                    const q = query(
+                        collection(db, "users"), 
+                        orderBy("username"), 
+                        where("username", ">=", val), 
+                        where("username", "<=", val + "\uf8ff")
+                    );
+                    
+                    const snap = await getDocs(q);
+                    
+                    if(snap.empty) {
+                        suggestionsBox.style.display = 'none';
+                        suggestionsBox.innerHTML = '';
+                        return;
+                    }
+
+                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.style.display = 'block';
+
+                    snap.forEach(docSnap => {
+                        const uData = docSnap.data();
+                        const uPic = (uData.pic && uData.pic !== "" && uData.pic !== "null") ? uData.pic : defaultAvtr;
+                        
+                        const searchItemRedTick = uData.hasRedTick ? redTickSVG : '';
+
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <img src="${uPic}" onerror="this.src='${defaultAvtr}'">
+                            <span style="display:flex; align-items:center;">@${uData.username}${searchItemRedTick}</span>
+                        `;
+                        
+                        item.addEventListener('click', () => {
+                            searchInput.value = uData.username;
+                            suggestionsBox.style.display = 'none';
+                            suggestionsBox.innerHTML = '';
+                            navTo('profile', false, uData);
+                        });
+
+                        suggestionsBox.appendChild(item);
+                    });
+
+                } catch (err) {
+                    console.error("Suggestion engine error: ", err);
+                }
+            }, 300); // Wait 300ms before calling DB
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target !== searchInput && e.target !== suggestionsBox) {
+                suggestionsBox.style.display = 'none';
+            }
+            if (e.target !== postInput && e.target !== postSuggestionsBox) {
+                postSuggestionsBox.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
