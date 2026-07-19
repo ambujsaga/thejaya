@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Jaya Reels</title>
+    <style>
+        /* Modern Glassmorphism & Animations */
+        :root {
+            --primary: #00e5ff;
+            --bg: #030a1a;
+            --glass-bg: rgba(6, 17, 39, 0.6);
+            --star: #ffd700;
+            --red: #ff4444;
+            --text: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden; /* Only scroll the feed container */
+        }
+
+        /* Scroll Progress Bar */
+        #scroll-progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: var(--primary); width: 0%; z-index: 10000;
+            box-shadow: 0 0 10px var(--primary); transition: width 0.2s;
+        }
+
+        /* Top Header */
+        header {
+            position: fixed; top: 0; width: 100%; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: transparent; z-index: 2000; box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+
+        .header-icons { display: flex; gap: 15px; align-items: center; position: relative; }
+        .icon-btn { cursor: pointer; width: 28px; height: 28px; fill: var(--text); transition: 0.3s; }
+        .icon-btn:hover { fill: var(--primary); filter: drop-shadow(0 0 5px var(--primary)); }
+        
+        .notification-btn { position: relative; }
+        .red-dot {
+            position: absolute; top: 0; right: 0; width: 8px; height: 8px;
+            background: var(--red); border-radius: 50%; display: none;
+            box-shadow: 0 0 5px var(--red);
+        }
+
+        /* Main Feed */
+        #reels-container {
+            height: 100vh; width: 100%;
+            overflow-y: scroll; scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+        #reels-container::-webkit-scrollbar { display: none; } /* Hide scrollbar for reels */
+
+        .reel {
+            height: 100vh; width: 100%; position: relative;
+            scroll-snap-align: start; background: #000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .reel video {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* Video Overlays */
+        .reel-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 40%);
+        }
+
+        /* Right Side Actions */
+        .right-actions {
+            position: absolute; bottom: 80px; right: 15px;
+            display: flex; flex-direction: column; gap: 20px; align-items: center;
+            pointer-events: all;
+        }
+
+        .action-item {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .action-item svg { width: 35px; height: 35px; fill: white; transition: 0.2s; }
+        .action-item:active svg { transform: scale(0.8); }
+
+        .profile-btn-right {
+            position: relative; width: 45px; height: 45px; border-radius: 50%;
+            border: 2px solid white; cursor: pointer; object-fit: cover;
+        }
+        .follow-plus-btn {
+            position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            background: var(--red); color: white; width: 18px; height: 18px;
+            border-radius: 50%; font-size: 14px; font-weight: bold;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+
+        /* Bottom Info */
+        .bottom-info {
+            position: absolute; bottom: 20px; left: 15px;
+            width: calc(100% - 80px); pointer-events: all;
+        }
+        .user-details { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; cursor: pointer; }
+        .user-details img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+        .username { font-weight: bold; font-size: 16px; display: flex; align-items: center; }
+        .follow-text-btn { border: 1px solid white; border-radius: 8px; padding: 2px 8px; font-size: 12px; margin-left: 10px; }
+        
+        .caption-container { font-size: 14px; }
+        .more-text { color: var(--text-muted); cursor: pointer; font-weight: bold; }
+
+        /* The Jaya Red Tick */
+        .red-tick-svg { width: 16px; height: 16px; color: #ff4444; margin-left: 4px; filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.4)); display: inline-block; }
+
+        /* Modals (Upload, Profile, Search, Notifications) */
+        .glass-panel {
+            position: fixed; inset: 0; background: rgba(3, 10, 26, 0.85);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 5000; display: none; flex-direction: column;
+            overflow-y: auto; padding: 20px; box-sizing: border-box;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .close-panel { font-size: 30px; font-weight: bold; align-self: flex-end; cursor: pointer; }
+
+        .btn-primary {
+            background: var(--primary); color: #000; border: none; padding: 12px;
+            border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+        }
+
+        /* 7th Video Toggle Container */
+        .feed-toggle-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--glass-bg); padding: 20px; border-radius: 20px;
+            text-align: center; backdrop-filter: blur(10px); border: 1px solid var(--primary);
+            pointer-events: all;
+        }
+
+        /* Double Tap Heart Animation */
+        .heart-particle {
+            position: fixed; pointer-events: none; z-index: 9999;
+            width: 100px; height: 100px; fill: var(--star);
+            transform: translate(-50%, -50%) scale(0);
+            animation: popHeart 0.8s ease-out forwards;
+        }
+        @keyframes popHeart {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5) translateY(-50px); opacity: 0; }
+        }
+
+        input, textarea {
+            width: 100%; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--primary);
+            color: white; padding: 10px; border-radius: 10px; box-sizing: border-box; margin-bottom: 15px;
+        }
+
+        .list-item {
+            display: flex; align-items: center; gap: 15px; padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+        }
+        .list-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <div id="scroll-progress"></div>
+
+    <header>
+        <h2 style="margin: 0; color: var(--primary); text-shadow: 0 0 10px var(--primary);">Reels</h2>
+        <div class="header-icons">
+            <svg class="icon-btn" onclick="openPanel('search-panel')" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <div class="notification-btn" onclick="openPanel('notification-panel'); seenNotifications();">
+                <svg class="icon-btn" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+                <div id="notif-dot" class="red-dot"></div>
+            </div>
+            <img id="my-profile-pic" src="" class="profile-btn-right" onclick="openProfile(me.username)" style="width: 32px; height: 32px;">
+            <svg class="icon-btn" onclick="openPanel('upload-panel')" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+    </header>
+
+    <div id="reels-container">
+        <!-- Feed generates here -->
+    </div>
+
+    <!-- Upload Panel -->
+    <div id="upload-panel" class="glass-panel">
+        <span class="close-panel" onclick="closePanel('upload-panel')">&times;</span>
+        <h2 style="color: var(--primary);">Upload Reel</h2>
+        <input type="file" id="video-upload" accept="video/mp4,video/x-m4v,video/*">
+        <textarea id="caption-upload" rows="3" placeholder="Write a caption (Max 90 chars)..." maxlength="90"></textarea>
+        <button class="btn-primary" onclick="uploadReel()">Post Reel</button>
+        <p style="color: var(--text-muted); font-size: 12px; margin-top: 15px;">* Video must be less than 45 seconds.<br>* We are using Local Storage as per strict guidelines.</p>
+    </div>
+
+    <!-- Profile Panel -->
+    <div id="profile-panel" class="glass-panel">
+        <span class="close-panel" onclick="closePanel('profile-panel')">&times;</span>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img id="prof-img" src="" style="width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover;">
+            <h2 id="prof-name" style="margin: 10px 0; display: flex; justify-content: center; align-items: center;"></h2>
+            
+            <div style="display: flex; justify-content: center; gap: 30px; margin: 15px 0;">
+                <div><h3 style="margin: 0; color: var(--primary);" id="prof-posts">0</h3><small>Posts</small></div>
+                <div><h3 style="margin: 0; color: var(--primary);" id="prof-followers">0</h3><small>Followers</small></div>
+                <div><h3 style="margin: 0; color: var(--primary);" id="prof-following">0</h3><small>Following</small></div>
+            </div>
+            
+            <button id="prof-action-btn" class="btn-primary" style="width: 200px;"></button>
+        </div>
+        <div id="prof-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;"></div>
+    </div>
+
+    <!-- Search Panel -->
+    <div id="search-panel" class="glass-panel">
+        <span class="close-panel" onclick="closePanel('search-panel')">&times;</span>
+        <input type="text" id="search-input" placeholder="Search username (a-z, 0-9)..." oninput="searchUsers()">
+        <div id="search-results"></div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notification-panel" class="glass-panel">
+        <span class="close-panel" onclick="closePanel('notification-panel')">&times;</span>
+        <h2 style="color: var(--primary);">Notifications</h2>
+        <div id="notif-list"></div>
+    </div>
+
+    <!-- Firebase SDK Setup for "The Jaya" auth check -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
+            authDomain: "links-62592.firebaseapp.com",
+            databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
+            projectId: "links-62592",
+            storageBucket: "links-62592.firebasestorage.app",
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        const iconStar = `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>`;
+
+        window.me = null;
+        window.dbReels = JSON.parse(localStorage.getItem('reels_data') || '[]');
+        window.dbFollows = JSON.parse(localStorage.getItem('reels_follows') || '{}');
+        window.dbNotifs = JSON.parse(localStorage.getItem('reels_notifs') || '[]');
+        window.currentFeedMode = 'global'; // 'global' or 'following'
+
+        // Check Login Status from The Jaya App
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                alert("Account Alert: The Jaya application par login hona jaruri hai yeh application chalane ke liye!");
+                window.location.href = "index.html"; // Send to The Jaya main page
+            } else {
+                const dSnap = await getDoc(doc(db, "users", user.uid));
+                if (dSnap.exists()) {
+                    window.me = dSnap.data();
+                    document.getElementById('my-profile-pic').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                    checkNotifications();
+                    renderFeed();
+                } else {
+                    alert("User record not found in The Jaya database.");
+                    window.location.href = "index.html";
+                }
+            }
+        });
+
+        // ------------------ Scroll Progress Bar ------------------
+        const container = document.getElementById('reels-container');
+        container.addEventListener('scroll', () => {
+            const scrollTop = container.scrollTop;
+            const docHeight = container.scrollHeight - container.clientHeight;
+            const scrolled = (scrollTop / docHeight) * 100;
+            document.getElementById('scroll-progress').style.width = scrolled + "%";
+            
+            // Intersection tracking for views would go here for optimization, 
+            // but for smooth realtime feel, we use IntersectionObserver below.
+        });
+
+        // ------------------ Core Feed Logic ------------------
+        window.renderFeed = () => {
+            const container = document.getElementById('reels-container');
+            container.innerHTML = "";
+            
+            let displayReels = window.dbReels.sort((a,b) => b.timestamp - a.timestamp);
+
+            if (window.currentFeedMode === 'following') {
+                const myFollows = window.dbFollows[me.username] || [];
+                displayReels = displayReels.filter(r => myFollows.includes(r.username) || r.username === me.username);
+            }
+
+            if (displayReels.length === 0) {
+                container.innerHTML = `<h2 style="text-align:center; margin-top:50vh; color:var(--text-muted);">No reels found. Start uploading!</h2>`;
+                return;
+            }
+
+            displayReels.forEach((reel, index) => {
+                // 7th Video rule trigger (Index 6, 13, 20 etc)
+                if (index > 0 && index % 6 === 0) {
+                    const toggleDiv = document.createElement('div');
+                    toggleDiv.className = 'reel';
+                    toggleDiv.innerHTML = `
+                        <div class="feed-toggle-container">
+                            <h2>Switch Feed</h2>
+                            <p>You have seen 6 reels. Switch to see posts only from people you follow, or discover globally.</p>
+                            <button class="btn-primary" onclick="switchFeedMode('following')" style="margin-bottom: 10px;">Following Feed</button>
+                            <button class="btn-primary" onclick="switchFeedMode('global')" style="background: rgba(255,255,255,0.1); color: white;">Global Feed</button>
+                        </div>
+                    `;
+                    container.appendChild(toggleDiv);
+                }
+
+                // Normal Reel Generation
+                const isLiked = reel.likes.includes(me.username);
+                const hasTick = reel.hasRedTick ? redTickSVG : '';
+                const amIFollowing = (window.dbFollows[me.username] || []).includes(reel.username);
+
+                let captionHTML = "";
+                if (reel.caption.length > 10) {
+                    const shortText = reel.caption.substring(0, 10);
+                    captionHTML = `<span id="cap-short-${reel.id}">${shortText}... <span class="more-text" onclick="toggleCaption('${reel.id}', true)">more</span></span>
+                                   <span id="cap-full-${reel.id}" style="display:none;">${reel.caption} <span class="more-text" onclick="toggleCaption('${reel.id}', false)">less</span></span>`;
+                } else {
+                    captionHTML = reel.caption;
+                }
+
+                const reelEl = document.createElement('div');
+                reelEl.className = 'reel';
+                reelEl.id = `reel-container-${reel.id}`;
+                reelEl.innerHTML = `
+                    <video id="vid-${reel.id}" src="${reel.video}" loop playsinline onclick="togglePlay('${reel.id}')" ondblclick="doubleTapLike(event, '${reel.id}')"></video>
+                    <div class="reel-overlay"></div>
+                    
+                    <div class="right-actions">
+                        <div style="position:relative;" onclick="openProfile('${reel.username}')">
+                            <img src="${reel.pic}" class="profile-btn-right">
+                            ${reel.username !== me.username && !amIFollowing ? `<div class="follow-plus-btn" onclick="event.stopPropagation(); toggleFollow('${reel.username}')">+</div>` : ''}
+                        </div>
+                        <div class="action-item" onclick="toggleLike('${reel.id}')">
+                            <svg viewBox="0 0 24 24" style="fill: ${isLiked ? 'var(--star)' : 'white'};"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+                            <span id="like-count-${reel.id}">${reel.likes.length}</span>
+                        </div>
+                        <div class="action-item" onclick="alert('Comment system initialized like The Jaya. (Placeholder for UI)')">
+                            <svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>
+                            <span>${reel.comments.length}</span>
+                        </div>
+                        <div class="action-item" onclick="shareReel('${reel.id}')">
+                            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                            <span>Share</span>
+                        </div>
+                        <div class="action-item">
+                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                            <span id="view-count-${reel.id}">${reel.views}</span>
+                        </div>
+                    </div>
+
+                    <div class="bottom-info">
+                        <div class="user-details" onclick="openProfile('${reel.username}')">
+                            <img src="${reel.pic}">
+                            <span class="username">@${reel.username} ${hasTick}</span>
+                            ${reel.username !== me.username ? 
+                                `<span class="follow-text-btn" onclick="event.stopPropagation(); toggleFollow('${reel.username}')">${amIFollowing ? 'Following' : 'Follow'}</span>` : ''}
+                        </div>
+                        <div class="caption-container">${captionHTML}</div>
+                    </div>
+                `;
+                container.appendChild(reelEl);
+            });
+
+            // Intersection Observer to Auto-Play, Pause, and Count Views
+            const videos = document.querySelectorAll('video');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.play();
+                        // Realtime view count logic
+                        const vidId = entry.target.id.replace('vid-', '');
+                        registerView(vidId);
+                    } else {
+                        entry.target.pause();
+                        entry.target.currentTime = 0;
+                    }
+                });
+            }, { threshold: 0.6 });
+
+            videos.forEach(video => observer.observe(video));
+        };
+
+        // ------------------ Actions ------------------
+        window.switchFeedMode = (mode) => {
+            window.currentFeedMode = mode;
+            renderFeed();
+        };
+
+        window.togglePlay = (id) => {
+            const vid = document.getElementById('vid-'+id);
+            if (vid.paused) vid.play(); else vid.pause();
+        };
+
+        window.toggleCaption = (id, showFull) => {
+            document.getElementById(`cap-short-${id}`).style.display = showFull ? 'none' : 'inline';
+            document.getElementById(`cap-full-${id}`).style.display = showFull ? 'inline' : 'none';
+        };
+
+        window.doubleTapLike = (e, id) => {
+            toggleLike(id, true);
+            // Spawn animation
+            const heart = document.createElement('svg');
+            heart.className = 'heart-particle';
+            heart.innerHTML = `<path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>`;
+            heart.style.left = e.clientX + 'px';
+            heart.style.top = e.clientY + 'px';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 800);
+        };
+
+        window.toggleLike = (id, forceLike = false) => {
+            const reel = window.dbReels.find(r => r.id === id);
+            if (!reel) return;
+            
+            const idx = reel.likes.indexOf(me.username);
+            if (idx > -1 && !forceLike) {
+                reel.likes.splice(idx, 1);
+            } else if (idx === -1) {
+                reel.likes.push(me.username);
+                // Send Notification
+                if (reel.username !== me.username) {
+                    addNotification(reel.username, `${me.username} ne aapke video ko Star diya.`, id);
+                }
+            }
+            saveData();
+            
+            const likeText = document.getElementById(`like-count-${id}`);
+            if (likeText) {
+                likeText.innerText = reel.likes.length;
+                likeText.previousElementSibling.style.fill = reel.likes.includes(me.username) ? 'var(--star)' : 'white';
+            }
+        };
+
+        window.registerView = (id) => {
+            const reel = window.dbReels.find(r => r.id === id);
+            if (reel) {
+                // To prevent hyper-looping view counts on scroll, logic to track session views can be added.
+                // Simple realtime increment:
+                reel.views += 1;
+                saveData();
+                const viewTxt = document.getElementById(`view-count-${id}`);
+                if(viewTxt) viewTxt.innerText = reel.views;
+            }
+        };
+
+        window.toggleFollow = (targetUser) => {
+            if (!window.dbFollows[me.username]) window.dbFollows[me.username] = [];
+            
+            const idx = window.dbFollows[me.username].indexOf(targetUser);
+            if (idx > -1) {
+                window.dbFollows[me.username].splice(idx, 1);
+            } else {
+                window.dbFollows[me.username].push(targetUser);
+                addNotification(targetUser, `${me.username} ne aapko follow kiya.`, null);
+            }
+            saveData();
+            renderFeed(); // Re-render to update buttons
+        };
+
+        window.shareReel = (id) => {
+            alert(`Link copied! The Jaya network ke reel id: ${id}`);
+        };
+
+        // ------------------ Upload System ------------------
+        window.uploadReel = () => {
+            const fileInput = document.getElementById('video-upload');
+            const captionInput = document.getElementById('caption-upload').value;
+
+            if (captionInput.length > 90) {
+                alert("Caption 90 text se jada nahi hona chahiye!");
+                return;
+            }
+
+            if (fileInput.files.length === 0) {
+                alert("Please select a video!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            
+            video.onloadedmetadata = function() {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 45) {
+                    alert("Alert: 45 second se kaam ka video upload/post kare!");
+                    return;
+                }
+                
+                // Read as Base64 (Local Storage implementation)
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Vid = e.target.result;
+                    const newReel = {
+                        id: Date.now().toString(),
+                        uid: me.uid,
+                        username: me.username,
+                        pic: me.pic,
+                        hasRedTick: me.hasRedTick || false,
+                        video: base64Vid,
+                        caption: captionInput,
+                        timestamp: Date.now(),
+                        likes: [],
+                        comments: [],
+                        views: 0
+                    };
+                    window.dbReels.push(newReel);
+                    saveData();
+                    closePanel('upload-panel');
+                    alert("Reel Uploaded Successfully!");
+                    renderFeed();
+                };
+                reader.readAsDataURL(file);
+            }
+            video.src = URL.createObjectURL(file);
+        };
+
+        // ------------------ Profile System ------------------
+        window.openProfile = (username) => {
+            document.getElementById('profile-panel').style.display = 'flex';
+            
+            const userReels = window.dbReels.filter(r => r.username === username);
+            const userRefData = userReels.length > 0 ? userReels[0] : (username === me.username ? me : null);
+            
+            const profImg = document.getElementById('prof-img');
+            const profName = document.getElementById('prof-name');
+            const actionBtn = document.getElementById('prof-action-btn');
+            
+            profImg.src = userRefData ? (userRefData.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png") : "";
+            
+            const hasTick = (userRefData && userRefData.hasRedTick) ? redTickSVG : '';
+            profName.innerHTML = `@${username} ${hasTick}`;
+            
+            document.getElementById('prof-posts').innerText = userReels.length;
+            
+            // Calc followers/following
+            let followers = 0;
+            let following = (window.dbFollows[username] || []).length;
+            for (let key in window.dbFollows) {
+                if (window.dbFollows[key].includes(username)) followers++;
+            }
+            document.getElementById('prof-followers').innerText = followers;
+            document.getElementById('prof-following').innerText = following;
+
+            if (username === me.username) {
+                actionBtn.innerText = "Edit Profile (The Jaya)";
+                actionBtn.onclick = () => window.location.href = "index.html";
+            } else {
+                const amIFollowing = (window.dbFollows[me.username] || []).includes(username);
+                actionBtn.innerText = amIFollowing ? "Unfollow" : "Follow";
+                actionBtn.onclick = () => { toggleFollow(username); openProfile(username); };
+            }
+
+            // Render Grid
+            const grid = document.getElementById('prof-grid');
+            grid.innerHTML = "";
+            userReels.sort((a,b) => b.timestamp - a.timestamp).forEach(reel => {
+                const item = document.createElement('div');
+                item.style = "position: relative; width: 100%; aspect-ratio: 9/16; background: #222; overflow: hidden; cursor: pointer;";
+                item.innerHTML = `<video src="${reel.video}" style="width: 100%; height: 100%; object-fit: cover;" onloadeddata="this.currentTime=0;"></video>
+                                  ${username === me.username ? `<div style="position:absolute; bottom:5px; left:5px; background:rgba(255,0,0,0.8); padding:5px; border-radius:5px; font-size:12px; z-index:10;" onclick="event.stopPropagation(); requestDelete('${reel.id}')">Delete</div>` : ''}`;
+                grid.appendChild(item);
+            });
+        };
+
+        window.requestDelete = (id) => {
+            if (confirm("Kiya aap confirm karte hain is reel ko delete karne ke liye?")) {
+                window.dbReels = window.dbReels.filter(r => r.id !== id);
+                saveData();
+                openProfile(me.username);
+                renderFeed();
+            }
+        };
+
+        // ------------------ Search System ------------------
+        window.searchUsers = () => {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            const resultsDiv = document.getElementById('search-results');
+            resultsDiv.innerHTML = "";
+            if (!query) return;
+
+            // Extract unique users from local storage reels metadata
+            const uniqueUsers = {};
+            window.dbReels.forEach(r => {
+                uniqueUsers[r.username] = { pic: r.pic, hasRedTick: r.hasRedTick };
+            });
+
+            for (let uname in uniqueUsers) {
+                if (uname.toLowerCase().includes(query)) {
+                    const uData = uniqueUsers[uname];
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `<img src="${uData.pic}"> <span>@${uname} ${uData.hasRedTick ? redTickSVG : ''}</span>`;
+                    div.onclick = () => { closePanel('search-panel'); openProfile(uname); };
+                    resultsDiv.appendChild(div);
+                }
+            }
+        };
+
+        // ------------------ Notifications System ------------------
+        window.addNotification = (toUser, message, reelId) => {
+            const notif = { msg: message, from: me.username, pic: me.pic, reelId: reelId, time: Date.now() };
+            if (!window.dbNotifs[toUser]) window.dbNotifs[toUser] = [];
+            window.dbNotifs[toUser].unshift(notif);
+            saveData();
+            checkNotifications();
+        };
+
+        window.checkNotifications = () => {
+            const myNotifs = window.dbNotifs[me.username] || [];
+            if (myNotifs.length > 0 && !localStorage.getItem('notifs_seen_' + me.username)) {
+                document.getElementById('notif-dot').style.display = 'block';
+            }
+        };
+
+        window.seenNotifications = () => {
+            document.getElementById('notif-dot').style.display = 'none';
+            localStorage.setItem('notifs_seen_' + me.username, 'true');
+            
+            const listDiv = document.getElementById('notif-list');
+            listDiv.innerHTML = "";
+            const myNotifs = window.dbNotifs[me.username] || [];
+            
+            if (myNotifs.length === 0) {
+                listDiv.innerHTML = "<p style='color:var(--text-muted);'>No new notifications.</p>";
+            } else {
+                myNotifs.forEach(n => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `<img src="${n.pic}" onclick="openProfile('${n.from}')"> <span style="flex:1;">${n.msg}</span>`;
+                    if (n.reelId) {
+                        div.style.cursor = 'pointer';
+                        div.onclick = () => {
+                            closePanel('notification-panel');
+                            // Scroll to that specific reel
+                            const targetReel = document.getElementById(`reel-container-${n.reelId}`);
+                            if(targetReel) targetReel.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                    listDiv.appendChild(div);
+                });
+            }
+        };
+
+        // ------------------ Utility ------------------
+        window.saveData = () => {
+            localStorage.setItem('reels_data', JSON.stringify(window.dbReels));
+            localStorage.setItem('reels_follows', JSON.stringify(window.dbFollows));
+            localStorage.setItem('reels_notifs', JSON.stringify(window.dbNotifs));
+        };
+
+        window.openPanel = (id) => document.getElementById(id).style.display = 'flex';
+        window.closePanel = (id) => document.getElementById(id).style.display = 'none';
+
+    </script>
+</body>
+</html>
