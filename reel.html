@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Jaya Reels</title>
+    <!-- By- Saga -->
     <style>
         /* Modern Glassmorphism & Animations */
         :root {
@@ -194,8 +195,8 @@
         <h2 style="color: var(--primary);">Upload Reel</h2>
         <input type="file" id="video-upload" accept="video/mp4,video/x-m4v,video/*">
         <textarea id="caption-upload" rows="3" placeholder="Write a caption (Max 90 chars)..." maxlength="90"></textarea>
-        <button class="btn-primary" onclick="uploadReel()">Post Reel</button>
-        <p style="color: var(--text-muted); font-size: 12px; margin-top: 15px;">* Video must be less than 45 seconds.<br>* We are using Local Storage as per strict guidelines.</p>
+        <button id="upload-btn-action" class="btn-primary" onclick="uploadReel()">Post Reel</button>
+        <p style="color: var(--text-muted); font-size: 12px; margin-top: 15px;">* Video must be less than 45 seconds.<br>* Global Feed Sync Enabled.</p>
     </div>
 
     <!-- Profile Panel -->
@@ -230,11 +231,12 @@
         <div id="notif-list"></div>
     </div>
 
-    <!-- Firebase SDK Setup for "The Jaya" auth check -->
+    <!-- Firebase SDK Setup for "The Jaya" auth check & Realtime DB -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
@@ -247,34 +249,62 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Storage initialize kiya video uploads ke liye
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
-        const iconStar = `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>`;
-
+        
+        // Purana memory variables wese hi hain, par ab database se sync honge
         window.me = null;
-        window.dbReels = JSON.parse(localStorage.getItem('reels_data') || '[]');
-        window.dbFollows = JSON.parse(localStorage.getItem('reels_follows') || '{}');
-        window.dbNotifs = JSON.parse(localStorage.getItem('reels_notifs') || '[]');
-        window.currentFeedMode = 'global'; // 'global' or 'following'
+        window.dbReels = [];
+        window.dbFollows = {};
+        window.dbNotifs = {};
+        window.currentFeedMode = 'global';
 
         // Check Login Status from The Jaya App
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 alert("Account Alert: The Jaya application par login hona jaruri hai yeh application chalane ke liye!");
-                window.location.href = "index.html"; // Send to The Jaya main page
+                window.location.href = "index.html";
             } else {
                 const dSnap = await getDoc(doc(db, "users", user.uid));
                 if (dSnap.exists()) {
                     window.me = dSnap.data();
                     document.getElementById('my-profile-pic').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                    checkNotifications();
-                    renderFeed();
+                    
+                    // Start Global Real-time syncing bina purane features disturb kiye
+                    setupRealtimeListeners();
                 } else {
                     alert("User record not found in The Jaya database.");
                     window.location.href = "index.html";
                 }
             }
         });
+
+        // ------------------ Realtime Global Listeners ------------------
+        window.setupRealtimeListeners = () => {
+            onSnapshot(collection(db, "reels"), (snapshot) => {
+                window.dbReels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderFeed(); 
+                if(document.getElementById('profile-panel').style.display === 'flex') {
+                    const currentProfName = document.getElementById('prof-name').innerText.replace('@','').trim().split(' ')[0];
+                    if(currentProfName) openProfile(currentProfName, true); 
+                }
+            });
+
+            onSnapshot(doc(db, "globalData", "follows"), (docSnap) => {
+                if(docSnap.exists()) {
+                    window.dbFollows = docSnap.data();
+                    renderFeed();
+                }
+            });
+
+            onSnapshot(doc(db, "globalData", "notifs"), (docSnap) => {
+                if(docSnap.exists()) {
+                    window.dbNotifs = docSnap.data();
+                    checkNotifications();
+                }
+            });
+        };
 
         // ------------------ Scroll Progress Bar ------------------
         const container = document.getElementById('reels-container');
@@ -285,9 +315,10 @@
             document.getElementById('scroll-progress').style.width = scrolled + "%";
         });
 
-        // ------------------ Core Feed Logic (UPDATED) ------------------
+        // ------------------ Core Feed Logic (Purana UI intact) ------------------
         window.renderFeed = () => {
             const container = document.getElementById('reels-container');
+            const currentScroll = container.scrollTop; 
             container.innerHTML = "";
             
             let displayReels = window.dbReels.sort((a,b) => b.timestamp - a.timestamp);
@@ -303,7 +334,7 @@
             }
 
             displayReels.forEach((reel, index) => {
-                // 7th Video rule trigger (Index 6, 13, 20 etc)
+                // Aapka 7th Video toggle feature
                 if (index > 0 && index % 6 === 0) {
                     const toggleDiv = document.createElement('div');
                     toggleDiv.className = 'reel';
@@ -318,25 +349,24 @@
                     container.appendChild(toggleDiv);
                 }
 
-                // Normal Reel Generation
-                const isLiked = reel.likes.includes(me.username);
+                // Normal Reel UI (Same as your old code)
+                const isLiked = (reel.likes || []).includes(me.username);
                 const hasTick = reel.hasRedTick ? redTickSVG : '';
                 const amIFollowing = (window.dbFollows[me.username] || []).includes(reel.username);
 
                 let captionHTML = "";
-                if (reel.caption.length > 10) {
+                if (reel.caption && reel.caption.length > 10) {
                     const shortText = reel.caption.substring(0, 10);
                     captionHTML = `<span id="cap-short-${reel.id}">${shortText}... <span class="more-text" onclick="toggleCaption('${reel.id}', true)">more</span></span>
                                    <span id="cap-full-${reel.id}" style="display:none;">${reel.caption} <span class="more-text" onclick="toggleCaption('${reel.id}', false)">less</span></span>`;
                 } else {
-                    captionHTML = reel.caption;
+                    captionHTML = reel.caption || "";
                 }
 
                 const reelEl = document.createElement('div');
                 reelEl.className = 'reel';
                 reelEl.id = `reel-container-${reel.id}`;
                 
-                // ADDED 'muted' to video for browser autoplay support
                 reelEl.innerHTML = `
                     <video id="vid-${reel.id}" src="${reel.video}" loop muted playsinline onclick="togglePlay('${reel.id}')" ondblclick="doubleTapLike(event, '${reel.id}')"></video>
                     <div class="reel-overlay"></div>
@@ -348,11 +378,11 @@
                         </div>
                         <div class="action-item" onclick="toggleLike('${reel.id}')">
                             <svg viewBox="0 0 24 24" style="fill: ${isLiked ? 'var(--star)' : 'white'};"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
-                            <span id="like-count-${reel.id}">${reel.likes.length}</span>
+                            <span id="like-count-${reel.id}">${(reel.likes || []).length}</span>
                         </div>
                         <div class="action-item" onclick="alert('Comment system initialized like The Jaya. (Placeholder for UI)')">
                             <svg viewBox="0 0 24 24"><path d="M9 22a1 1 0 01-1-1v-3H4a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-4.9l-3.4 3.7a1 1 0 01-.7.3zm-5-6h5a1 1 0 011 1v2.3l2.5-2.7a1 1 0 01.8-.3H20V4H4z"/></svg>
-                            <span>${reel.comments.length}</span>
+                            <span>${(reel.comments || []).length}</span>
                         </div>
                         <div class="action-item" onclick="shareReel('${reel.id}')">
                             <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
@@ -360,7 +390,7 @@
                         </div>
                         <div class="action-item">
                             <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                            <span id="view-count-${reel.id}">${reel.views}</span>
+                            <span id="view-count-${reel.id}">${reel.views || 0}</span>
                         </div>
                     </div>
 
@@ -377,17 +407,15 @@
                 container.appendChild(reelEl);
             });
 
-            // Intersection Observer to Auto-Play, Pause, and Count Views
+            // Auto-Play observer wese hi rahega
             const videos = document.querySelectorAll('video');
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        // ADDED: Promise handling to avoid autoplay API errors
                         const playPromise = entry.target.play();
                         if (playPromise !== undefined) {
                             playPromise.catch(error => console.log("Realtime Autoplay API Notice:", error));
                         }
-                        
                         const vidId = entry.target.id.replace('vid-', '');
                         registerView(vidId);
                     } else {
@@ -398,9 +426,10 @@
             }, { threshold: 0.6 });
 
             videos.forEach(video => observer.observe(video));
+            container.scrollTop = currentScroll; // Scroll maintain karega feed update hone par
         };
 
-        // ------------------ Actions ------------------
+        // ------------------ Actions (Purana kaam ab Firebase me save hoga) ------------------
         window.switchFeedMode = (mode) => {
             window.currentFeedMode = mode;
             renderFeed();
@@ -416,6 +445,7 @@
             document.getElementById(`cap-full-${id}`).style.display = showFull ? 'inline' : 'none';
         };
 
+        // Aapka double tap animation feature bina change kiye
         window.doubleTapLike = (e, id) => {
             toggleLike(id, true);
             const heart = document.createElement('svg');
@@ -427,39 +457,34 @@
             setTimeout(() => heart.remove(), 800);
         };
 
-        window.toggleLike = (id, forceLike = false) => {
+        window.toggleLike = async (id, forceLike = false) => {
             const reel = window.dbReels.find(r => r.id === id);
             if (!reel) return;
             
-            const idx = reel.likes.indexOf(me.username);
+            let currentLikes = reel.likes || [];
+            const idx = currentLikes.indexOf(me.username);
+            
             if (idx > -1 && !forceLike) {
-                reel.likes.splice(idx, 1);
+                currentLikes.splice(idx, 1);
             } else if (idx === -1) {
-                reel.likes.push(me.username);
+                currentLikes.push(me.username);
                 if (reel.username !== me.username) {
                     addNotification(reel.username, `${me.username} ne aapke video ko Star diya.`, id);
                 }
             }
-            saveData();
             
-            const likeText = document.getElementById(`like-count-${id}`);
-            if (likeText) {
-                likeText.innerText = reel.likes.length;
-                likeText.previousElementSibling.style.fill = reel.likes.includes(me.username) ? 'var(--star)' : 'white';
-            }
+            await updateDoc(doc(db, "reels", id), { likes: currentLikes });
         };
 
-        window.registerView = (id) => {
+        window.registerView = async (id) => {
             const reel = window.dbReels.find(r => r.id === id);
             if (reel) {
-                reel.views += 1;
-                saveData();
-                const viewTxt = document.getElementById(`view-count-${id}`);
-                if(viewTxt) viewTxt.innerText = reel.views;
+                const newViews = (Number(reel.views) || 0) + 1;
+                await updateDoc(doc(db, "reels", id), { views: newViews });
             }
         };
 
-        window.toggleFollow = (targetUser) => {
+        window.toggleFollow = async (targetUser) => {
             if (!window.dbFollows[me.username]) window.dbFollows[me.username] = [];
             
             const idx = window.dbFollows[me.username].indexOf(targetUser);
@@ -469,86 +494,83 @@
                 window.dbFollows[me.username].push(targetUser);
                 addNotification(targetUser, `${me.username} ne aapko follow kiya.`, null);
             }
-            saveData();
-            renderFeed();
+            
+            await setDoc(doc(db, "globalData", "follows"), window.dbFollows);
         };
 
         window.shareReel = (id) => {
             alert(`Link copied! The Jaya network ke reel id: ${id}`);
         };
 
-        // ------------------ Upload System (UPDATED) ------------------
+        // ------------------ Upload System (Purana Method Cloud Par) ------------------
         window.uploadReel = () => {
             const fileInput = document.getElementById('video-upload');
             const captionInput = document.getElementById('caption-upload').value;
+            const actionBtn = document.getElementById('upload-btn-action');
 
-            if (captionInput.length > 90) {
-                alert("Caption 90 text se jada nahi hona chahiye!");
-                return;
-            }
-
-            if (fileInput.files.length === 0) {
-                alert("Please select a video!");
-                return;
-            }
+            if (captionInput.length > 90) return alert("Caption 90 text se jada nahi hona chahiye!");
+            if (fileInput.files.length === 0) return alert("Please select a video!");
 
             const file = fileInput.files[0];
             const video = document.createElement('video');
             video.preload = 'metadata';
             
-            video.onloadedmetadata = function() {
-                // DON'T revoke it immediately! Using this API URL for realtime display.
-                const realtimeVideoURL = URL.createObjectURL(file); 
+            video.onloadedmetadata = async function() {
+                if (video.duration > 45) return alert("Alert: 45 second se kaam ka video upload/post kare!");
                 
-                if (video.duration > 45) {
-                    alert("Alert: 45 second se kaam ka video upload/post kare!");
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Vid = e.target.result;
-                    const newReel = {
-                        id: Date.now().toString(),
-                        uid: me.uid,
-                        username: me.username,
-                        pic: me.pic,
-                        hasRedTick: me.hasRedTick || false,
-                        video: base64Vid,
-                        caption: captionInput,
-                        timestamp: Date.now(),
-                        likes: [],
-                        comments: [],
-                        views: 0
-                    };
-                    
-                    window.dbReels.push(newReel);
-                    
-                    // ADDED: Using Try-Catch to prevent script crash due to LocalStorage 5MB Limit
-                    try {
-                        saveData(); 
-                    } catch (error) {
-                        console.warn("Storage API Full: Swapping to Realtime ObjectURL for session.");
-                        // Agar storage full hai toh base64 ki jagah Realtime API Blob URL dikha dega
-                        window.dbReels[window.dbReels.length - 1].video = realtimeVideoURL;
-                    }
+                actionBtn.innerText = "Uploading Global Reel... Please Wait";
+                actionBtn.disabled = true;
 
-                    closePanel('upload-panel');
-                    alert("Reel Uploaded Successfully!");
-                    
-                    // Inputs clear karke realtime feed render karenge
-                    fileInput.value = "";
-                    document.getElementById('caption-upload').value = "";
-                    renderFeed();
-                };
-                reader.readAsDataURL(file);
+                try {
+                    const storageRef = ref(storage, `reels/${Date.now()}_${file.name}`);
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+
+                    uploadTask.on('state_changed', 
+                        null, 
+                        (error) => {
+                            alert("Upload Error: " + error.message);
+                            actionBtn.innerText = "Post Reel";
+                            actionBtn.disabled = false;
+                        }, 
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            const newReelId = Date.now().toString();
+                            
+                            await setDoc(doc(db, "reels", newReelId), {
+                                id: newReelId,
+                                uid: me.uid,
+                                username: me.username,
+                                pic: me.pic,
+                                hasRedTick: me.hasRedTick || false,
+                                video: downloadURL,
+                                caption: captionInput,
+                                timestamp: Date.now(),
+                                likes: [],
+                                comments: [],
+                                views: 0
+                            });
+
+                            closePanel('upload-panel');
+                            alert("Reel Globally Uploaded!");
+                            
+                            fileInput.value = "";
+                            document.getElementById('caption-upload').value = "";
+                            actionBtn.innerText = "Post Reel";
+                            actionBtn.disabled = false;
+                        }
+                    );
+                } catch (error) {
+                    alert("Error: " + error.message);
+                    actionBtn.innerText = "Post Reel";
+                    actionBtn.disabled = false;
+                }
             }
             video.src = URL.createObjectURL(file);
         };
 
-        // ------------------ Profile System ------------------
-        window.openProfile = (username) => {
-            document.getElementById('profile-panel').style.display = 'flex';
+        // ------------------ Profile System (Purana UI wese hi hai) ------------------
+        window.openProfile = (username, isSilentUpdate = false) => {
+            if(!isSilentUpdate) document.getElementById('profile-panel').style.display = 'flex';
             
             const userReels = window.dbReels.filter(r => r.username === username);
             const userRefData = userReels.length > 0 ? userReels[0] : (username === me.username ? me : null);
@@ -592,12 +614,9 @@
             });
         };
 
-        window.requestDelete = (id) => {
+        window.requestDelete = async (id) => {
             if (confirm("Kiya aap confirm karte hain is reel ko delete karne ke liye?")) {
-                window.dbReels = window.dbReels.filter(r => r.id !== id);
-                saveData();
-                openProfile(me.username);
-                renderFeed();
+                await deleteDoc(doc(db, "reels", id));
             }
         };
 
@@ -626,12 +645,12 @@
         };
 
         // ------------------ Notifications System ------------------
-        window.addNotification = (toUser, message, reelId) => {
+        window.addNotification = async (toUser, message, reelId) => {
             const notif = { msg: message, from: me.username, pic: me.pic, reelId: reelId, time: Date.now() };
             if (!window.dbNotifs[toUser]) window.dbNotifs[toUser] = [];
             window.dbNotifs[toUser].unshift(notif);
-            saveData();
-            checkNotifications();
+            
+            await setDoc(doc(db, "globalData", "notifs"), window.dbNotifs);
         };
 
         window.checkNotifications = () => {
@@ -669,15 +688,12 @@
             }
         };
 
-        // ------------------ Utility ------------------
-        window.saveData = () => {
-            localStorage.setItem('reels_data', JSON.stringify(window.dbReels));
-            localStorage.setItem('reels_follows', JSON.stringify(window.dbFollows));
-            localStorage.setItem('reels_notifs', JSON.stringify(window.dbNotifs));
-        };
-
+        // ------------------ Utility (Purani functions) ------------------
         window.openPanel = (id) => document.getElementById(id).style.display = 'flex';
         window.closePanel = (id) => document.getElementById(id).style.display = 'none';
+        
+        // Purana saveData function ko hataya kyunki ab database realtime automatically save karta hai.
+        window.saveData = () => { console.log("Abhi Firebase global storage active hai."); };
 
     </script>
 </body>
