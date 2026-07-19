@@ -283,12 +283,9 @@
             const docHeight = container.scrollHeight - container.clientHeight;
             const scrolled = (scrollTop / docHeight) * 100;
             document.getElementById('scroll-progress').style.width = scrolled + "%";
-            
-            // Intersection tracking for views would go here for optimization, 
-            // but for smooth realtime feel, we use IntersectionObserver below.
         });
 
-        // ------------------ Core Feed Logic ------------------
+        // ------------------ Core Feed Logic (UPDATED) ------------------
         window.renderFeed = () => {
             const container = document.getElementById('reels-container');
             container.innerHTML = "";
@@ -338,8 +335,10 @@
                 const reelEl = document.createElement('div');
                 reelEl.className = 'reel';
                 reelEl.id = `reel-container-${reel.id}`;
+                
+                // ADDED 'muted' to video for browser autoplay support
                 reelEl.innerHTML = `
-                    <video id="vid-${reel.id}" src="${reel.video}" loop playsinline onclick="togglePlay('${reel.id}')" ondblclick="doubleTapLike(event, '${reel.id}')"></video>
+                    <video id="vid-${reel.id}" src="${reel.video}" loop muted playsinline onclick="togglePlay('${reel.id}')" ondblclick="doubleTapLike(event, '${reel.id}')"></video>
                     <div class="reel-overlay"></div>
                     
                     <div class="right-actions">
@@ -383,8 +382,12 @@
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        entry.target.play();
-                        // Realtime view count logic
+                        // ADDED: Promise handling to avoid autoplay API errors
+                        const playPromise = entry.target.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => console.log("Realtime Autoplay API Notice:", error));
+                        }
+                        
                         const vidId = entry.target.id.replace('vid-', '');
                         registerView(vidId);
                     } else {
@@ -415,7 +418,6 @@
 
         window.doubleTapLike = (e, id) => {
             toggleLike(id, true);
-            // Spawn animation
             const heart = document.createElement('svg');
             heart.className = 'heart-particle';
             heart.innerHTML = `<path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>`;
@@ -434,7 +436,6 @@
                 reel.likes.splice(idx, 1);
             } else if (idx === -1) {
                 reel.likes.push(me.username);
-                // Send Notification
                 if (reel.username !== me.username) {
                     addNotification(reel.username, `${me.username} ne aapke video ko Star diya.`, id);
                 }
@@ -451,8 +452,6 @@
         window.registerView = (id) => {
             const reel = window.dbReels.find(r => r.id === id);
             if (reel) {
-                // To prevent hyper-looping view counts on scroll, logic to track session views can be added.
-                // Simple realtime increment:
                 reel.views += 1;
                 saveData();
                 const viewTxt = document.getElementById(`view-count-${id}`);
@@ -471,14 +470,14 @@
                 addNotification(targetUser, `${me.username} ne aapko follow kiya.`, null);
             }
             saveData();
-            renderFeed(); // Re-render to update buttons
+            renderFeed();
         };
 
         window.shareReel = (id) => {
             alert(`Link copied! The Jaya network ke reel id: ${id}`);
         };
 
-        // ------------------ Upload System ------------------
+        // ------------------ Upload System (UPDATED) ------------------
         window.uploadReel = () => {
             const fileInput = document.getElementById('video-upload');
             const captionInput = document.getElementById('caption-upload').value;
@@ -498,13 +497,14 @@
             video.preload = 'metadata';
             
             video.onloadedmetadata = function() {
-                window.URL.revokeObjectURL(video.src);
+                // DON'T revoke it immediately! Using this API URL for realtime display.
+                const realtimeVideoURL = URL.createObjectURL(file); 
+                
                 if (video.duration > 45) {
                     alert("Alert: 45 second se kaam ka video upload/post kare!");
                     return;
                 }
                 
-                // Read as Base64 (Local Storage implementation)
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const base64Vid = e.target.result;
@@ -521,10 +521,24 @@
                         comments: [],
                         views: 0
                     };
+                    
                     window.dbReels.push(newReel);
-                    saveData();
+                    
+                    // ADDED: Using Try-Catch to prevent script crash due to LocalStorage 5MB Limit
+                    try {
+                        saveData(); 
+                    } catch (error) {
+                        console.warn("Storage API Full: Swapping to Realtime ObjectURL for session.");
+                        // Agar storage full hai toh base64 ki jagah Realtime API Blob URL dikha dega
+                        window.dbReels[window.dbReels.length - 1].video = realtimeVideoURL;
+                    }
+
                     closePanel('upload-panel');
                     alert("Reel Uploaded Successfully!");
+                    
+                    // Inputs clear karke realtime feed render karenge
+                    fileInput.value = "";
+                    document.getElementById('caption-upload').value = "";
                     renderFeed();
                 };
                 reader.readAsDataURL(file);
@@ -550,7 +564,6 @@
             
             document.getElementById('prof-posts').innerText = userReels.length;
             
-            // Calc followers/following
             let followers = 0;
             let following = (window.dbFollows[username] || []).length;
             for (let key in window.dbFollows) {
@@ -568,7 +581,6 @@
                 actionBtn.onclick = () => { toggleFollow(username); openProfile(username); };
             }
 
-            // Render Grid
             const grid = document.getElementById('prof-grid');
             grid.innerHTML = "";
             userReels.sort((a,b) => b.timestamp - a.timestamp).forEach(reel => {
@@ -596,7 +608,6 @@
             resultsDiv.innerHTML = "";
             if (!query) return;
 
-            // Extract unique users from local storage reels metadata
             const uniqueUsers = {};
             window.dbReels.forEach(r => {
                 uniqueUsers[r.username] = { pic: r.pic, hasRedTick: r.hasRedTick };
@@ -649,7 +660,6 @@
                         div.style.cursor = 'pointer';
                         div.onclick = () => {
                             closePanel('notification-panel');
-                            // Scroll to that specific reel
                             const targetReel = document.getElementById(`reel-container-${n.reelId}`);
                             if(targetReel) targetReel.scrollIntoView({ behavior: 'smooth' });
                         }
