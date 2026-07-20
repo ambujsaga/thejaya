@@ -235,8 +235,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, onSnapshot, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
@@ -248,17 +248,19 @@
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app); // Changed to Realtime DB
         const storage = getStorage(app); // Storage initialize kiya video uploads ke liye
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
         
-        // Purana memory variables wese hi hain, par ab database se sync honge
+        // Variables & Local Storage for Personal Experience
         window.me = null;
         window.dbReels = [];
         window.dbFollows = {};
         window.dbNotifs = {};
-        window.currentFeedMode = 'global';
+        
+        // Fetch feed mode preference from LocalStorage
+        window.currentFeedMode = localStorage.getItem('t3_jaya_feed_mode') || 'global';
 
         // Check Login Status from The Jaya App
         onAuthStateChanged(auth, async (user) => {
@@ -266,12 +268,12 @@
                 alert("Account Alert: The Jaya application par login hona jaruri hai yeh application chalane ke liye!");
                 window.location.href = "index.html";
             } else {
-                const dSnap = await getDoc(doc(db, "users", user.uid));
-                if (dSnap.exists()) {
-                    window.me = dSnap.data();
+                const userSnapshot = await get(ref(db, "users/" + user.uid)); // Realtime DB query
+                if (userSnapshot.exists()) {
+                    window.me = userSnapshot.val();
                     document.getElementById('my-profile-pic').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
                     
-                    // Start Global Real-time syncing bina purane features disturb kiye
+                    // Start Global Real-time syncing
                     setupRealtimeListeners();
                 } else {
                     alert("User record not found in The Jaya database.");
@@ -282,8 +284,14 @@
 
         // ------------------ Realtime Global Listeners ------------------
         window.setupRealtimeListeners = () => {
-            onSnapshot(collection(db, "reels"), (snapshot) => {
-                window.dbReels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Reels Data Listener
+            onValue(ref(db, "reels"), (snapshot) => {
+                window.dbReels = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnap) => {
+                        window.dbReels.push({ id: childSnap.key, ...childSnap.val() });
+                    });
+                }
                 renderFeed(); 
                 if(document.getElementById('profile-panel').style.display === 'flex') {
                     const currentProfName = document.getElementById('prof-name').innerText.replace('@','').trim().split(' ')[0];
@@ -291,16 +299,18 @@
                 }
             });
 
-            onSnapshot(doc(db, "globalData", "follows"), (docSnap) => {
-                if(docSnap.exists()) {
-                    window.dbFollows = docSnap.data();
+            // Follows Data Listener
+            onValue(ref(db, "globalData/follows"), (snapshot) => {
+                if(snapshot.exists()) {
+                    window.dbFollows = snapshot.val();
                     renderFeed();
                 }
             });
 
-            onSnapshot(doc(db, "globalData", "notifs"), (docSnap) => {
-                if(docSnap.exists()) {
-                    window.dbNotifs = docSnap.data();
+            // Notifications Data Listener
+            onValue(ref(db, "globalData/notifs"), (snapshot) => {
+                if(snapshot.exists()) {
+                    window.dbNotifs = snapshot.val();
                     checkNotifications();
                 }
             });
@@ -349,7 +359,7 @@
                     container.appendChild(toggleDiv);
                 }
 
-                // Normal Reel UI (Same as your old code)
+                // Normal Reel UI
                 const isLiked = (reel.likes || []).includes(me.username);
                 const hasTick = reel.hasRedTick ? redTickSVG : '';
                 const amIFollowing = (window.dbFollows[me.username] || []).includes(reel.username);
@@ -429,9 +439,10 @@
             container.scrollTop = currentScroll; // Scroll maintain karega feed update hone par
         };
 
-        // ------------------ Actions (Purana kaam ab Firebase me save hoga) ------------------
+        // ------------------ Actions (Ab Realtime DB + LocalStorage) ------------------
         window.switchFeedMode = (mode) => {
             window.currentFeedMode = mode;
+            localStorage.setItem('t3_jaya_feed_mode', mode); // Saved to LocalStorage
             renderFeed();
         };
 
@@ -473,14 +484,14 @@
                 }
             }
             
-            await updateDoc(doc(db, "reels", id), { likes: currentLikes });
+            await update(ref(db, "reels/" + id), { likes: currentLikes });
         };
 
         window.registerView = async (id) => {
             const reel = window.dbReels.find(r => r.id === id);
             if (reel) {
                 const newViews = (Number(reel.views) || 0) + 1;
-                await updateDoc(doc(db, "reels", id), { views: newViews });
+                await update(ref(db, "reels/" + id), { views: newViews });
             }
         };
 
@@ -495,14 +506,14 @@
                 addNotification(targetUser, `${me.username} ne aapko follow kiya.`, null);
             }
             
-            await setDoc(doc(db, "globalData", "follows"), window.dbFollows);
+            await set(ref(db, "globalData/follows"), window.dbFollows);
         };
 
         window.shareReel = (id) => {
             alert(`Link copied! The Jaya network ke reel id: ${id}`);
         };
 
-        // ------------------ Upload System (Purana Method Cloud Par) ------------------
+        // ------------------ Upload System (Realtime DB Par) ------------------
         window.uploadReel = () => {
             const fileInput = document.getElementById('video-upload');
             const captionInput = document.getElementById('caption-upload').value;
@@ -522,8 +533,8 @@
                 actionBtn.disabled = true;
 
                 try {
-                    const storageRef = ref(storage, `reels/${Date.now()}_${file.name}`);
-                    const uploadTask = uploadBytesResumable(storageRef, file);
+                    const storeRef = storageRef(storage, `reels/${Date.now()}_${file.name}`);
+                    const uploadTask = uploadBytesResumable(storeRef, file);
 
                     uploadTask.on('state_changed', 
                         null, 
@@ -536,7 +547,7 @@
                             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                             const newReelId = Date.now().toString();
                             
-                            await setDoc(doc(db, "reels", newReelId), {
+                            await set(ref(db, "reels/" + newReelId), {
                                 id: newReelId,
                                 uid: me.uid,
                                 username: me.username,
@@ -616,7 +627,7 @@
 
         window.requestDelete = async (id) => {
             if (confirm("Kiya aap confirm karte hain is reel ko delete karne ke liye?")) {
-                await deleteDoc(doc(db, "reels", id));
+                await remove(ref(db, "reels/" + id));
             }
         };
 
@@ -644,17 +655,18 @@
             }
         };
 
-        // ------------------ Notifications System ------------------
+        // ------------------ Notifications System (LocalStorage mix) ------------------
         window.addNotification = async (toUser, message, reelId) => {
             const notif = { msg: message, from: me.username, pic: me.pic, reelId: reelId, time: Date.now() };
             if (!window.dbNotifs[toUser]) window.dbNotifs[toUser] = [];
             window.dbNotifs[toUser].unshift(notif);
             
-            await setDoc(doc(db, "globalData", "notifs"), window.dbNotifs);
+            await set(ref(db, "globalData/notifs"), window.dbNotifs);
         };
 
         window.checkNotifications = () => {
             const myNotifs = window.dbNotifs[me.username] || [];
+            // LocalStorage checking user's personal seen status
             if (myNotifs.length > 0 && !localStorage.getItem('notifs_seen_' + me.username)) {
                 document.getElementById('notif-dot').style.display = 'block';
             }
@@ -662,7 +674,7 @@
 
         window.seenNotifications = () => {
             document.getElementById('notif-dot').style.display = 'none';
-            localStorage.setItem('notifs_seen_' + me.username, 'true');
+            localStorage.setItem('notifs_seen_' + me.username, 'true'); // Saved to LocalStorage
             
             const listDiv = document.getElementById('notif-list');
             listDiv.innerHTML = "";
@@ -688,13 +700,10 @@
             }
         };
 
-        // ------------------ Utility (Purani functions) ------------------
+        // ------------------ Utility ------------------
         window.openPanel = (id) => document.getElementById(id).style.display = 'flex';
         window.closePanel = (id) => document.getElementById(id).style.display = 'none';
         
-        // Purana saveData function ko hataya kyunki ab database realtime automatically save karta hai.
-        window.saveData = () => { console.log("Abhi Firebase global storage active hai."); };
-
     </script>
 </body>
 </html>
