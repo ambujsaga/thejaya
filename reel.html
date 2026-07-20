@@ -116,7 +116,7 @@
         /* The Jaya Red Tick */
         .red-tick-svg { width: 16px; height: 16px; color: #ff4444; margin-left: 4px; filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.4)); display: inline-block; }
 
-        /* Modals (Upload, Profile, Search, Notifications) */
+        /* Modals */
         .glass-panel {
             position: fixed; inset: 0; background: rgba(3, 10, 26, 0.85);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -231,49 +231,47 @@
         <div id="notif-list"></div>
     </div>
 
-    <!-- Firebase SDK Setup for "The Jaya" auth check & Realtime DB -->
+    <!-- Firebase SDK Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, doc, getDoc, collection, onSnapshot, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // NOTE: Firebase Storage imports removed. Cloudinary will handle videos.
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCwsiYyKy6r2rKu-nGy7lu9Zv0aL9SE-8M",
             authDomain: "links-62592.firebaseapp.com",
             databaseURL: "https://links-62592-default-rtdb.firebaseio.com",
             projectId: "links-62592",
+            // Storage bucket no longer strictly needed for this, but kept for config structure
             storageBucket: "links-62592.firebasestorage.app",
         };
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app); // Changed to Realtime DB
-        const storage = getStorage(app); // Storage initialize kiya video uploads ke liye
+        const db = getFirestore(app);
+        
+        // --- CLOUDINARY CONFIGURATION ---
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/e8omfke3/video/upload";
+        const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET_HERE"; // IMPORTANT: Replace this!
 
         const redTickSVG = `<svg viewBox="0 0 24 24" class="red-tick-svg"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
         
-        // Variables & Local Storage for Personal Experience
         window.me = null;
         window.dbReels = [];
         window.dbFollows = {};
         window.dbNotifs = {};
-        
-        // Fetch feed mode preference from LocalStorage
-        window.currentFeedMode = localStorage.getItem('t3_jaya_feed_mode') || 'global';
+        window.currentFeedMode = 'global';
 
-        // Check Login Status from The Jaya App
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 alert("Account Alert: The Jaya application par login hona jaruri hai yeh application chalane ke liye!");
                 window.location.href = "index.html";
             } else {
-                const userSnapshot = await get(ref(db, "users/" + user.uid)); // Realtime DB query
-                if (userSnapshot.exists()) {
-                    window.me = userSnapshot.val();
+                const dSnap = await getDoc(doc(db, "users", user.uid));
+                if (dSnap.exists()) {
+                    window.me = dSnap.data();
                     document.getElementById('my-profile-pic').src = me.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                    
-                    // Start Global Real-time syncing
                     setupRealtimeListeners();
                 } else {
                     alert("User record not found in The Jaya database.");
@@ -284,14 +282,8 @@
 
         // ------------------ Realtime Global Listeners ------------------
         window.setupRealtimeListeners = () => {
-            // Reels Data Listener
-            onValue(ref(db, "reels"), (snapshot) => {
-                window.dbReels = [];
-                if (snapshot.exists()) {
-                    snapshot.forEach((childSnap) => {
-                        window.dbReels.push({ id: childSnap.key, ...childSnap.val() });
-                    });
-                }
+            onSnapshot(collection(db, "reels"), (snapshot) => {
+                window.dbReels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderFeed(); 
                 if(document.getElementById('profile-panel').style.display === 'flex') {
                     const currentProfName = document.getElementById('prof-name').innerText.replace('@','').trim().split(' ')[0];
@@ -299,24 +291,21 @@
                 }
             });
 
-            // Follows Data Listener
-            onValue(ref(db, "globalData/follows"), (snapshot) => {
-                if(snapshot.exists()) {
-                    window.dbFollows = snapshot.val();
+            onSnapshot(doc(db, "globalData", "follows"), (docSnap) => {
+                if(docSnap.exists()) {
+                    window.dbFollows = docSnap.data();
                     renderFeed();
                 }
             });
 
-            // Notifications Data Listener
-            onValue(ref(db, "globalData/notifs"), (snapshot) => {
-                if(snapshot.exists()) {
-                    window.dbNotifs = snapshot.val();
+            onSnapshot(doc(db, "globalData", "notifs"), (docSnap) => {
+                if(docSnap.exists()) {
+                    window.dbNotifs = docSnap.data();
                     checkNotifications();
                 }
             });
         };
 
-        // ------------------ Scroll Progress Bar ------------------
         const container = document.getElementById('reels-container');
         container.addEventListener('scroll', () => {
             const scrollTop = container.scrollTop;
@@ -325,7 +314,7 @@
             document.getElementById('scroll-progress').style.width = scrolled + "%";
         });
 
-        // ------------------ Core Feed Logic (Purana UI intact) ------------------
+        // ------------------ Core Feed Logic ------------------
         window.renderFeed = () => {
             const container = document.getElementById('reels-container');
             const currentScroll = container.scrollTop; 
@@ -344,7 +333,6 @@
             }
 
             displayReels.forEach((reel, index) => {
-                // Aapka 7th Video toggle feature
                 if (index > 0 && index % 6 === 0) {
                     const toggleDiv = document.createElement('div');
                     toggleDiv.className = 'reel';
@@ -359,7 +347,6 @@
                     container.appendChild(toggleDiv);
                 }
 
-                // Normal Reel UI
                 const isLiked = (reel.likes || []).includes(me.username);
                 const hasTick = reel.hasRedTick ? redTickSVG : '';
                 const amIFollowing = (window.dbFollows[me.username] || []).includes(reel.username);
@@ -417,7 +404,6 @@
                 container.appendChild(reelEl);
             });
 
-            // Auto-Play observer wese hi rahega
             const videos = document.querySelectorAll('video');
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -436,13 +422,11 @@
             }, { threshold: 0.6 });
 
             videos.forEach(video => observer.observe(video));
-            container.scrollTop = currentScroll; // Scroll maintain karega feed update hone par
+            container.scrollTop = currentScroll; 
         };
 
-        // ------------------ Actions (Ab Realtime DB + LocalStorage) ------------------
         window.switchFeedMode = (mode) => {
             window.currentFeedMode = mode;
-            localStorage.setItem('t3_jaya_feed_mode', mode); // Saved to LocalStorage
             renderFeed();
         };
 
@@ -456,7 +440,6 @@
             document.getElementById(`cap-full-${id}`).style.display = showFull ? 'inline' : 'none';
         };
 
-        // Aapka double tap animation feature bina change kiye
         window.doubleTapLike = (e, id) => {
             toggleLike(id, true);
             const heart = document.createElement('svg');
@@ -484,14 +467,14 @@
                 }
             }
             
-            await update(ref(db, "reels/" + id), { likes: currentLikes });
+            await updateDoc(doc(db, "reels", id), { likes: currentLikes });
         };
 
         window.registerView = async (id) => {
             const reel = window.dbReels.find(r => r.id === id);
             if (reel) {
                 const newViews = (Number(reel.views) || 0) + 1;
-                await update(ref(db, "reels/" + id), { views: newViews });
+                await updateDoc(doc(db, "reels", id), { views: newViews });
             }
         };
 
@@ -506,14 +489,14 @@
                 addNotification(targetUser, `${me.username} ne aapko follow kiya.`, null);
             }
             
-            await set(ref(db, "globalData/follows"), window.dbFollows);
+            await setDoc(doc(db, "globalData", "follows"), window.dbFollows);
         };
 
         window.shareReel = (id) => {
             alert(`Link copied! The Jaya network ke reel id: ${id}`);
         };
 
-        // ------------------ Upload System (Realtime DB Par) ------------------
+        // ------------------ NEW UPLOAD SYSTEM (CLOUDINARY) ------------------
         window.uploadReel = () => {
             const fileInput = document.getElementById('video-upload');
             const captionInput = document.getElementById('caption-upload').value;
@@ -521,6 +504,9 @@
 
             if (captionInput.length > 90) return alert("Caption 90 text se jada nahi hona chahiye!");
             if (fileInput.files.length === 0) return alert("Please select a video!");
+            if (CLOUDINARY_UPLOAD_PRESET === "YOUR_UPLOAD_PRESET_HERE") {
+                return alert("Pehle Cloudinary Settings se 'Unsigned Upload Preset' bana kar code me replace karein!");
+            }
 
             const file = fileInput.files[0];
             const video = document.createElement('video');
@@ -529,47 +515,51 @@
             video.onloadedmetadata = async function() {
                 if (video.duration > 45) return alert("Alert: 45 second se kaam ka video upload/post kare!");
                 
-                actionBtn.innerText = "Uploading Global Reel... Please Wait";
+                actionBtn.innerText = "Uploading to Cloudinary... Please Wait";
                 actionBtn.disabled = true;
 
                 try {
-                    const storeRef = storageRef(storage, `reels/${Date.now()}_${file.name}`);
-                    const uploadTask = uploadBytesResumable(storeRef, file);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                    formData.append('folder', 'TheJayaReels');
 
-                    uploadTask.on('state_changed', 
-                        null, 
-                        (error) => {
-                            alert("Upload Error: " + error.message);
-                            actionBtn.innerText = "Post Reel";
-                            actionBtn.disabled = false;
-                        }, 
-                        async () => {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            const newReelId = Date.now().toString();
-                            
-                            await set(ref(db, "reels/" + newReelId), {
-                                id: newReelId,
-                                uid: me.uid,
-                                username: me.username,
-                                pic: me.pic,
-                                hasRedTick: me.hasRedTick || false,
-                                video: downloadURL,
-                                caption: captionInput,
-                                timestamp: Date.now(),
-                                likes: [],
-                                comments: [],
-                                views: 0
-                            });
+                    // Fetch API for direct upload to Cloudinary
+                    const cloudinaryResponse = await fetch(CLOUDINARY_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                            closePanel('upload-panel');
-                            alert("Reel Globally Uploaded!");
-                            
-                            fileInput.value = "";
-                            document.getElementById('caption-upload').value = "";
-                            actionBtn.innerText = "Post Reel";
-                            actionBtn.disabled = false;
-                        }
-                    );
+                    const cloudData = await cloudinaryResponse.json();
+
+                    if(cloudData.secure_url) {
+                        const newReelId = Date.now().toString();
+                        
+                        // Cloudinary video URL Firebase Firestore me save kar rahe hain
+                        await setDoc(doc(db, "reels", newReelId), {
+                            id: newReelId,
+                            uid: me.uid,
+                            username: me.username,
+                            pic: me.pic,
+                            hasRedTick: me.hasRedTick || false,
+                            video: cloudData.secure_url,
+                            caption: captionInput,
+                            timestamp: Date.now(),
+                            likes: [],
+                            comments: [],
+                            views: 0
+                        });
+
+                        closePanel('upload-panel');
+                        alert("Reel Cloudinary par Upload ho gayi aur Global feed me aa gayi!");
+                        
+                        fileInput.value = "";
+                        document.getElementById('caption-upload').value = "";
+                        actionBtn.innerText = "Post Reel";
+                        actionBtn.disabled = false;
+                    } else {
+                        throw new Error(cloudData.error.message || "Cloudinary Upload Failed");
+                    }
                 } catch (error) {
                     alert("Error: " + error.message);
                     actionBtn.innerText = "Post Reel";
@@ -579,7 +569,7 @@
             video.src = URL.createObjectURL(file);
         };
 
-        // ------------------ Profile System (Purana UI wese hi hai) ------------------
+        // ------------------ Profile System ------------------
         window.openProfile = (username, isSilentUpdate = false) => {
             if(!isSilentUpdate) document.getElementById('profile-panel').style.display = 'flex';
             
@@ -627,7 +617,7 @@
 
         window.requestDelete = async (id) => {
             if (confirm("Kiya aap confirm karte hain is reel ko delete karne ke liye?")) {
-                await remove(ref(db, "reels/" + id));
+                await deleteDoc(doc(db, "reels", id));
             }
         };
 
@@ -655,18 +645,17 @@
             }
         };
 
-        // ------------------ Notifications System (LocalStorage mix) ------------------
+        // ------------------ Notifications System ------------------
         window.addNotification = async (toUser, message, reelId) => {
             const notif = { msg: message, from: me.username, pic: me.pic, reelId: reelId, time: Date.now() };
             if (!window.dbNotifs[toUser]) window.dbNotifs[toUser] = [];
             window.dbNotifs[toUser].unshift(notif);
             
-            await set(ref(db, "globalData/notifs"), window.dbNotifs);
+            await setDoc(doc(db, "globalData", "notifs"), window.dbNotifs);
         };
 
         window.checkNotifications = () => {
             const myNotifs = window.dbNotifs[me.username] || [];
-            // LocalStorage checking user's personal seen status
             if (myNotifs.length > 0 && !localStorage.getItem('notifs_seen_' + me.username)) {
                 document.getElementById('notif-dot').style.display = 'block';
             }
@@ -674,7 +663,7 @@
 
         window.seenNotifications = () => {
             document.getElementById('notif-dot').style.display = 'none';
-            localStorage.setItem('notifs_seen_' + me.username, 'true'); // Saved to LocalStorage
+            localStorage.setItem('notifs_seen_' + me.username, 'true');
             
             const listDiv = document.getElementById('notif-list');
             listDiv.innerHTML = "";
@@ -700,7 +689,6 @@
             }
         };
 
-        // ------------------ Utility ------------------
         window.openPanel = (id) => document.getElementById(id).style.display = 'flex';
         window.closePanel = (id) => document.getElementById(id).style.display = 'none';
         
