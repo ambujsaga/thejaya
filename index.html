@@ -715,9 +715,17 @@
         .song-preview-btn.playing { background: var(--primary); color: #fff; box-shadow: var(--neon-shadow); }
         .song-select-btn {
             flex-shrink: 0; border: 1px solid var(--primary); color: var(--primary); background: transparent;
-            border-radius: 16px; padding: 3px 9px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s;
+            border-radius: 16px; padding: 2px 7px; font-size: 9px; font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .song-select-btn:hover { background: var(--primary); color: #fff; }
+        /* NEW: "Use" button stays hidden until the row's Play/Review button is clicked,
+           then it pops in small next to it (old CSS above left untouched, just gated with this class). */
+        .song-select-btn.song-select-btn-hidden { display: none; }
+        .song-select-btn.song-select-btn-pop { animation: songSelectPop 0.18s ease-out; }
+        @keyframes songSelectPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -1619,24 +1627,35 @@
                         artwork.src = t.artworkUrl60 || t.artworkUrl100 || '';
                         artwork.alt = '';
 
-                        const previewBtn = document.createElement('div');
-                        previewBtn.className = 'song-preview-btn';
-                        previewBtn.title = 'Listen';
-                        previewBtn.innerHTML = songPreviewPlayIconSVG;
-                        previewBtn.onclick = () => toggleSongResultPreview(t, previewBtn);
-
                         const info = document.createElement('div');
                         info.className = 'song-search-item-info';
                         info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName || ''}</span>`;
 
+                        // NEW: "Use" button is created hidden — it only pops in (small) next to
+                        // the Play/Review button once that row's Play/Review button is clicked.
                         const useBtn = document.createElement('button');
                         useBtn.type = 'button';
-                        useBtn.className = 'song-select-btn';
+                        useBtn.className = 'song-select-btn song-select-btn-hidden';
                         useBtn.textContent = 'Use';
                         useBtn.onclick = () => {
                             const durSec = Math.round((t.trackTimeMillis || 30000) / 1000);
                             const end = Math.max(1, Math.min(durSec, SONG_MAX_TRIM_SECONDS));
                             selectOnlineSong(t, durSec, 0, end);
+                        };
+
+                        // Play/Review button: still plays/pauses the preview exactly as before
+                        // (toggleSongResultPreview untouched); the only addition is that clicking
+                        // it also reveals this row's small "Use" button.
+                        const previewBtn = document.createElement('div');
+                        previewBtn.className = 'song-preview-btn';
+                        previewBtn.title = 'Listen';
+                        previewBtn.innerHTML = songPreviewPlayIconSVG;
+                        previewBtn.onclick = () => {
+                            toggleSongResultPreview(t, previewBtn);
+                            if (useBtn.classList.contains('song-select-btn-hidden')) {
+                                useBtn.classList.remove('song-select-btn-hidden');
+                                useBtn.classList.add('song-select-btn-pop');
+                            }
                         };
 
                         item.appendChild(artwork);
