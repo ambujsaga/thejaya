@@ -640,7 +640,13 @@
             font-size: 10px; line-height: 1; cursor: pointer;
         }
 
-        /* --- NEW: SONG ATTACHMENT UI (POST CREATION + POST CARD PLAYER) --- */
+        /* --- NEW: SONG ATTACHMENT UI (ONLINE SONG SEARCH + POST CARD ICON PLAYER) --- */
+        .song-search-results {
+            position: relative; width: 100%; background: rgba(6, 17, 39, 0.98);
+            border: 1px solid var(--primary); border-radius: 12px; max-height: 180px; overflow-y: auto;
+            z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; backdrop-filter: blur(10px);
+            margin-bottom: 10px;
+        }
         .song-preview-container { margin-bottom: 10px; }
         .song-preview-chip {
             display: flex; align-items: center; gap: 8px;
@@ -649,17 +655,27 @@
             border-radius: 12px; padding: 6px 10px;
         }
         .song-preview-chip audio { flex: 1; height: 32px; min-width: 0; }
+        .song-preview-chip .song-name-label { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .song-remove-btn {
             cursor: pointer; color: var(--red); font-weight: bold;
             font-size: 15px; padding: 0 4px; flex-shrink: 0;
         }
-        .post-song-player {
-            display: flex; align-items: center; gap: 8px; margin-top: 10px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(0, 229, 255, 0.15);
-            border-radius: 12px; padding: 6px 10px;
+        .post-song-player { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .song-icon-btn {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(0, 229, 255, 0.3);
+            color: var(--primary); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
         }
-        .post-song-player audio { flex: 1; height: 32px; min-width: 0; }
+        .song-icon-btn.playing {
+            background: var(--primary); color: #fff; box-shadow: var(--neon-shadow);
+            animation: songPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes songPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        .song-name-label { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -851,11 +867,11 @@
             </div>
             <div id="previewContainer" class="upload-preview-container"></div>
 
-            <!-- NEW: Song attachment row (post gets max 30s of the chosen song) -->
+            <!-- NEW: Online song search row (post gets the song's ~30s preview clip, no local upload) -->
             <div class="upload-row">
-                <label for="songSelector" class="btn-upload-label">🎵 Add Song (Max 30s)</label>
-                <input type="file" id="songSelector" accept="audio/*" style="display:none;" onchange="handleSongSelect(this)">
+                <input type="text" id="songSearchInput" placeholder="🎵 Search a song online..." style="margin-bottom:0;" oninput="handleSongSearchInput()">
             </div>
+            <div id="songSearchResults" class="song-search-results"></div>
             <div id="songPreviewContainer" class="song-preview-container"></div>
 
             <div class="modal-actions-grid">
@@ -926,8 +942,12 @@
         // Global arrays to handle base64 image strings inside post creation
         let selectedBase64Images = [];
 
-        // NEW: Holds the trimmed (max 30s) base64 WAV data URL of the song attached to a post
-        let selectedSongBase64 = null;
+        // NEW: Holds the currently selected ONLINE song ({url, name, artist}) attached to the post being created
+        let selectedSongData = null;
+
+        // NEW: Tracks which single post's song is currently playing app-wide (Instagram-style — only one plays at a time)
+        window.currentPlayingAudio = null;
+        window.currentPlayingIconEl = null;
         
         // NEW Post image cropping state variables
         let postCropper = null;
@@ -1475,117 +1495,108 @@
         };
         // --- END PHOTO DESELECT FEATURE ---
 
-        // --- NEW: SONG ATTACHMENT (posts get trimmed to max 30s) ---
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
+        // --- NEW: SONG ATTACHMENT (search & attach an ONLINE song — no local file upload) ---
+        // Uses Apple's public iTunes Search API (no key needed) which returns a ~30s preview mp3 URL per track.
+        let songSearchDebounceTimer;
+        window.handleSongSearchInput = () => {
+            clearTimeout(songSearchDebounceTimer);
+            const val = document.getElementById('songSearchInput').value.trim();
+            const resultsBox = document.getElementById('songSearchResults');
 
-        // Encodes a rendered AudioBuffer into a WAV Blob (mono, 16-bit PCM)
-        function audioBufferToWavBlob(abuffer) {
-            const numOfChan = abuffer.numberOfChannels;
-            const len = abuffer.length;
-            const length = len * numOfChan * 2 + 44;
-            const buffer = new ArrayBuffer(length);
-            const view = new DataView(buffer);
-            let pos = 0;
-
-            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
-            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
-
-            setUint32(0x46464952); // "RIFF"
-            setUint32(length - 8);
-            setUint32(0x45564157); // "WAVE"
-            setUint32(0x20746d66); // "fmt "
-            setUint32(16);
-            setUint16(1);
-            setUint16(numOfChan);
-            setUint32(abuffer.sampleRate);
-            setUint32(abuffer.sampleRate * 2 * numOfChan);
-            setUint16(numOfChan * 2);
-            setUint16(16);
-            setUint32(0x61746164); // "data"
-            setUint32(length - pos - 4);
-
-            const channels = [];
-            for (let i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
-
-            let offset = 0;
-            while (pos < length) {
-                for (let i = 0; i < numOfChan; i++) {
-                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                    sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                    view.setInt16(pos, sample, true);
-                    pos += 2;
-                }
-                offset++;
+            if (!val) {
+                resultsBox.style.display = 'none';
+                resultsBox.innerHTML = '';
+                return;
             }
-            return new Blob([view], { type: 'audio/wav' });
-        }
 
-        // Decodes the chosen audio file and trims it down to maxSeconds, returning a base64 data URL
-        async function trimAudioToBase64(file, maxSeconds) {
-            const arrayBuffer = await file.arrayBuffer();
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            const tempCtx = new AudioCtx();
-            const decoded = await tempCtx.decodeAudioData(arrayBuffer);
+            songSearchDebounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(val)}&media=music&limit=8`);
+                    const data = await res.json();
+                    const tracks = (data.results || []).filter(t => t.previewUrl);
 
-            const sampleRate = 22050; // downsampled to keep file size small
-            const duration = Math.min(decoded.duration, maxSeconds);
-            const frameCount = Math.max(1, Math.floor(duration * sampleRate));
+                    resultsBox.innerHTML = '';
+                    if (tracks.length === 0) {
+                        resultsBox.style.display = 'none';
+                        return;
+                    }
+                    resultsBox.style.display = 'block';
 
-            const offlineCtx = new OfflineAudioContext(1, frameCount, sampleRate);
-            const source = offlineCtx.createBufferSource();
-            source.buffer = decoded;
-            source.connect(offlineCtx.destination);
-            source.start(0, 0, duration);
+                    tracks.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<span>🎵 ${t.trackName} <span style="color:var(--text-muted);">— ${t.artistName}</span></span>`;
+                        item.onclick = () => selectOnlineSong(t);
+                        resultsBox.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error("Online song search failed:", err);
+                }
+            }, 400);
+        };
 
-            const rendered = await offlineCtx.startRendering();
-            tempCtx.close();
-
-            const wavBlob = audioBufferToWavBlob(rendered);
-            return await blobToBase64(wavBlob);
-        }
+        window.selectOnlineSong = (track) => {
+            selectedSongData = { url: track.previewUrl, name: track.trackName, artist: track.artistName };
+            document.getElementById('songSearchInput').value = "";
+            document.getElementById('songSearchResults').style.display = 'none';
+            document.getElementById('songSearchResults').innerHTML = '';
+            renderSongPreview();
+        };
 
         function renderSongPreview() {
             const container = document.getElementById('songPreviewContainer');
             container.innerHTML = "";
-            if (!selectedSongBase64) return;
+            if (!selectedSongData) return;
             const chip = document.createElement('div');
             chip.className = 'song-preview-chip';
-            chip.innerHTML = `<span>🎵</span><audio controls src="${selectedSongBase64}"></audio><span class="song-remove-btn" onclick="removeSelectedSong()" title="Remove song">✕</span>`;
+            chip.innerHTML = `
+                <span>🎵</span>
+                <span class="song-name-label">${selectedSongData.name}${selectedSongData.artist ? ' — ' + selectedSongData.artist : ''}</span>
+                <audio controls src="${selectedSongData.url}"></audio>
+                <span class="song-remove-btn" onclick="removeSelectedSong()" title="Remove song">✕</span>`;
             container.appendChild(chip);
         }
 
-        window.handleSongSelect = async (inputField) => {
-            const file = inputField.files[0];
-            if (!file) return;
+        // Lets user deselect (remove) the attached song before posting
+        window.removeSelectedSong = () => {
+            selectedSongData = null;
+            renderSongPreview();
+        };
 
-            const label = document.querySelector('label[for="songSelector"]');
-            const originalLabelText = label.innerText;
-            label.innerText = "⏳ Processing song...";
+        // Instagram-style single-song playback: playing one post's song stops whichever other post's song was playing
+        window.togglePostSong = (postId) => {
+            const audioEl = document.getElementById('song-audio-' + postId);
+            const iconEl = document.getElementById('song-icon-' + postId);
+            if (!audioEl || !iconEl) return;
 
-            try {
-                selectedSongBase64 = await trimAudioToBase64(file, 30); // Posts: max 30 seconds
-                renderSongPreview();
-            } catch (err) {
-                console.error("Song processing failed:", err);
-                alert("Could not process this audio file. Please try a different song.");
-            } finally {
-                label.innerText = originalLabelText;
-                inputField.value = "";
+            if (window.currentPlayingAudio && window.currentPlayingAudio !== audioEl) {
+                window.currentPlayingAudio.pause();
+                window.currentPlayingAudio.currentTime = 0;
+                if (window.currentPlayingIconEl) window.currentPlayingIconEl.classList.remove('playing');
+            }
+
+            if (audioEl.paused) {
+                audioEl.play().catch(() => {});
+                iconEl.classList.add('playing');
+                window.currentPlayingAudio = audioEl;
+                window.currentPlayingIconEl = iconEl;
+            } else {
+                audioEl.pause();
+                audioEl.currentTime = 0;
+                iconEl.classList.remove('playing');
+                window.currentPlayingAudio = null;
+                window.currentPlayingIconEl = null;
             }
         };
 
-        // Lets user deselect (remove) the attached song before posting
-        window.removeSelectedSong = () => {
-            selectedSongBase64 = null;
-            document.getElementById('songSelector').value = "";
-            renderSongPreview();
+        // Resets a post's icon once its song finishes playing naturally
+        window.resetSongIcon = (postId) => {
+            const iconEl = document.getElementById('song-icon-' + postId);
+            if (iconEl) iconEl.classList.remove('playing');
+            if (window.currentPlayingIconEl === iconEl) {
+                window.currentPlayingAudio = null;
+                window.currentPlayingIconEl = null;
+            }
         };
         // --- END SONG ATTACHMENT FEATURE ---
 
@@ -1691,10 +1702,18 @@
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
-                    // NEW: Song player for posts that have an attached song
+                    // NEW: Song icon-button for posts that have an attached online song (own id per post)
                     let songHtml = '';
-                    if (p.song) {
-                        songHtml = `<div class="post-song-player"><span>🎵</span><audio controls src="${p.song}"></audio></div>`;
+                    if (p.song && p.song.url) {
+                        const safeSongName = (p.song.name || 'Song').replace(/"/g, '&quot;');
+                        songHtml = `
+                        <div class="post-song-player">
+                            <div class="song-icon-btn" id="song-icon-${p.id}" onclick="togglePostSong('${p.id}')" title="${safeSongName}">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            </div>
+                            <span class="song-name-label">${safeSongName}${p.song.artist ? ' • ' + p.song.artist : ''}</span>
+                            <audio id="song-audio-${p.id}" src="${p.song.url}" preload="none" onended="resetSongIcon('${p.id}')"></audio>
+                        </div>`;
                     }
 
                     // 4:3 Carousel Generator System Injection (With Long Press Toggle System)
@@ -1831,7 +1850,7 @@
         window.doPost = async () => {
             const originalInputText = document.getElementById('postInput').value;
             // Prevent execution if text content, photos, and song are all completely absent
-            if(!originalInputText.trim() && selectedBase64Images.length === 0 && !selectedSongBase64) return;
+            if(!originalInputText.trim() && selectedBase64Images.length === 0 && !selectedSongData) return;
 
             const detectedLinks = extractLinks(originalInputText);
 
@@ -1867,7 +1886,7 @@
                 text: cleanedText, 
                 links: detectedLinks,
                 images: selectedBase64Images, // Inserted safe payload images array
-                song: selectedSongBase64 || null, // NEW: trimmed (max 30s) song attached to the post
+                song: selectedSongData || null, // NEW: online song ({url, name, artist}) attached to the post
                 username: me.username || 'user', 
                 pic: me.pic || defaultAvtr, 
                 uid: auth.currentUser.uid, 
@@ -1898,9 +1917,11 @@
             document.getElementById('photoSelector').value = "";
             document.getElementById('previewContainer').innerHTML = "";
             selectedBase64Images = [];
-            document.getElementById('songSelector').value = "";
+            document.getElementById('songSearchInput').value = "";
+            document.getElementById('songSearchResults').innerHTML = "";
+            document.getElementById('songSearchResults').style.display = 'none';
             document.getElementById('songPreviewContainer').innerHTML = "";
-            selectedSongBase64 = null;
+            selectedSongData = null;
             setPostModal(false);
         };
 
@@ -2004,9 +2025,11 @@
                 document.getElementById('previewContainer').innerHTML = "";
                 document.getElementById('post-suggestions').style.display = 'none';
                 selectedBase64Images = [];
-                document.getElementById('songSelector').value = "";
+                document.getElementById('songSearchInput').value = "";
+                document.getElementById('songSearchResults').innerHTML = "";
+                document.getElementById('songSearchResults').style.display = 'none';
                 document.getElementById('songPreviewContainer').innerHTML = "";
-                selectedSongBase64 = null;
+                selectedSongData = null;
                 updateWordCount();
             }
         };
@@ -2225,6 +2248,12 @@
             }
             if (e.target !== postInput && e.target !== postSuggestionsBox) {
                 postSuggestionsBox.style.display = 'none';
+            }
+            // NEW: close the online song search results when clicking elsewhere
+            const songSearchInputEl = document.getElementById('songSearchInput');
+            const songSearchResultsEl = document.getElementById('songSearchResults');
+            if (songSearchInputEl && songSearchResultsEl && e.target !== songSearchInputEl && e.target !== songSearchResultsEl && !songSearchResultsEl.contains(e.target)) {
+                songSearchResultsEl.style.display = 'none';
             }
         });
     </script>
