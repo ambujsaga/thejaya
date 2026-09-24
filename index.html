@@ -45,6 +45,8 @@
             .p-pic { width: 50px; height: 50px; }
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
             #post-modal .container { max-width: 500px; }
+            /* NEW: desktop sizing for the full-page song search popup — mirrors #post-modal, nothing old touched */
+            #song-search-modal .card { max-width: 500px; }
             
             /* Centering row modifications */
             #search-row {
@@ -728,6 +730,80 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
+        /* ================= NEW: FULL-PAGE SONG SEARCH POPUP =================
+           Sirf naya CSS add kiya gaya hai. Purana #post-modal, .song-search-results
+           dropdown, ya koi bhi purana song feature/method bilkul waisa hi hai,
+           kuchh chheda nahi gaya. Yeh popup New Post card jitna hi bada hota hai. */
+        #song-search-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 10, 26, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 3100;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        #song-search-modal .card {
+            background: linear-gradient(135deg, rgba(6, 17, 39, 0.95), rgba(3, 10, 26, 0.98));
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 28px;
+            padding: 25px;
+            width: 100%;
+            max-width: 440px;
+            height: 80vh;
+            max-height: 640px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.1);
+            animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            box-sizing: border-box;
+        }
+        #song-search-modal h3 {
+            margin: 0 0 15px 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            background: linear-gradient(90deg, #ffffff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .song-modal-close-btn {
+            -webkit-text-fill-color: var(--text-muted);
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+        }
+        #songSearchModalInput { flex-shrink: 0; margin-bottom: 12px; }
+        .song-search-modal-results {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 12px;
+        }
+        .song-search-modal-empty {
+            color: var(--text-muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 20px 10px;
+        }
+        /* NEW: select/use button as an SVG icon (used only inside the full-page popup) */
+        .song-select-icon-btn {
+            width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+            border: 1px solid var(--primary); color: var(--primary); background: transparent;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .song-select-icon-btn svg { width: 16px; height: 16px; }
+        .song-select-icon-btn:hover { background: var(--primary); color: #fff; }
+
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
         .pic-edit-btn {
@@ -920,7 +996,7 @@
 
             <!-- NEW: Online song search row (post gets the song's ~30s preview clip, no local upload) -->
             <div class="upload-row">
-                <input type="text" id="songSearchInput" placeholder="🎵 Search a song online..." style="margin-bottom:0;" oninput="handleSongSearchInput()">
+                <input type="text" id="songSearchInput" placeholder="🎵 Search a song online..." style="margin-bottom:0;" oninput="handleSongSearchInput()" onclick="openSongSearchModal()" readonly>
             </div>
             <div id="songSearchResults" class="song-search-results"></div>
             <div id="songPreviewContainer" class="song-preview-container"></div>
@@ -938,6 +1014,20 @@
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ================= NEW: FULL-PAGE SONG SEARCH POPUP =================
+         Sirf naya markup add kiya gaya hai. Purana #post-modal, songSearchInput,
+         songSearchResults dropdown wagera bilkul waisa hi hai — kuchh chheda nahi
+         gaya. Yeh popup #post-modal ("New Post") jitna hi bada khulta hai jab
+         songSearchInput ko click kiya jata hai, aur ismein select/use button SVG
+         icon ke roop me rehta hai. -->
+    <div id="song-search-modal">
+        <div class="card">
+            <h3>Search a Song <span class="song-modal-close-btn" onclick="closeSongSearchModal()" title="Close">✕</span></h3>
+            <input type="text" id="songSearchModalInput" placeholder="🎵 Search a song online..." oninput="handleSongSearchModalInput()">
+            <div id="songSearchModalResults" class="song-search-modal-results"></div>
         </div>
     </div>
 
@@ -1681,6 +1771,102 @@
             document.getElementById('songSearchResults').innerHTML = '';
             renderSongPreview();
         };
+
+        // ================= NEW: FULL-PAGE SONG SEARCH POPUP (own input/results/timer) =================
+        // Purana handleSongSearchInput(), songSearchResults dropdown, selectOnlineSong(), renderSongPreview(),
+        // toggleSongResultPreview() aur stopSongResultPreview() — in sabko yahan sirf REUSE/CALL kiya gaya hai,
+        // koi bhi purana function chheda ya modify nahi kiya gaya. Yeh sirf ek naya, bada popup add karta hai
+        // jo songSearchInput ko click karne par khulta hai (New Post card jitna bada), jisme select/use button
+        // ab SVG icon ke roop me hota hai.
+        window.openSongSearchModal = () => {
+            document.getElementById('song-search-modal').style.display = 'flex';
+            const modalInput = document.getElementById('songSearchModalInput');
+            modalInput.value = "";
+            document.getElementById('songSearchModalResults').innerHTML = '';
+            modalInput.focus();
+        };
+
+        window.closeSongSearchModal = () => {
+            stopSongResultPreview(); // same old preview-stop helper, untouched
+            document.getElementById('song-search-modal').style.display = 'none';
+        };
+
+        let songSearchModalDebounceTimer;
+        window.handleSongSearchModalInput = () => {
+            clearTimeout(songSearchModalDebounceTimer);
+            const val = document.getElementById('songSearchModalInput').value.trim();
+            const resultsBox = document.getElementById('songSearchModalResults');
+
+            if (!val) {
+                resultsBox.innerHTML = '';
+                return;
+            }
+
+            songSearchModalDebounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(val)}&media=music&limit=20`);
+                    const data = await res.json();
+                    const tracks = (data.results || []).filter(t => t.previewUrl);
+
+                    resultsBox.innerHTML = '';
+                    if (tracks.length === 0) {
+                        resultsBox.innerHTML = '<div class="song-search-modal-empty">No songs found. Try a different search.</div>';
+                        return;
+                    }
+
+                    // Each result: artwork + Play (listen) button + info + a select/use button as an SVG icon
+                    tracks.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'song-search-item';
+
+                        const artwork = document.createElement('img');
+                        artwork.className = 'song-search-item-artwork';
+                        artwork.src = t.artworkUrl60 || t.artworkUrl100 || '';
+                        artwork.alt = '';
+
+                        const info = document.createElement('div');
+                        info.className = 'song-search-item-info';
+                        info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName || ''}</span>`;
+
+                        // NEW: select/use button — SVG checkmark icon instead of a text "Use" button
+                        const useIconBtn = document.createElement('div');
+                        useIconBtn.className = 'song-select-icon-btn';
+                        useIconBtn.title = 'Select this song';
+                        useIconBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z"/></svg>';
+                        useIconBtn.onclick = () => {
+                            const durSec = Math.round((t.trackTimeMillis || 30000) / 1000);
+                            const end = Math.max(1, Math.min(durSec, SONG_MAX_TRIM_SECONDS));
+                            selectOnlineSong(t, durSec, 0, end); // old, untouched method attaches the song to the post
+                            closeSongSearchModal();
+                        };
+
+                        // Play/Review button — reuses the exact same toggleSongResultPreview() as the old dropdown
+                        const previewBtn = document.createElement('div');
+                        previewBtn.className = 'song-preview-btn';
+                        previewBtn.title = 'Listen';
+                        previewBtn.innerHTML = songPreviewPlayIconSVG;
+                        previewBtn.onclick = () => toggleSongResultPreview(t, previewBtn);
+
+                        item.appendChild(artwork);
+                        item.appendChild(previewBtn);
+                        item.appendChild(info);
+                        item.appendChild(useIconBtn);
+                        resultsBox.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error("Online song search (popup) failed:", err);
+                }
+            }, 400);
+        };
+
+        // Click outside the popup card closes it (new, standalone listener — doesn't touch the old
+        // document click-listener used for the suggestions/old dropdown below).
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('song-search-modal');
+            if (modal && modal.style.display === 'flex' && e.target === modal) {
+                closeSongSearchModal();
+            }
+        });
 
         function renderSongPreview() {
             const container = document.getElementById('songPreviewContainer');
