@@ -803,6 +803,23 @@
         }
         .song-select-icon-btn svg { width: 16px; height: 16px; }
         .song-select-icon-btn:hover { background: var(--primary); color: #fff; }
+        /* NEW: row itself is clickable to auto-play/pause (Instagram-style), so give it a pointer
+           cursor and a highlight while its song is playing — popup-only, old .song-search-item
+           styling used by the dropdown feature is untouched. */
+        #song-search-modal .song-search-item { cursor: pointer; }
+        #song-search-modal .song-search-item.playing { background: rgba(0, 229, 255, 0.1); }
+        .song-search-item-artwork-wrap { position: relative; flex-shrink: 0; }
+        .song-playing-indicator {
+            display: none;
+            position: absolute; bottom: -3px; right: -3px;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--primary); color: #fff;
+            align-items: center; justify-content: center;
+            box-shadow: var(--neon-shadow);
+            animation: songPulse 1.2s ease-in-out infinite;
+        }
+        .song-playing-indicator svg { width: 9px; height: 9px; }
+        .song-search-item.playing .song-playing-indicator { display: flex; }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -1788,8 +1805,27 @@
 
         window.closeSongSearchModal = () => {
             stopSongResultPreview(); // same old preview-stop helper, untouched
+            stopSongModalRowPreview(); // NEW: also stop the popup's own click-to-play preview, if any
             document.getElementById('song-search-modal').style.display = 'none';
         };
+
+        // NEW: Instagram-style "click a song row to play it, click another to switch" state,
+        // kept separate from the old songResultPreviewAudio/songResultPreviewBtnEl (used by the
+        // untouched dropdown feature) so neither feature interferes with the other's own state.
+        let songModalPreviewAudio = null;
+        let songModalPreviewRowEl = null;
+
+        function stopSongModalRowPreview() {
+            if (songModalPreviewAudio) {
+                songModalPreviewAudio.pause();
+                songModalPreviewAudio.currentTime = 0;
+            }
+            if (songModalPreviewRowEl) {
+                songModalPreviewRowEl.classList.remove('playing');
+            }
+            songModalPreviewAudio = null;
+            songModalPreviewRowEl = null;
+        }
 
         let songSearchModalDebounceTimer;
         window.handleSongSearchModalInput = () => {
@@ -1799,6 +1835,7 @@
 
             if (!val) {
                 resultsBox.innerHTML = '';
+                stopSongModalRowPreview();
                 return;
             }
 
@@ -1809,20 +1846,31 @@
                     const tracks = (data.results || []).filter(t => t.previewUrl);
 
                     resultsBox.innerHTML = '';
+                    stopSongModalRowPreview();
                     if (tracks.length === 0) {
                         resultsBox.innerHTML = '<div class="song-search-modal-empty">No songs found. Try a different search.</div>';
                         return;
                     }
 
-                    // Each result: artwork + Play (listen) button + info + a select/use button as an SVG icon
+                    // Each result: artwork + info + a select/use button as an SVG icon.
+                    // No separate play/review button — clicking the row itself auto-plays that
+                    // song's preview (Instagram-style), and clicking a different row switches
+                    // playback automatically: the previous song stops, the new one plays.
                     tracks.forEach(t => {
                         const item = document.createElement('div');
                         item.className = 'song-search-item';
 
+                        const artworkWrap = document.createElement('div');
+                        artworkWrap.className = 'song-search-item-artwork-wrap';
                         const artwork = document.createElement('img');
                         artwork.className = 'song-search-item-artwork';
                         artwork.src = t.artworkUrl60 || t.artworkUrl100 || '';
                         artwork.alt = '';
+                        const playingBadge = document.createElement('div');
+                        playingBadge.className = 'song-playing-indicator';
+                        playingBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+                        artworkWrap.appendChild(artwork);
+                        artworkWrap.appendChild(playingBadge);
 
                         const info = document.createElement('div');
                         info.className = 'song-search-item-info';
@@ -1833,22 +1881,33 @@
                         useIconBtn.className = 'song-select-icon-btn';
                         useIconBtn.title = 'Select this song';
                         useIconBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z"/></svg>';
-                        useIconBtn.onclick = () => {
+                        useIconBtn.onclick = (ev) => {
+                            ev.stopPropagation(); // don't also trigger the row's play/pause click below
+                            stopSongModalRowPreview();
                             const durSec = Math.round((t.trackTimeMillis || 30000) / 1000);
                             const end = Math.max(1, Math.min(durSec, SONG_MAX_TRIM_SECONDS));
                             selectOnlineSong(t, durSec, 0, end); // old, untouched method attaches the song to the post
                             closeSongSearchModal();
                         };
 
-                        // Play/Review button — reuses the exact same toggleSongResultPreview() as the old dropdown
-                        const previewBtn = document.createElement('div');
-                        previewBtn.className = 'song-preview-btn';
-                        previewBtn.title = 'Listen';
-                        previewBtn.innerHTML = songPreviewPlayIconSVG;
-                        previewBtn.onclick = () => toggleSongResultPreview(t, previewBtn);
+                        // NEW: clicking anywhere on the row plays/pauses that song automatically —
+                        // clicking the same row again pauses it; clicking a different row stops the
+                        // currently playing one and starts the new one (only one plays at a time).
+                        item.onclick = () => {
+                            if (songModalPreviewRowEl === item) {
+                                stopSongModalRowPreview();
+                                return;
+                            }
+                            stopSongModalRowPreview();
+                            const audio = new Audio(t.previewUrl);
+                            audio.play().catch(() => {});
+                            audio.onended = () => stopSongModalRowPreview();
+                            item.classList.add('playing');
+                            songModalPreviewAudio = audio;
+                            songModalPreviewRowEl = item;
+                        };
 
-                        item.appendChild(artwork);
-                        item.appendChild(previewBtn);
+                        item.appendChild(artworkWrap);
                         item.appendChild(info);
                         item.appendChild(useIconBtn);
                         resultsBox.appendChild(item);
