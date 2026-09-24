@@ -821,6 +821,41 @@
         .song-playing-indicator svg { width: 9px; height: 9px; }
         .song-search-item.playing .song-playing-indicator { display: flex; }
 
+        /* ================= NEW: STATUS FEATURE EMBEDDED INSIDE INDEX =================
+           Sirf naya CSS add kiya gaya hai. Purana status.html file bilkul waisa hi hai
+           (alag file ke roop me abhi bhi maujood hai), bas "Status" button click karne
+           par ab woh alag page par navigate karne ki jagah, iss modal ke andar ek iframe
+           me load hota hai — poora status feature index ke andar hi khul jata hai. */
+        #status-embed-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 10, 26, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 5000;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .status-embed-topbar {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: flex-end;
+            padding: 12px 15px;
+        }
+        .status-embed-close-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--card-bg); border: 1px solid var(--primary);
+            color: var(--text-main); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 18px; box-shadow: var(--neon-shadow);
+        }
+        #status-embed-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: var(--bg);
+        }
+
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
         .pic-edit-btn {
@@ -967,7 +1002,7 @@
             <svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </a>
 
-        <a href="status.html" class="bits-btn" title="status">Status</a>
+        <a href="javascript:void(0)" class="bits-btn" title="status" onclick="requireLogin(() => openStatusEmbed())">Status</a>
         <div id="fab-btn" class="fab" onclick="requireLogin(() => setPostModal(true))">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
@@ -1046,6 +1081,18 @@
             <input type="text" id="songSearchModalInput" placeholder="🎵 Search a song online..." oninput="handleSongSearchModalInput()">
             <div id="songSearchModalResults" class="song-search-modal-results"></div>
         </div>
+    </div>
+
+    <!-- ================= NEW: STATUS FEATURE EMBEDDED INSIDE INDEX =================
+         Sirf naya markup add kiya gaya hai. Purana "status.html" file bilkul waisa hi
+         alag file hai — kuchh chheda nahi gaya. Bas ab "Status" button click karne par
+         yeh sara feature (stories tray, status upload, viewer wagera) ek iframe ke
+         andar, index ke ander hi ek fullscreen modal me khul jata hai. -->
+    <div id="status-embed-modal">
+        <div class="status-embed-topbar">
+            <span class="status-embed-close-btn" onclick="closeStatusEmbed()" title="Close">✕</span>
+        </div>
+        <iframe id="status-embed-frame" src="about:blank" title="Status"></iframe>
     </div>
 
     <script type="module">
@@ -2688,6 +2735,27 @@
             if (songSearchInputEl && songSearchResultsEl && e.target !== songSearchInputEl && e.target !== songSearchResultsEl && !songSearchResultsEl.contains(e.target)) {
                 songSearchResultsEl.style.display = 'none';
                 stopSongResultPreview(); // NEW: stop any listen-preview when the dropdown is dismissed
+            }
+        });
+
+        /* ================= NEW: STATUS FEATURE EMBEDDED INSIDE INDEX (logic) =================
+           Sirf naya code add kiya gaya hai. Purana koi bhi feature/function/method chheda
+           nahi gaya hai. Yeh sirf "Status" button click hone par status.html ko ek iframe
+           ke andar, index ke andar hi ek fullscreen modal me kholta/band karta hai, aur
+           status.html se aane wale "close" message (Back button / auth-fail) ko sunta hai. */
+        window.openStatusEmbed = () => {
+            const frame = document.getElementById('status-embed-frame');
+            // Har baar fresh load karo taaki latest stories/status hamesha dikhein
+            frame.src = 'status.html';
+            document.getElementById('status-embed-modal').style.display = 'flex';
+        };
+        window.closeStatusEmbed = () => {
+            document.getElementById('status-embed-modal').style.display = 'none';
+            document.getElementById('status-embed-frame').src = 'about:blank';
+        };
+        window.addEventListener('message', (e) => {
+            if (e && e.data === 'thejaya-close-status-embed') {
+                closeStatusEmbed();
             }
         });
 
