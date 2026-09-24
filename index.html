@@ -707,33 +707,17 @@
         .song-search-item-title { color: var(--text-main); font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .song-search-item-artist { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .song-preview-btn {
-            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0, 229, 255, 0.35);
+            width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0, 229, 255, 0.35);
             background: rgba(255,255,255,0.06); color: var(--primary); display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
         }
-        .song-preview-btn svg { width: 12px; height: 12px; }
+        .song-preview-btn svg { width: 18px; height: 18px; }
         .song-preview-btn.playing { background: var(--primary); color: #fff; box-shadow: var(--neon-shadow); }
         .song-select-btn {
             flex-shrink: 0; border: 1px solid var(--primary); color: var(--primary); background: transparent;
-            border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;
+            border-radius: 16px; padding: 3px 9px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .song-select-btn:hover { background: var(--primary); color: #fff; }
-
-        /* NEW: trim panel — pick a start–end window (max 30s) of the chosen song before it's attached */
-        .song-trim-panel {
-            display: none; background: rgba(255,255,255,0.04); border: 1px solid rgba(0, 229, 255, 0.3);
-            border-radius: 12px; padding: 12px; margin-bottom: 10px;
-        }
-        .song-trim-panel.active { display: block; }
-        .song-trim-name { font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-        .song-trim-row { margin-bottom: 10px; }
-        .song-trim-row label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; }
-        .song-trim-row input[type="range"] { width: 100%; accent-color: var(--primary); }
-        .song-trim-actions { display: flex; gap: 8px; margin-top: 6px; }
-        .song-trim-actions button { flex: 1; border: 0; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; font-size: 12px; }
-        .song-trim-preview-btn { background: rgba(0, 229, 255, 0.15); color: var(--primary); }
-        .song-trim-confirm-btn { background: var(--primary); color: #fff; }
-        .song-trim-cancel-btn { background: rgba(255, 68, 68, 0.15); color: var(--red); }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -921,7 +905,7 @@
             <div class="upload-row">
                 <label for="photoSelector" class="btn-upload-label">🖼️ Add Photos (Max 5)</label>
                 <input type="file" id="photoSelector" accept="image/*" multiple style="display:none;" onchange="handleModalImagesSelect(this)">
-                <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
+                <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 115</p>
             </div>
             <div id="previewContainer" class="upload-preview-container"></div>
 
@@ -930,23 +914,6 @@
                 <input type="text" id="songSearchInput" placeholder="🎵 Search a song online..." style="margin-bottom:0;" oninput="handleSongSearchInput()">
             </div>
             <div id="songSearchResults" class="song-search-results"></div>
-            <!-- NEW: trim step — pick a start–end window (max 30s) before the song is attached -->
-            <div id="songTrimPanel" class="song-trim-panel">
-                <div class="song-trim-name" id="songTrimName"></div>
-                <div class="song-trim-row">
-                    <label><span id="songTrimStartLabel">Start: 0:00</span></label>
-                    <input type="range" id="songTrimStart">
-                </div>
-                <div class="song-trim-row">
-                    <label><span id="songTrimEndLabel">End: 0:00</span></label>
-                    <input type="range" id="songTrimEnd">
-                </div>
-                <div class="song-trim-actions">
-                    <button type="button" class="song-trim-preview-btn" onclick="previewSongTrim()">▶ Preview</button>
-                    <button type="button" class="song-trim-confirm-btn" onclick="confirmSongTrim()">✓ Done</button>
-                    <button type="button" class="song-trim-cancel-btn" onclick="closeSongTrimPanel()">← Back</button>
-                </div>
-            </div>
             <div id="songPreviewContainer" class="song-preview-container"></div>
 
             <div class="modal-actions-grid">
@@ -1041,7 +1008,7 @@
                 if(container && !container.classList.contains('expanded')) {
                     container.classList.add('expanded');
                 }
-            }, 400); // 400ms duration triggers long press
+            }, 3000); // 3000ms (3 sec) duration triggers long press
         };
 
         window.cancelLongPress = () => {
@@ -1668,7 +1635,8 @@
                         useBtn.textContent = 'Use';
                         useBtn.onclick = () => {
                             const durSec = Math.round((t.trackTimeMillis || 30000) / 1000);
-                            openSongTrimPanel(t, durSec);
+                            const end = Math.max(1, Math.min(durSec, SONG_MAX_TRIM_SECONDS));
+                            selectOnlineSong(t, durSec, 0, end);
                         };
 
                         item.appendChild(artwork);
@@ -1682,96 +1650,6 @@
                 }
             }, 400);
         };
-
-        // --- NEW: trim step — pick a start–end window (max 30s, Instagram/WhatsApp-style) of the
-        // chosen song before it's attached to the post; user can Preview the trimmed range first. ---
-        let songTrimTrack = null; // track currently being trimmed before confirm
-
-        window.openSongTrimPanel = (track, durSec) => {
-            stopSongResultPreview();
-            songTrimTrack = track;
-            const trimPanel = document.getElementById('songTrimPanel');
-            const nameEl = document.getElementById('songTrimName');
-            const startRange = document.getElementById('songTrimStart');
-            const endRange = document.getElementById('songTrimEnd');
-            const startLbl = document.getElementById('songTrimStartLabel');
-            const endLbl = document.getElementById('songTrimEndLabel');
-            if (!trimPanel || !startRange || !endRange) return;
-
-            nameEl.textContent = `🎵 ${track.trackName || 'Untitled'}${track.artistName ? ' — ' + track.artistName : ''}`;
-            startRange.min = 0; startRange.max = Math.max(0, Math.floor(durSec)); startRange.value = 0;
-            endRange.min = 0; endRange.max = Math.max(1, Math.floor(durSec));
-            const defaultEnd = Math.max(1, Math.min(Math.floor(durSec), SONG_MAX_TRIM_SECONDS));
-            endRange.value = defaultEnd;
-            startLbl.textContent = 'Start: ' + fmtSongSec(0);
-            endLbl.textContent = 'End: ' + fmtSongSec(defaultEnd);
-            trimPanel.dataset.duration = String(durSec);
-
-            document.getElementById('songSearchResults').style.display = 'none';
-            trimPanel.classList.add('active');
-        };
-
-        window.closeSongTrimPanel = () => {
-            stopSongResultPreview();
-            songTrimTrack = null;
-            const trimPanel = document.getElementById('songTrimPanel');
-            if (trimPanel) trimPanel.classList.remove('active');
-            const resultsBox = document.getElementById('songSearchResults');
-            if (resultsBox && resultsBox.innerHTML.trim()) resultsBox.style.display = 'block';
-        };
-
-        function currentSongTrimRange(applyCap) {
-            const trimPanel = document.getElementById('songTrimPanel');
-            const startRange = document.getElementById('songTrimStart');
-            const endRange = document.getElementById('songTrimEnd');
-            const dur = parseFloat(trimPanel?.dataset.duration || '0');
-            let start = parseFloat(startRange?.value || '0');
-            let end = parseFloat(endRange?.value || String(dur));
-            if (end <= start) end = Math.min(dur, start + 1);
-            // 30-sec cap only applies when attaching to the post — during preview the full
-            // available clip stays open so the user can pick their favourite part.
-            if (applyCap && (end - start > SONG_MAX_TRIM_SECONDS)) end = Math.min(dur, start + SONG_MAX_TRIM_SECONDS);
-            return { start, end, duration: dur };
-        }
-
-        window.previewSongTrim = () => {
-            if (!songTrimTrack) return;
-            const { start, end } = currentSongTrimRange(false);
-            stopSongResultPreview();
-            const a = new Audio(songTrimTrack.previewUrl);
-            songResultPreviewAudio = a;
-            a.currentTime = start;
-            a.play().catch(() => {});
-            const stopAt = () => {
-                if (a.currentTime >= end) { a.pause(); a.removeEventListener('timeupdate', stopAt); }
-            };
-            a.addEventListener('timeupdate', stopAt);
-            a.addEventListener('ended', () => { songResultPreviewAudio = null; });
-        };
-
-        window.confirmSongTrim = () => {
-            if (!songTrimTrack) return;
-            const { start, end, duration } = currentSongTrimRange(true);
-            const track = songTrimTrack;
-            selectOnlineSong(track, duration, start, end);
-            songTrimTrack = null;
-            const trimPanel = document.getElementById('songTrimPanel');
-            if (trimPanel) trimPanel.classList.remove('active');
-        };
-
-        // Live start/end labels while dragging the trim sliders (cap applies only on Done, above)
-        document.getElementById('songTrimStart')?.addEventListener('input', function () {
-            let v = parseFloat(this.value);
-            const endRange = document.getElementById('songTrimEnd');
-            if (v >= parseFloat(endRange.value)) { v = Math.max(0, parseFloat(endRange.value) - 1); this.value = v; }
-            document.getElementById('songTrimStartLabel').textContent = 'Start: ' + fmtSongSec(v);
-        });
-        document.getElementById('songTrimEnd')?.addEventListener('input', function () {
-            let v = parseFloat(this.value);
-            const startRange = document.getElementById('songTrimStart');
-            if (v <= parseFloat(startRange.value)) { v = parseFloat(startRange.value) + 1; this.value = v; }
-            document.getElementById('songTrimEndLabel').textContent = 'End: ' + fmtSongSec(v);
-        });
 
         window.selectOnlineSong = (track, durationSec, start, end) => {
             stopSongResultPreview(); // stop the listen-preview once the user actually attaches the song
@@ -2198,10 +2076,9 @@
                 cleanedEditText = "Shared Links:";
             }
 
-            const words = cleanedEditText.match(/\S+/g) || [];
-            if(words.length > WORD_LIMIT) {
-                cleanedEditText = cleanedEditText.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
-                alert(`Post trimmed to ${WORD_LIMIT} words limit.`);
+            if(cleanedEditText.length > CHAR_LIMIT) {
+                cleanedEditText = cleanedEditText.slice(0, CHAR_LIMIT);
+                alert(`Post trimmed to ${CHAR_LIMIT} characters limit.`);
             }
 
             try {
@@ -2281,8 +2158,6 @@
                 document.getElementById('songSearchResults').innerHTML = "";
                 document.getElementById('songSearchResults').style.display = 'none';
                 document.getElementById('songPreviewContainer').innerHTML = "";
-                document.getElementById('songTrimPanel')?.classList.remove('active'); // NEW: also close the trim step when the modal closes
-                songTrimTrack = null;
                 selectedSongData = null;
                 stopSongResultPreview(); // NEW: stop any listen-preview still playing when the modal closes
                 updateWordCount();
@@ -2304,7 +2179,7 @@
 
         const postInput = document.getElementById('postInput');
         const wordCountDisplay = document.getElementById('word-count');
-        const WORD_LIMIT = 110;
+        const CHAR_LIMIT = 115;
 
         const updateWordCount = () => {
             const val = postInput.value;
@@ -2315,16 +2190,14 @@
                 filteredTextForCounter = filteredTextForCounter.replace(lk, '');
             });
 
-            const words = filteredTextForCounter.match(/\S+/g) || []; 
-            if (words.length > WORD_LIMIT) {
-                const trimmedText = filteredTextForCounter.split(/\s+/).slice(0, WORD_LIMIT).join(' ');
+            if (filteredTextForCounter.length > CHAR_LIMIT) {
+                const trimmedText = filteredTextForCounter.slice(0, CHAR_LIMIT);
                 
                 postInput.value = trimmedText + (linksInText.length > 0 ? " " + linksInText.join(" ") : "");
-                const finalWords = trimmedText.match(/\S+/g) || [];
-                wordCountDisplay.innerText = `${finalWords.length} / ${WORD_LIMIT} words`;
+                wordCountDisplay.innerText = `${trimmedText.length} / ${CHAR_LIMIT} characters`;
                 wordCountDisplay.style.color = "var(--red)";
             } else {
-                wordCountDisplay.innerText = `${words.length} / ${WORD_LIMIT} words`;
+                wordCountDisplay.innerText = `${filteredTextForCounter.length} / ${CHAR_LIMIT} characters`;
                 wordCountDisplay.style.color = "var(--text-muted)";
             }
         };
