@@ -711,9 +711,63 @@
                 });
                 window.globalStories = liveDatabase.filter(story => story.slides.length > 0);
                 localStorage.setItem('thejaya_stories_db_live', JSON.stringify(window.globalStories));
+                markStatusLastSync(); // NEW: har online update ke saath "last online" time bhi save karo
                 window.renderStoriesTray();
             });
         };
+
+        /* ================= NEW: ONLINE/OFFLINE LAST-ACTIVITY SNAPSHOT (WhatsApp jaisa) =================
+           Purana koi bhi feature/function/method chheda nahi gaya — yeh sirf naya, alag
+           naam wala code hai jo upar wale live-sync ke saath add ho raha hai.
+
+           Method: user jab tak online hai, har live update (upar wale onSnapshot me)
+           localStorage me already save hota rehta hai (thejaya_stories_db_live) — ab
+           uske saath-saath us update ka exact time bhi (thejaya_stories_last_sync_ts)
+           save ho raha hai. Jaise hi browser "offline" ho jata hai, window.globalStories
+           ko chheda nahi jata — wahi localStorage me save hua aakhri (last-online-time
+           ka) data UI par dikhta rehta hai, bas ek chhota badge dikhakar bataya jata hai
+           ki yeh us time ka status hai jab user offline hua tha (WhatsApp ke "last seen"
+           jaisa). Wapas online hote hi badge hat jata hai aur Firestore ka onSnapshot
+           khud fresh data laa kar localStorage update kar deta hai — jaisa pehle se ho
+           raha tha. */
+        const STATUS_LAST_SYNC_KEY = 'thejaya_stories_last_sync_ts';
+
+        function markStatusLastSync() {
+            localStorage.setItem(STATUS_LAST_SYNC_KEY, Date.now().toString());
+        }
+
+        function getStatusLastSyncLabel() {
+            const ts = parseInt(localStorage.getItem(STATUS_LAST_SYNC_KEY) || '0', 10);
+            if (!ts) return '';
+            const d = new Date(ts);
+            let hours = d.getHours();
+            const minutes = d.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
+        function renderStatusConnectionBadge() {
+            const tray = document.getElementById('stories-tray-zone');
+            if (!tray || !tray.parentNode) return;
+            let badge = document.getElementById('status-connection-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'status-connection-badge';
+                badge.style.cssText = 'font-size:11px;color:var(--text-muted);text-align:center;margin:-10px 0 15px;';
+                tray.parentNode.insertBefore(badge, tray);
+            }
+            if (navigator.onLine) {
+                badge.innerText = '';
+            } else {
+                const label = getStatusLastSyncLabel();
+                badge.innerText = label ? `⚫ Offline — showing status as of ${label}` : '⚫ Offline';
+            }
+        }
+
+        window.addEventListener('offline', renderStatusConnectionBadge);
+        window.addEventListener('online', renderStatusConnectionBadge);
+        document.addEventListener('DOMContentLoaded', renderStatusConnectionBadge);
 
         function toggleUploadUI() {
             const ui = document.getElementById('upload-ui-container');
@@ -985,6 +1039,7 @@
             try {
                 const userDocRef = window.doc(window.db, "status_stories", window.currentUserProfile.uid);
                 await window.setDoc(userDocRef, storyDataToSave);
+                markStatusLastSync(); // NEW: apna upload bhi ek "online activity" hai, last-sync time update karo
                 document.getElementById('status-text-input').value = "";
                 document.getElementById('photo-files').value = "";
                 document.getElementById('video-files').value = "";
