@@ -643,7 +643,7 @@
         /* --- NEW: SONG ATTACHMENT UI (ONLINE SONG SEARCH + POST CARD ICON PLAYER) --- */
         .song-search-results {
             position: relative; width: 100%; background: rgba(6, 17, 39, 0.98);
-            border: 1px solid var(--primary); border-radius: 12px; max-height: 180px; overflow-y: auto;
+            border: 1px solid var(--primary); border-radius: 12px; max-height: 220px; overflow-y: auto;
             z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; backdrop-filter: blur(10px);
             margin-bottom: 10px;
         }
@@ -662,11 +662,12 @@
         }
         .post-song-player { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
         .song-icon-btn {
-            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
             background: rgba(255,255,255,0.06); border: 1px solid rgba(0, 229, 255, 0.3);
             color: var(--primary); display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
         }
+        .song-icon-btn svg { width: 12px; height: 12px; }
         .song-icon-btn.playing {
             background: var(--primary); color: #fff; box-shadow: var(--neon-shadow);
             animation: songPulse 1.2s ease-in-out infinite;
@@ -676,6 +677,30 @@
             50% { transform: scale(1.12); }
         }
         .song-name-label { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* NEW: search result row — listen first (preview), then select separately */
+        .song-search-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; cursor: default;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.2s;
+        }
+        .song-search-item:hover { background: rgba(0, 229, 255, 0.08); }
+        .song-search-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .song-search-item-title { color: var(--text-main); font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-search-item-artist { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-preview-btn {
+            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0, 229, 255, 0.35);
+            background: rgba(255,255,255,0.06); color: var(--primary); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .song-preview-btn svg { width: 12px; height: 12px; }
+        .song-preview-btn.playing { background: var(--primary); color: #fff; box-shadow: var(--neon-shadow); }
+        .song-select-btn {
+            flex-shrink: 0; border: 1px solid var(--primary); color: var(--primary); background: transparent;
+            border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .song-select-btn:hover { background: var(--primary); color: #fff; }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -1498,6 +1523,52 @@
         // --- NEW: SONG ATTACHMENT (search & attach an ONLINE song — no local file upload) ---
         // Uses Apple's public iTunes Search API (no key needed) which returns a ~30s preview mp3 URL per track.
         let songSearchDebounceTimer;
+        // NEW: shared preview player for the search-results list (listen-before-select), separate from the post's own audio players
+        let songResultPreviewAudio = null;
+        let songResultPreviewBtnEl = null;
+        const songPreviewPlayIconSVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        const songPreviewPauseIconSVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+        // Lets the user listen to a search result before deciding to select it; only one preview plays at a time
+        window.toggleSongResultPreview = (track, btnEl) => {
+            if (songResultPreviewAudio && songResultPreviewBtnEl === btnEl) {
+                songResultPreviewAudio.pause();
+                songResultPreviewAudio.currentTime = 0;
+                btnEl.classList.remove('playing');
+                btnEl.innerHTML = songPreviewPlayIconSVG;
+                songResultPreviewAudio = null;
+                songResultPreviewBtnEl = null;
+                return;
+            }
+            stopSongResultPreview();
+            const audio = new Audio(track.previewUrl);
+            audio.play().catch(() => {});
+            btnEl.classList.add('playing');
+            btnEl.innerHTML = songPreviewPauseIconSVG;
+            audio.onended = () => {
+                btnEl.classList.remove('playing');
+                btnEl.innerHTML = songPreviewPlayIconSVG;
+                songResultPreviewAudio = null;
+                songResultPreviewBtnEl = null;
+            };
+            songResultPreviewAudio = audio;
+            songResultPreviewBtnEl = btnEl;
+        };
+
+        // Stops whichever search-result preview is currently playing (called when selecting a song, closing the dropdown/modal, etc.)
+        function stopSongResultPreview() {
+            if (songResultPreviewAudio) {
+                songResultPreviewAudio.pause();
+                songResultPreviewAudio.currentTime = 0;
+            }
+            if (songResultPreviewBtnEl) {
+                songResultPreviewBtnEl.classList.remove('playing');
+                songResultPreviewBtnEl.innerHTML = songPreviewPlayIconSVG;
+            }
+            songResultPreviewAudio = null;
+            songResultPreviewBtnEl = null;
+        }
+
         window.handleSongSearchInput = () => {
             clearTimeout(songSearchDebounceTimer);
             const val = document.getElementById('songSearchInput').value.trim();
@@ -1522,11 +1593,31 @@
                     }
                     resultsBox.style.display = 'block';
 
+                    // NEW: each result now shows a Play (preview) button and a separate Select
+                    // button — user can listen first, and only clicking Select attaches the song.
                     tracks.forEach(t => {
                         const item = document.createElement('div');
-                        item.className = 'suggestion-item';
-                        item.innerHTML = `<span>🎵 ${t.trackName} <span style="color:var(--text-muted);">— ${t.artistName}</span></span>`;
-                        item.onclick = () => selectOnlineSong(t);
+                        item.className = 'song-search-item';
+
+                        const previewBtn = document.createElement('div');
+                        previewBtn.className = 'song-preview-btn';
+                        previewBtn.title = 'Listen';
+                        previewBtn.innerHTML = songPreviewPlayIconSVG;
+                        previewBtn.onclick = () => toggleSongResultPreview(t, previewBtn);
+
+                        const info = document.createElement('div');
+                        info.className = 'song-search-item-info';
+                        info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName}</span>`;
+
+                        const selectBtn = document.createElement('button');
+                        selectBtn.type = 'button';
+                        selectBtn.className = 'song-select-btn';
+                        selectBtn.textContent = 'Select';
+                        selectBtn.onclick = () => selectOnlineSong(t);
+
+                        item.appendChild(previewBtn);
+                        item.appendChild(info);
+                        item.appendChild(selectBtn);
                         resultsBox.appendChild(item);
                     });
                 } catch (err) {
@@ -1536,6 +1627,7 @@
         };
 
         window.selectOnlineSong = (track) => {
+            stopSongResultPreview(); // NEW: stop the listen-preview once the user actually selects the song
             selectedSongData = { url: track.previewUrl, name: track.trackName, artist: track.artistName };
             document.getElementById('songSearchInput').value = "";
             document.getElementById('songSearchResults').style.display = 'none';
@@ -1709,7 +1801,7 @@
                         songHtml = `
                         <div class="post-song-player">
                             <div class="song-icon-btn" id="song-icon-${p.id}" onclick="togglePostSong('${p.id}')" title="${safeSongName}">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
                             </div>
                             <span class="song-name-label">${safeSongName}${p.song.artist ? ' • ' + p.song.artist : ''}</span>
                             <audio id="song-audio-${p.id}" src="${p.song.url}" preload="none" onended="resetSongIcon('${p.id}')"></audio>
@@ -2030,6 +2122,7 @@
                 document.getElementById('songSearchResults').style.display = 'none';
                 document.getElementById('songPreviewContainer').innerHTML = "";
                 selectedSongData = null;
+                stopSongResultPreview(); // NEW: stop any listen-preview still playing when the modal closes
                 updateWordCount();
             }
         };
@@ -2254,6 +2347,7 @@
             const songSearchResultsEl = document.getElementById('songSearchResults');
             if (songSearchInputEl && songSearchResultsEl && e.target !== songSearchInputEl && e.target !== songSearchResultsEl && !songSearchResultsEl.contains(e.target)) {
                 songSearchResultsEl.style.display = 'none';
+                stopSongResultPreview(); // NEW: stop any listen-preview when the dropdown is dismissed
             }
         });
     </script>
