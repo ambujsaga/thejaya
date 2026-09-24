@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>The Jaya</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
     <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
@@ -86,6 +86,13 @@
             padding-bottom: 100px; 
             overflow-x: hidden; 
             transition: background 0.3s ease;
+        }
+
+        /* ================= NEW: DISABLE WEBSITE ZOOM (PINCH / DOUBLE-TAP) =================
+           Sirf naya CSS add kiya gaya hai, purana kuchh nahi chheda gaya. */
+        html, body {
+            touch-action: pan-x pan-y;
+            -ms-touch-action: pan-x pan-y;
         }
 
         header { 
@@ -556,6 +563,15 @@
             max-height: 90vh; /* Viewing limit */
         }
 
+        /* ================= NEW: pinch/double-tap zoom for the original-size (expanded) photo =================
+           Sirf naya CSS add kiya gaya hai. Yeh sirf expanded (long-press se khula original-size)
+           image par apply hota hai — chhoti/normal thumbnail images ya koi bhi purana rule chheda nahi gaya hai. */
+        .post-media-container.expanded .post-media-slide img {
+            touch-action: none;
+            transform-origin: center center;
+            will-change: transform;
+        }
+
         .carousel-btn {
             position: absolute;
             top: 50%;
@@ -686,6 +702,7 @@
             transition: background 0.2s;
         }
         .song-search-item:hover { background: rgba(0, 229, 255, 0.08); }
+        .song-search-item-artwork { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
         .song-search-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
         .song-search-item-title { color: var(--text-main); font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .song-search-item-artist { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -701,6 +718,22 @@
             border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .song-select-btn:hover { background: var(--primary); color: #fff; }
+
+        /* NEW: trim panel — pick a start–end window (max 30s) of the chosen song before it's attached */
+        .song-trim-panel {
+            display: none; background: rgba(255,255,255,0.04); border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 12px; padding: 12px; margin-bottom: 10px;
+        }
+        .song-trim-panel.active { display: block; }
+        .song-trim-name { font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+        .song-trim-row { margin-bottom: 10px; }
+        .song-trim-row label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; }
+        .song-trim-row input[type="range"] { width: 100%; accent-color: var(--primary); }
+        .song-trim-actions { display: flex; gap: 8px; margin-top: 6px; }
+        .song-trim-actions button { flex: 1; border: 0; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .song-trim-preview-btn { background: rgba(0, 229, 255, 0.15); color: var(--primary); }
+        .song-trim-confirm-btn { background: var(--primary); color: #fff; }
+        .song-trim-cancel-btn { background: rgba(255, 68, 68, 0.15); color: var(--red); }
 
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
@@ -897,6 +930,23 @@
                 <input type="text" id="songSearchInput" placeholder="🎵 Search a song online..." style="margin-bottom:0;" oninput="handleSongSearchInput()">
             </div>
             <div id="songSearchResults" class="song-search-results"></div>
+            <!-- NEW: trim step — pick a start–end window (max 30s) before the song is attached -->
+            <div id="songTrimPanel" class="song-trim-panel">
+                <div class="song-trim-name" id="songTrimName"></div>
+                <div class="song-trim-row">
+                    <label><span id="songTrimStartLabel">Start: 0:00</span></label>
+                    <input type="range" id="songTrimStart">
+                </div>
+                <div class="song-trim-row">
+                    <label><span id="songTrimEndLabel">End: 0:00</span></label>
+                    <input type="range" id="songTrimEnd">
+                </div>
+                <div class="song-trim-actions">
+                    <button type="button" class="song-trim-preview-btn" onclick="previewSongTrim()">▶ Preview</button>
+                    <button type="button" class="song-trim-confirm-btn" onclick="confirmSongTrim()">✓ Done</button>
+                    <button type="button" class="song-trim-cancel-btn" onclick="closeSongTrimPanel()">← Back</button>
+                </div>
+            </div>
             <div id="songPreviewContainer" class="song-preview-container"></div>
 
             <div class="modal-actions-grid">
@@ -1523,6 +1573,14 @@
         // --- NEW: SONG ATTACHMENT (search & attach an ONLINE song — no local file upload) ---
         // Uses Apple's public iTunes Search API (no key needed) which returns a ~30s preview mp3 URL per track.
         let songSearchDebounceTimer;
+        const SONG_MAX_TRIM_SECONDS = 30; // Instagram/WhatsApp-style cap on the chosen audio window
+
+        function fmtSongSec(s) {
+            s = Math.max(0, Math.round(s || 0));
+            const m = Math.floor(s / 60), r = s % 60;
+            return m + ':' + String(r).padStart(2, '0');
+        }
+
         // NEW: shared preview player for the search-results list (listen-before-select), separate from the post's own audio players
         let songResultPreviewAudio = null;
         let songResultPreviewBtnEl = null;
@@ -1532,12 +1590,7 @@
         // Lets the user listen to a search result before deciding to select it; only one preview plays at a time
         window.toggleSongResultPreview = (track, btnEl) => {
             if (songResultPreviewAudio && songResultPreviewBtnEl === btnEl) {
-                songResultPreviewAudio.pause();
-                songResultPreviewAudio.currentTime = 0;
-                btnEl.classList.remove('playing');
-                btnEl.innerHTML = songPreviewPlayIconSVG;
-                songResultPreviewAudio = null;
-                songResultPreviewBtnEl = null;
+                stopSongResultPreview();
                 return;
             }
             stopSongResultPreview();
@@ -1545,12 +1598,7 @@
             audio.play().catch(() => {});
             btnEl.classList.add('playing');
             btnEl.innerHTML = songPreviewPauseIconSVG;
-            audio.onended = () => {
-                btnEl.classList.remove('playing');
-                btnEl.innerHTML = songPreviewPlayIconSVG;
-                songResultPreviewAudio = null;
-                songResultPreviewBtnEl = null;
-            };
+            audio.onended = () => stopSongResultPreview();
             songResultPreviewAudio = audio;
             songResultPreviewBtnEl = btnEl;
         };
@@ -1593,11 +1641,16 @@
                     }
                     resultsBox.style.display = 'block';
 
-                    // NEW: each result now shows a Play (preview) button and a separate Select
-                    // button — user can listen first, and only clicking Select attaches the song.
+                    // Each result shows artwork + a Play (preview) button + a "Use" button —
+                    // user can listen first, and only clicking Use opens the trim step.
                     tracks.forEach(t => {
                         const item = document.createElement('div');
                         item.className = 'song-search-item';
+
+                        const artwork = document.createElement('img');
+                        artwork.className = 'song-search-item-artwork';
+                        artwork.src = t.artworkUrl60 || t.artworkUrl100 || '';
+                        artwork.alt = '';
 
                         const previewBtn = document.createElement('div');
                         previewBtn.className = 'song-preview-btn';
@@ -1607,17 +1660,21 @@
 
                         const info = document.createElement('div');
                         info.className = 'song-search-item-info';
-                        info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName}</span>`;
+                        info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName || ''}</span>`;
 
-                        const selectBtn = document.createElement('button');
-                        selectBtn.type = 'button';
-                        selectBtn.className = 'song-select-btn';
-                        selectBtn.textContent = 'Select';
-                        selectBtn.onclick = () => selectOnlineSong(t);
+                        const useBtn = document.createElement('button');
+                        useBtn.type = 'button';
+                        useBtn.className = 'song-select-btn';
+                        useBtn.textContent = 'Use';
+                        useBtn.onclick = () => {
+                            const durSec = Math.round((t.trackTimeMillis || 30000) / 1000);
+                            openSongTrimPanel(t, durSec);
+                        };
 
+                        item.appendChild(artwork);
                         item.appendChild(previewBtn);
                         item.appendChild(info);
-                        item.appendChild(selectBtn);
+                        item.appendChild(useBtn);
                         resultsBox.appendChild(item);
                     });
                 } catch (err) {
@@ -1626,9 +1683,101 @@
             }, 400);
         };
 
-        window.selectOnlineSong = (track) => {
-            stopSongResultPreview(); // NEW: stop the listen-preview once the user actually selects the song
-            selectedSongData = { url: track.previewUrl, name: track.trackName, artist: track.artistName };
+        // --- NEW: trim step — pick a start–end window (max 30s, Instagram/WhatsApp-style) of the
+        // chosen song before it's attached to the post; user can Preview the trimmed range first. ---
+        let songTrimTrack = null; // track currently being trimmed before confirm
+
+        window.openSongTrimPanel = (track, durSec) => {
+            stopSongResultPreview();
+            songTrimTrack = track;
+            const trimPanel = document.getElementById('songTrimPanel');
+            const nameEl = document.getElementById('songTrimName');
+            const startRange = document.getElementById('songTrimStart');
+            const endRange = document.getElementById('songTrimEnd');
+            const startLbl = document.getElementById('songTrimStartLabel');
+            const endLbl = document.getElementById('songTrimEndLabel');
+            if (!trimPanel || !startRange || !endRange) return;
+
+            nameEl.textContent = `🎵 ${track.trackName || 'Untitled'}${track.artistName ? ' — ' + track.artistName : ''}`;
+            startRange.min = 0; startRange.max = Math.max(0, Math.floor(durSec)); startRange.value = 0;
+            endRange.min = 0; endRange.max = Math.max(1, Math.floor(durSec));
+            const defaultEnd = Math.max(1, Math.min(Math.floor(durSec), SONG_MAX_TRIM_SECONDS));
+            endRange.value = defaultEnd;
+            startLbl.textContent = 'Start: ' + fmtSongSec(0);
+            endLbl.textContent = 'End: ' + fmtSongSec(defaultEnd);
+            trimPanel.dataset.duration = String(durSec);
+
+            document.getElementById('songSearchResults').style.display = 'none';
+            trimPanel.classList.add('active');
+        };
+
+        window.closeSongTrimPanel = () => {
+            stopSongResultPreview();
+            songTrimTrack = null;
+            const trimPanel = document.getElementById('songTrimPanel');
+            if (trimPanel) trimPanel.classList.remove('active');
+            const resultsBox = document.getElementById('songSearchResults');
+            if (resultsBox && resultsBox.innerHTML.trim()) resultsBox.style.display = 'block';
+        };
+
+        function currentSongTrimRange(applyCap) {
+            const trimPanel = document.getElementById('songTrimPanel');
+            const startRange = document.getElementById('songTrimStart');
+            const endRange = document.getElementById('songTrimEnd');
+            const dur = parseFloat(trimPanel?.dataset.duration || '0');
+            let start = parseFloat(startRange?.value || '0');
+            let end = parseFloat(endRange?.value || String(dur));
+            if (end <= start) end = Math.min(dur, start + 1);
+            // 30-sec cap only applies when attaching to the post — during preview the full
+            // available clip stays open so the user can pick their favourite part.
+            if (applyCap && (end - start > SONG_MAX_TRIM_SECONDS)) end = Math.min(dur, start + SONG_MAX_TRIM_SECONDS);
+            return { start, end, duration: dur };
+        }
+
+        window.previewSongTrim = () => {
+            if (!songTrimTrack) return;
+            const { start, end } = currentSongTrimRange(false);
+            stopSongResultPreview();
+            const a = new Audio(songTrimTrack.previewUrl);
+            songResultPreviewAudio = a;
+            a.currentTime = start;
+            a.play().catch(() => {});
+            const stopAt = () => {
+                if (a.currentTime >= end) { a.pause(); a.removeEventListener('timeupdate', stopAt); }
+            };
+            a.addEventListener('timeupdate', stopAt);
+            a.addEventListener('ended', () => { songResultPreviewAudio = null; });
+        };
+
+        window.confirmSongTrim = () => {
+            if (!songTrimTrack) return;
+            const { start, end, duration } = currentSongTrimRange(true);
+            const track = songTrimTrack;
+            selectOnlineSong(track, duration, start, end);
+            songTrimTrack = null;
+            const trimPanel = document.getElementById('songTrimPanel');
+            if (trimPanel) trimPanel.classList.remove('active');
+        };
+
+        // Live start/end labels while dragging the trim sliders (cap applies only on Done, above)
+        document.getElementById('songTrimStart')?.addEventListener('input', function () {
+            let v = parseFloat(this.value);
+            const endRange = document.getElementById('songTrimEnd');
+            if (v >= parseFloat(endRange.value)) { v = Math.max(0, parseFloat(endRange.value) - 1); this.value = v; }
+            document.getElementById('songTrimStartLabel').textContent = 'Start: ' + fmtSongSec(v);
+        });
+        document.getElementById('songTrimEnd')?.addEventListener('input', function () {
+            let v = parseFloat(this.value);
+            const startRange = document.getElementById('songTrimStart');
+            if (v <= parseFloat(startRange.value)) { v = parseFloat(startRange.value) + 1; this.value = v; }
+            document.getElementById('songTrimEndLabel').textContent = 'End: ' + fmtSongSec(v);
+        });
+
+        window.selectOnlineSong = (track, durationSec, start, end) => {
+            stopSongResultPreview(); // stop the listen-preview once the user actually attaches the song
+            const s = (typeof start === 'number') ? start : 0;
+            const e = (typeof end === 'number') ? end : (durationSec || 30);
+            selectedSongData = { url: track.previewUrl, name: track.trackName, artist: track.artistName, start: s, end: e, duration: durationSec || 30 };
             document.getElementById('songSearchInput').value = "";
             document.getElementById('songSearchResults').style.display = 'none';
             document.getElementById('songSearchResults').innerHTML = '';
@@ -1639,11 +1788,13 @@
             const container = document.getElementById('songPreviewContainer');
             container.innerHTML = "";
             if (!selectedSongData) return;
+            const rangeLabel = (typeof selectedSongData.start === 'number' && typeof selectedSongData.end === 'number')
+                ? ` (${fmtSongSec(selectedSongData.start)}–${fmtSongSec(selectedSongData.end)})` : '';
             const chip = document.createElement('div');
             chip.className = 'song-preview-chip';
             chip.innerHTML = `
                 <span>🎵</span>
-                <span class="song-name-label">${selectedSongData.name}${selectedSongData.artist ? ' — ' + selectedSongData.artist : ''}</span>
+                <span class="song-name-label">${selectedSongData.name}${selectedSongData.artist ? ' — ' + selectedSongData.artist : ''}${rangeLabel}</span>
                 <audio controls src="${selectedSongData.url}"></audio>
                 <span class="song-remove-btn" onclick="removeSelectedSong()" title="Remove song">✕</span>`;
             container.appendChild(chip);
@@ -1655,7 +1806,8 @@
             renderSongPreview();
         };
 
-        // Instagram-style single-song playback: playing one post's song stops whichever other post's song was playing
+        // Instagram-style single-song playback: playing one post's song stops whichever other post's song was playing.
+        // Also respects the trimmed start–end window chosen at post-creation time.
         window.togglePostSong = (postId) => {
             const audioEl = document.getElementById('song-audio-' + postId);
             const iconEl = document.getElementById('song-icon-' + postId);
@@ -1664,10 +1816,17 @@
             if (window.currentPlayingAudio && window.currentPlayingAudio !== audioEl) {
                 window.currentPlayingAudio.pause();
                 window.currentPlayingAudio.currentTime = 0;
+                window.currentPlayingAudio.ontimeupdate = null;
                 if (window.currentPlayingIconEl) window.currentPlayingIconEl.classList.remove('playing');
             }
 
             if (audioEl.paused) {
+                const start = parseFloat(audioEl.dataset.start || '0') || 0;
+                const end = parseFloat(audioEl.dataset.end || '') || null;
+                audioEl.currentTime = start;
+                audioEl.ontimeupdate = () => {
+                    if (end && audioEl.currentTime >= end) togglePostSong(postId);
+                };
                 audioEl.play().catch(() => {});
                 iconEl.classList.add('playing');
                 window.currentPlayingAudio = audioEl;
@@ -1675,6 +1834,7 @@
             } else {
                 audioEl.pause();
                 audioEl.currentTime = 0;
+                audioEl.ontimeupdate = null;
                 iconEl.classList.remove('playing');
                 window.currentPlayingAudio = null;
                 window.currentPlayingIconEl = null;
@@ -1804,7 +1964,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
                             </div>
                             <span class="song-name-label">${safeSongName}${p.song.artist ? ' • ' + p.song.artist : ''}</span>
-                            <audio id="song-audio-${p.id}" src="${p.song.url}" preload="none" onended="resetSongIcon('${p.id}')"></audio>
+                            <audio id="song-audio-${p.id}" src="${p.song.url}" data-start="${p.song.start || 0}" data-end="${p.song.end || ''}" preload="none" onended="resetSongIcon('${p.id}')"></audio>
                         </div>`;
                     }
 
@@ -2121,6 +2281,8 @@
                 document.getElementById('songSearchResults').innerHTML = "";
                 document.getElementById('songSearchResults').style.display = 'none';
                 document.getElementById('songPreviewContainer').innerHTML = "";
+                document.getElementById('songTrimPanel')?.classList.remove('active'); // NEW: also close the trim step when the modal closes
+                songTrimTrack = null;
                 selectedSongData = null;
                 stopSongResultPreview(); // NEW: stop any listen-preview still playing when the modal closes
                 updateWordCount();
@@ -2350,6 +2512,153 @@
                 stopSongResultPreview(); // NEW: stop any listen-preview when the dropdown is dismissed
             }
         });
+
+        /* ================= NEW: DISABLE ZOOM (PINCH / DOUBLE-TAP / CTRL+WHEEL) =================
+           Sirf naya code add kiya gaya hai. Upar ka koi bhi purana function ya feature
+           chheda nahi gaya hai. Yeh sirf website app ko zoom-in/zoom-out hone se rokta hai
+           (pinch gesture, double-tap zoom, aur desktop par Ctrl+scroll / Ctrl+ / Ctrl-). */
+        (function () {
+            // Safari/iOS pinch-zoom gesture ko rokna
+            document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+            document.addEventListener('gesturechange', function (e) { e.preventDefault(); }, { passive: false });
+            document.addEventListener('gestureend', function (e) { e.preventDefault(); }, { passive: false });
+
+            // Android/Chrome jaise browsers me do-ungliyon (multi-touch) se pinch-zoom rokna
+            document.addEventListener('touchmove', function (e) {
+                if (e.touches && e.touches.length > 1) e.preventDefault();
+            }, { passive: false });
+
+            // Double-tap se zoom hone ko rokna (bina single-tap/click par asar dale)
+            var lastTouchEnd = 0;
+            document.addEventListener('touchend', function (e) {
+                var now = Date.now();
+                if (now - lastTouchEnd <= 350) e.preventDefault();
+                lastTouchEnd = now;
+            }, { passive: false });
+
+            // Desktop: Ctrl + scroll-wheel se zoom hone ko rokna
+            document.addEventListener('wheel', function (e) {
+                if (e.ctrlKey) e.preventDefault();
+            }, { passive: false });
+
+            // Desktop: Ctrl + Plus / Ctrl + Minus / Ctrl + 0 se zoom hone ko rokna
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        })();
+
+        /* ================= NEW: Pinch-to-zoom / double-tap zoom for original-size photos =================
+           Sirf naya, standalone code add kiya gaya hai. Yeh zoom feature SIRF tabhi kaam karta
+           hai jab photo ko long-press karke uske "original size" (.post-media-container.expanded)
+           view me khola gaya ho. Chhoti thumbnail images, startLongPress(), handleImageClick()
+           ya koi bhi purana feature/method bilkul waisa hi hai — kuchh chheda nahi gaya hai. */
+        (function () {
+            var MIN_SCALE = 1, MAX_SCALE = 4;
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+            function dist(a, b) { var dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+
+            function bindImageZoom(img) {
+                if (img.dataset.zoomBound) return;
+                img.dataset.zoomBound = '1';
+                var state = {
+                    scale: 1, panX: 0, panY: 0, pointers: {},
+                    startDist: 0, startScale: 1, startPanX: 0, startPanY: 0,
+                    startPointerX: 0, startPointerY: 0, gestureMoved: false, lastTapTime: 0
+                };
+                img._zoomState = state;
+
+                function applyTransform() {
+                    img.style.transform = 'translate(' + state.panX + 'px,' + state.panY + 'px) scale(' + state.scale + ')';
+                }
+
+                img.addEventListener('pointerdown', function (e) {
+                    state.pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+                    state.gestureMoved = false;
+                    var ids = Object.keys(state.pointers);
+                    if (ids.length === 2) {
+                        state.startDist = dist(state.pointers[ids[0]], state.pointers[ids[1]]);
+                        state.startScale = state.scale;
+                    } else if (ids.length === 1 && state.scale > 1) {
+                        state.startPointerX = e.clientX; state.startPointerY = e.clientY;
+                        state.startPanX = state.panX; state.startPanY = state.panY;
+                    }
+                });
+                img.addEventListener('pointermove', function (e) {
+                    if (!state.pointers[e.pointerId]) return;
+                    state.pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+                    var ids = Object.keys(state.pointers);
+                    if (ids.length === 2) {
+                        state.gestureMoved = true;
+                        var newDist = dist(state.pointers[ids[0]], state.pointers[ids[1]]);
+                        if (state.startDist > 0) {
+                            state.scale = clamp(state.startScale * (newDist / state.startDist), MIN_SCALE, MAX_SCALE);
+                            applyTransform();
+                        }
+                        e.preventDefault();
+                    } else if (ids.length === 1 && state.scale > 1) {
+                        var dx = e.clientX - state.startPointerX, dy = e.clientY - state.startPointerY;
+                        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) state.gestureMoved = true;
+                        state.panX = state.startPanX + dx; state.panY = state.startPanY + dy;
+                        applyTransform();
+                        e.preventDefault();
+                    }
+                });
+                function endPointer(e) {
+                    delete state.pointers[e.pointerId];
+                    if (Object.keys(state.pointers).length < 2) state.startDist = 0;
+                }
+                img.addEventListener('pointerup', endPointer);
+                img.addEventListener('pointercancel', endPointer);
+                img.addEventListener('pointerleave', endPointer);
+            }
+
+            // Capturing-phase click listener: runs BEFORE the image's own inline onclick
+            // (handleImageClick), so it can veto a collapse when a pinch just happened or
+            // when the photo is currently zoomed in — without touching handleImageClick itself.
+            document.addEventListener('click', function (e) {
+                var img = e.target.closest && e.target.closest('.post-media-container.expanded .post-media-slide img');
+                if (!img) return; // not an expanded (original-size) photo — leave old behavior untouched
+                var state = img._zoomState;
+                if (!state) return;
+
+                if (state.gestureMoved) {
+                    // Just finished a pinch/pan drag — swallow this synthetic tap so it doesn't collapse the photo
+                    state.gestureMoved = false;
+                    e.preventDefault(); e.stopPropagation();
+                    return;
+                }
+
+                var now = Date.now();
+                if (now - state.lastTapTime < 320) {
+                    // Double-tap: toggle zoom, never collapse
+                    state.lastTapTime = 0;
+                    e.preventDefault(); e.stopPropagation();
+                    if (state.scale > 1) { state.scale = 1; state.panX = 0; state.panY = 0; }
+                    else { state.scale = 2.5; }
+                    img.style.transform = 'translate(' + state.panX + 'px,' + state.panY + 'px) scale(' + state.scale + ')';
+                    return;
+                }
+                state.lastTapTime = now;
+
+                if (state.scale > 1) {
+                    // Single tap while zoomed in — reset zoom instead of collapsing the photo
+                    e.preventDefault(); e.stopPropagation();
+                    state.scale = 1; state.panX = 0; state.panY = 0;
+                    img.style.transform = 'translate(0px,0px) scale(1)';
+                }
+                // else: not zoomed and not a double-tap — let the tap proceed normally
+                // (original single-tap-to-collapse behavior, completely unchanged)
+            }, true);
+
+            // Photos re-render often (new posts, feed refresh), so keep scanning for newly
+            // expanded images and bind zoom to them — same polling idea as long-press binding.
+            setInterval(function () {
+                document.querySelectorAll('.post-media-container.expanded .post-media-slide img').forEach(bindImageZoom);
+            }, 500);
+        })();
     </script>
 </body>
 </html>
