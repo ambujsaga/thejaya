@@ -420,6 +420,80 @@
             padding: 8px 16px;
             border-radius: 20px;
         }
+
+        /* ================= NEW: STATUS SONG ATTACHMENT (SAME METHOD AS INDEX.HTML'S
+           ONLINE SONG SEARCH, BAS YAHAN CLIP SIRF 15 SECOND TAK LIMITED HAI) =================
+           Sirf naya CSS add kiya gaya hai. Upar ka koi bhi purana style/feature/method
+           chheda nahi gaya hai. */
+        .song-search-results {
+            position: relative; width: 100%; background: rgba(6, 17, 39, 0.98);
+            border: 1px solid var(--primary); border-radius: 12px; max-height: 220px; overflow-y: auto;
+            z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; backdrop-filter: blur(10px);
+            margin-bottom: 10px;
+        }
+        .song-preview-container { margin-bottom: 10px; }
+        .song-preview-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 12px; padding: 6px 10px;
+        }
+        .song-preview-chip audio { flex: 1; height: 32px; min-width: 0; }
+        .song-preview-chip .song-name-label { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-remove-btn {
+            cursor: pointer; color: var(--red); font-weight: bold;
+            font-size: 15px; padding: 0 4px; flex-shrink: 0;
+        }
+        .song-name-label { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-search-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; cursor: default;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.2s;
+        }
+        .song-search-item:hover { background: rgba(0, 229, 255, 0.08); }
+        .song-search-item-artwork { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
+        .song-search-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .song-search-item-title { color: var(--text-main); font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-search-item-artist { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .song-preview-btn {
+            width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0, 229, 255, 0.35);
+            background: rgba(255,255,255,0.06); color: var(--primary); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .song-preview-btn svg { width: 18px; height: 18px; }
+        .song-preview-btn.playing { background: var(--primary); color: #fff; box-shadow: var(--neon-shadow); }
+        .song-select-btn {
+            flex-shrink: 0; flex-grow: 0; border: 1px solid var(--primary); color: var(--primary); background: transparent;
+            border-radius: 12px; padding: 2px 0; font-size: 9px; font-weight: 700; cursor: pointer; transition: 0.2s;
+            line-height: 1.4; width: 40px; text-align: center;
+        }
+        .song-select-btn:hover { background: var(--primary); color: #fff; }
+        .song-select-btn.song-select-btn-hidden { display: none; }
+        .song-select-btn.song-select-btn-pop { animation: songSelectPop 0.18s ease-out; }
+        @keyframes songSelectPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes songPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        /* --- Status viewer: audio-status slide look --- */
+        .viewer-song-card {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px; padding: 20px; text-align: center;
+        }
+        .viewer-song-icon {
+            width: 90px; height: 90px; border-radius: 50%;
+            background: rgba(0, 229, 255, 0.1); border: 2px solid var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--neon-shadow);
+            animation: songPulse 1.6s ease-in-out infinite;
+        }
+        .viewer-song-icon svg { width: 40px; height: 40px; fill: var(--primary); }
+        .viewer-song-title { font-size: 18px; font-weight: bold; color: #fff; }
+        .viewer-song-artist { font-size: 13px; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -459,6 +533,19 @@
                     </label>
                 </div>
                 <div id="file-count-status" style="font-size: 12px; margin-bottom: 10px; color: var(--text-muted);"></div>
+
+                <!-- ================= NEW: Online song search row for Status =================
+                     Index.html ke "New Post" wale online song search jaisa hi method use kiya
+                     gaya hai (same iTunes search + preview-listen-then-Use flow), bas yahan
+                     status ke liye attach hone wala clip max 15 second tak hi limited hai.
+                     Purana photo/video/text status feature ya method kuchh bhi chheda nahi
+                     gaya hai — yeh sirf ek naya, optional addition hai. -->
+                <div>
+                    <input type="text" id="statusSongSearchInput" placeholder="🎵 Add a song (15s clip)..." oninput="handleStatusSongSearchInput()">
+                </div>
+                <div id="statusSongSearchResults" class="song-search-results"></div>
+                <div id="statusSongPreviewContainer" class="song-preview-container"></div>
+
                 <button class="btn-submit" onclick="publishStatus()">Upload Status</button>
             </div>
         </div>
@@ -466,7 +553,7 @@
 
     <div class="floating-actions">
         <a href="thejayabit.html" class="float-btn bits-btn">Bits</a>
-        <a href="index.html" class="float-btn">> Back</a>
+        <a href="javascript:void(0)" class="float-btn" onclick="goBackFromStatus()">> Back</a>
     </div>
 
     <div class="status-viewer" id="status-player-modal">
@@ -564,9 +651,23 @@
             }
         });
 
+        /* ================= NEW: EMBEDDED-INSIDE-INDEX SUPPORT =================
+           Sirf naya code add kiya gaya hai. Purana koi bhi feature/function chheda
+           nahi gaya. Agar yeh page index.html ke andar ek iframe (status-embed-modal)
+           me khula hai, to "Back" ya auth-fail par alag page par navigate karne ki
+           jagah, parent ko close karne ka message bhej diya jata hai. Agar yeh page
+           seedha (standalone, iframe ke bina) khula hai, to purana behavior (index.html
+           par navigate karna) bilkul waisa hi kaam karega. */
+        const isEmbeddedInIndex = (window.self !== window.top);
+        window.goBackFromStatus = function() {
+            if (isEmbeddedInIndex) { window.parent.postMessage('thejaya-close-status-embed', '*'); }
+            else { window.location.href = "index.html"; }
+        };
+
         function throwAuthError() {
             alert("❌ Access Denied: Please login via the official website 'The Jaya' first!");
-            window.location.href = "index.html";
+            if (isEmbeddedInIndex) { window.parent.postMessage('thejaya-close-status-embed', '*'); }
+            else { window.location.href = "index.html"; }
         }
 
         function initializeStatusEngine() {
@@ -666,13 +767,164 @@
             });
         }
 
+        /* ================= NEW: STATUS SONG ATTACHMENT LOGIC =================
+           Same method/flow index.html ke "New Post" online song search jaisa hai
+           (iTunes search API, listen-preview then "Use" button, trimmed clip).
+           Sirf yahan farak itna hai ki status ke liye attach hone wala clip max
+           15 second tak hi hota hai (SONG_MAX_TRIM_SECONDS). Purana koi bhi
+           status feature/function chheda nahi gaya — yeh sab naye, alag naam
+           wale functions/variables hain. */
+        let selectedStatusSongData = null;
+        let statusSongSearchDebounceTimer;
+        const STATUS_SONG_MAX_TRIM_SECONDS = 15; // status ke liye 15-second cap
+
+        function fmtStatusSongSec(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60).toString().padStart(2, '0');
+            return `${m}:${sec}`;
+        }
+
+        let statusSongResultPreviewAudio = null;
+        let statusSongResultPreviewBtnEl = null;
+        const statusSongPreviewPlayIconSVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+        const statusSongPreviewPauseIconSVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+        window.toggleStatusSongResultPreview = (track, btnEl) => {
+            if (statusSongResultPreviewAudio && statusSongResultPreviewBtnEl === btnEl) {
+                stopStatusSongResultPreview();
+                return;
+            }
+            stopStatusSongResultPreview();
+            const audio = new Audio(track.previewUrl);
+            audio.play();
+            btnEl.classList.add('playing');
+            btnEl.innerHTML = statusSongPreviewPauseIconSVG;
+            audio.onended = () => stopStatusSongResultPreview();
+            statusSongResultPreviewAudio = audio;
+            statusSongResultPreviewBtnEl = btnEl;
+        };
+
+        function stopStatusSongResultPreview() {
+            if (statusSongResultPreviewAudio) {
+                statusSongResultPreviewAudio.pause();
+                statusSongResultPreviewAudio.currentTime = 0;
+            }
+            if (statusSongResultPreviewBtnEl) {
+                statusSongResultPreviewBtnEl.classList.remove('playing');
+                statusSongResultPreviewBtnEl.innerHTML = statusSongPreviewPlayIconSVG;
+            }
+            statusSongResultPreviewAudio = null;
+            statusSongResultPreviewBtnEl = null;
+        }
+
+        window.handleStatusSongSearchInput = () => {
+            clearTimeout(statusSongSearchDebounceTimer);
+            const val = document.getElementById('statusSongSearchInput').value.trim();
+            const resultsBox = document.getElementById('statusSongSearchResults');
+
+            if (!val) {
+                resultsBox.style.display = 'none';
+                resultsBox.innerHTML = '';
+                return;
+            }
+
+            statusSongSearchDebounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(val)}&media=music&limit=8`);
+                    const data = await res.json();
+                    const tracks = (data.results || []).filter(t => t.previewUrl);
+
+                    resultsBox.innerHTML = '';
+                    if (tracks.length === 0) {
+                        resultsBox.style.display = 'none';
+                        return;
+                    }
+                    resultsBox.style.display = 'block';
+
+                    tracks.forEach(t => {
+                        const item = document.createElement('div');
+                        item.className = 'song-search-item';
+
+                        const artwork = document.createElement('img');
+                        artwork.className = 'song-search-item-artwork';
+                        artwork.src = t.artworkUrl60 || t.artworkUrl100 || '';
+                        artwork.alt = '';
+
+                        const info = document.createElement('div');
+                        info.className = 'song-search-item-info';
+                        info.innerHTML = `<span class="song-search-item-title">${t.trackName}</span><span class="song-search-item-artist">${t.artistName || ''}</span>`;
+
+                        const useBtn = document.createElement('button');
+                        useBtn.type = 'button';
+                        useBtn.className = 'song-select-btn song-select-btn-hidden';
+                        useBtn.textContent = 'Use';
+                        useBtn.onclick = () => {
+                            const durSec = Math.round((t.trackTimeMillis || 15000) / 1000);
+                            const end = Math.max(1, Math.min(durSec, STATUS_SONG_MAX_TRIM_SECONDS));
+                            selectStatusOnlineSong(t, durSec, 0, end);
+                        };
+
+                        const previewBtn = document.createElement('div');
+                        previewBtn.className = 'song-preview-btn';
+                        previewBtn.title = 'Listen';
+                        previewBtn.innerHTML = statusSongPreviewPlayIconSVG;
+                        previewBtn.onclick = () => {
+                            toggleStatusSongResultPreview(t, previewBtn);
+                            if (useBtn.classList.contains('song-select-btn-hidden')) {
+                                useBtn.classList.remove('song-select-btn-hidden');
+                                useBtn.classList.add('song-select-btn-pop');
+                            }
+                        };
+
+                        item.appendChild(artwork);
+                        item.appendChild(previewBtn);
+                        item.appendChild(info);
+                        item.appendChild(useBtn);
+                        resultsBox.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error("Status online song search failed:", err);
+                }
+            }, 400);
+        };
+
+        window.selectStatusOnlineSong = (track, durationSec, start, end) => {
+            stopStatusSongResultPreview();
+            const s = (typeof start === 'number') ? start : 0;
+            let e = (typeof end === 'number') ? end : STATUS_SONG_MAX_TRIM_SECONDS;
+            e = Math.min(e, s + STATUS_SONG_MAX_TRIM_SECONDS); // hard cap: 15 second se zyada kabhi nahi
+            selectedStatusSongData = { url: track.previewUrl, name: track.trackName, artist: track.artistName, start: s, end: e, duration: durationSec || STATUS_SONG_MAX_TRIM_SECONDS };
+            document.getElementById('statusSongSearchInput').value = "";
+            document.getElementById('statusSongSearchResults').style.display = 'none';
+            document.getElementById('statusSongSearchResults').innerHTML = '';
+            renderStatusSongPreview();
+        };
+
+        function renderStatusSongPreview() {
+            const box = document.getElementById('statusSongPreviewContainer');
+            box.innerHTML = '';
+            if (!selectedStatusSongData) return;
+            const rangeLabel = ` (${fmtStatusSongSec(selectedStatusSongData.start)}–${fmtStatusSongSec(selectedStatusSongData.end)})`;
+            const chip = document.createElement('div');
+            chip.className = 'song-preview-chip';
+            chip.innerHTML = `<span class="song-name-label">${selectedStatusSongData.name}${selectedStatusSongData.artist ? ' — ' + selectedStatusSongData.artist : ''}${rangeLabel}</span>
+                <audio controls src="${selectedStatusSongData.url}"></audio>
+                <span class="song-remove-btn" onclick="removeSelectedStatusSong()" title="Remove song">✕</span>`;
+            box.appendChild(chip);
+        }
+
+        window.removeSelectedStatusSong = () => {
+            selectedStatusSongData = null;
+            renderStatusSongPreview();
+        };
+
         async function publishStatus() {
             if (!window.currentUserProfile) return;
             const textContent = document.getElementById('status-text-input').value.trim();
             const photoFiles = document.getElementById('photo-files').files;
             const videoFiles = document.getElementById('video-files').files;
 
-            if (!textContent && photoFiles.length === 0 && videoFiles.length === 0) { alert("Please write something or select media to upload!"); return; }
+            if (!textContent && photoFiles.length === 0 && videoFiles.length === 0 && !selectedStatusSongData) { alert("Please write something or select media/song to upload!"); return; }
 
             for (let i = 0; i < videoFiles.length; i++) {
                 if (videoFiles[i].size > 1024 * 1024) { alert(`Video "${videoFiles[i].name}" is too large. Please upload video smaller than 1MB.`); return; }
@@ -694,6 +946,23 @@
             for(let i=0; i<videoFiles.length; i++) {
                 const b64Data = await convertToBase64(videoFiles[i]);
                 newSlides.push({ id: 's_'+now+'_v'+i, type: 'video', content: b64Data, duration: 25000, timestamp: now, viewedBy: [] });
+            }
+
+            // NEW: song slide (max 15 second clip) — purana text/photo/video slide-creation logic
+            // bilkul waisa hi hai, yeh sirf ek naya, optional slide type add karta hai.
+            if (selectedStatusSongData) {
+                const clipSeconds = Math.max(1, Math.min(selectedStatusSongData.end - selectedStatusSongData.start, STATUS_SONG_MAX_TRIM_SECONDS));
+                newSlides.push({
+                    id: 's_'+now+'_song',
+                    type: 'song',
+                    content: selectedStatusSongData.url,
+                    songName: selectedStatusSongData.name,
+                    songArtist: selectedStatusSongData.artist || '',
+                    start: selectedStatusSongData.start,
+                    duration: clipSeconds * 1000,
+                    timestamp: now,
+                    viewedBy: []
+                });
             }
             
             const existingUserIndex = window.globalStories.findIndex(story => story.uid === window.currentUserProfile.uid);
@@ -720,6 +989,7 @@
                 document.getElementById('photo-files').value = "";
                 document.getElementById('video-files').value = "";
                 document.getElementById('file-count-status').innerText = "";
+                removeSelectedStatusSong(); // NEW: clear attached song after successful upload
                 toggleUploadUI();
                 alert("🚀 Status uploaded successfully!");
             } catch (error) {
@@ -771,6 +1041,9 @@
             if(currentSlideIndex >= currentViewingStory.slides.length) { closeStatusViewer(); return; }
             const renderTarget = document.getElementById('viewer-body-render');
             const progressBar = document.getElementById('status-progress');
+            // NEW: stop any previously playing status-song audio before rendering the next slide
+            // (purana image/video/text rendering logic ke saath koi chhed-chhaad nahi).
+            if (renderTarget._statusSongAudio) { renderTarget._statusSongAudio.pause(); renderTarget._statusSongAudio = null; }
             renderTarget.innerHTML = "";
             progressBar.style.width = "0%";
             isViewerPaused = false;
@@ -792,6 +1065,20 @@
             else if (slide.type === 'video') { 
                 const videoNode = document.createElement('video'); videoNode.src = slide.content; videoNode.autoplay = true; videoNode.muted = false; videoNode.playsInline = true; renderTarget.appendChild(videoNode); 
                 videoNode.onloadedmetadata = function() { if(videoNode.duration < 25) playbackTimeoutLimit = videoNode.duration * 1000; };
+            }
+            else if (slide.type === 'song') {
+                // NEW: audio-status slide — purana text/image/video rendering bilkul waisa hi hai,
+                // yeh sirf ek naya slide type hai jo max 15 second ka attached gaana chalata hai.
+                const songCard = document.createElement('div');
+                songCard.className = 'viewer-song-card';
+                songCard.innerHTML = `<div class="viewer-song-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+                    <div class="viewer-song-title">${slide.songName || 'Song'}</div>
+                    <div class="viewer-song-artist">${slide.songArtist || ''}</div>`;
+                renderTarget.appendChild(songCard);
+                const audioNode = new Audio(slide.content);
+                audioNode.currentTime = slide.start || 0;
+                audioNode.play().catch(() => {});
+                renderTarget._statusSongAudio = audioNode;
             }
 
             let elapsedCounter = 0;
@@ -818,7 +1105,11 @@
         window.showViewers = function() { isViewerPaused = true; const slide = currentViewingStory.slides[currentSlideIndex]; const listContent = document.getElementById('viewers-list-content'); if (slide.viewedBy.length === 0) listContent.innerHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;">No views yet.</div>`; else listContent.innerHTML = slide.viewedBy.map(v => { const vTick = v.hasRedTick || v.redTick ? '<svg viewBox="0 0 24 24" class="red-tick-svg" style="width:14px;height:14px;" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : ''; return `<div class="viewer-item"><img src="${v.avatar}"><span style="display:flex;align-items:center;">@${v.username}${vTick}</span></div>`; }).join(''); document.getElementById('viewers-list-panel').style.display = 'block'; }
         window.hideViewers = function() { document.getElementById('viewers-list-panel').style.display = 'none'; isViewerPaused = false; }
         async function syncToDatabase() { if(!currentViewingStory) return; const userDocRef = window.doc(window.db, "status_stories", currentViewingStory.uid); try { if (currentViewingStory.slides.length === 0) await window.deleteDoc(userDocRef); else await window.setDoc(userDocRef, currentViewingStory); } catch(e) { console.error("Error updating story state:", e); } }
-        window.closeStatusViewer = function() { document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; document.getElementById('viewer-body-render').innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null; }
+        window.closeStatusViewer = function() {
+        const renderTarget = document.getElementById('viewer-body-render');
+        if (renderTarget._statusSongAudio) { renderTarget._statusSongAudio.pause(); renderTarget._statusSongAudio = null; } // NEW: stop song audio on close
+        document.getElementById('status-player-modal').style.display = 'none'; document.getElementById('viewers-list-panel').style.display = 'none'; renderTarget.innerHTML = ""; clearInterval(progressAnimationInterval); clearTimeout(storyPlaybackTimer); currentViewingStory = null;
+    }
     </script>
 </body>
 </html>
