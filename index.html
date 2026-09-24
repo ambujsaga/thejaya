@@ -631,6 +631,36 @@
         }
         .preview-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
 
+        /* --- NEW: DESELECT (REMOVE) BUTTON ON SELECTED POST PHOTOS --- */
+        .preview-remove-btn {
+            position: absolute; top: 2px; right: 2px; z-index: 2;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: rgba(0,0,0,0.75); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; line-height: 1; cursor: pointer;
+        }
+
+        /* --- NEW: SONG ATTACHMENT UI (POST CREATION + POST CARD PLAYER) --- */
+        .song-preview-container { margin-bottom: 10px; }
+        .song-preview-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 12px; padding: 6px 10px;
+        }
+        .song-preview-chip audio { flex: 1; height: 32px; min-width: 0; }
+        .song-remove-btn {
+            cursor: pointer; color: var(--red); font-weight: bold;
+            font-size: 15px; padding: 0 4px; flex-shrink: 0;
+        }
+        .post-song-player {
+            display: flex; align-items: center; gap: 8px; margin-top: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 12px; padding: 6px 10px;
+        }
+        .post-song-player audio { flex: 1; height: 32px; min-width: 0; }
+
         /* --- ADDED PROFILE PIC EDIT & CROP MODAL STYLES --- */
         .pic-edit-wrapper { position: relative; display: inline-block; }
         .pic-edit-btn {
@@ -820,7 +850,14 @@
                 <p id="word-count" style="font-size: 12px; color: var(--text-muted); margin: 0; text-align: right; white-space: nowrap;">0 / 110</p>
             </div>
             <div id="previewContainer" class="upload-preview-container"></div>
-            
+
+            <!-- NEW: Song attachment row (post gets max 30s of the chosen song) -->
+            <div class="upload-row">
+                <label for="songSelector" class="btn-upload-label">🎵 Add Song (Max 30s)</label>
+                <input type="file" id="songSelector" accept="audio/*" style="display:none;" onchange="handleSongSelect(this)">
+            </div>
+            <div id="songPreviewContainer" class="song-preview-container"></div>
+
             <div class="modal-actions-grid">
                 <div class="modal-top-buttons">
                     <button class="btn-primary" onclick="doPost()">Post Now</button>
@@ -888,6 +925,9 @@
 
         // Global arrays to handle base64 image strings inside post creation
         let selectedBase64Images = [];
+
+        // NEW: Holds the trimmed (max 30s) base64 WAV data URL of the song attached to a post
+        let selectedSongBase64 = null;
         
         // NEW Post image cropping state variables
         let postCropper = null;
@@ -1398,12 +1438,7 @@
                 const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
                 
                 selectedBase64Images.push(compressedDataUrl);
-
-                const previewContainer = document.getElementById("previewContainer");
-                const wrp = document.createElement("div");
-                wrp.className = "preview-img-wrapper";
-                wrp.innerHTML = `<img src="${compressedDataUrl}">`;
-                previewContainer.appendChild(wrp);
+                renderSelectedImagePreviews();
 
                 currentCropIndex++;
                 window.showPostCropModalForCurrent();
@@ -1420,6 +1455,139 @@
             document.getElementById("previewContainer").innerHTML = "";
         };
         // --- END POST IMAGE CROP HANDLER ---
+
+        // --- NEW: RENDER SELECTED PHOTO PREVIEWS WITH DESELECT (REMOVE) OPTION ---
+        function renderSelectedImagePreviews() {
+            const previewContainer = document.getElementById("previewContainer");
+            previewContainer.innerHTML = "";
+            selectedBase64Images.forEach((imgSrc, idx) => {
+                const wrp = document.createElement("div");
+                wrp.className = "preview-img-wrapper";
+                wrp.innerHTML = `<img src="${imgSrc}"><span class="preview-remove-btn" onclick="removeSelectedImage(${idx})" title="Remove">✕</span>`;
+                previewContainer.appendChild(wrp);
+            });
+        }
+
+        // Lets user deselect (remove) any already-selected photo before posting
+        window.removeSelectedImage = (idx) => {
+            selectedBase64Images.splice(idx, 1);
+            renderSelectedImagePreviews();
+        };
+        // --- END PHOTO DESELECT FEATURE ---
+
+        // --- NEW: SONG ATTACHMENT (posts get trimmed to max 30s) ---
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Encodes a rendered AudioBuffer into a WAV Blob (mono, 16-bit PCM)
+        function audioBufferToWavBlob(abuffer) {
+            const numOfChan = abuffer.numberOfChannels;
+            const len = abuffer.length;
+            const length = len * numOfChan * 2 + 44;
+            const buffer = new ArrayBuffer(length);
+            const view = new DataView(buffer);
+            let pos = 0;
+
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8);
+            setUint32(0x45564157); // "WAVE"
+            setUint32(0x20746d66); // "fmt "
+            setUint32(16);
+            setUint16(1);
+            setUint16(numOfChan);
+            setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2);
+            setUint16(16);
+            setUint32(0x61746164); // "data"
+            setUint32(length - pos - 4);
+
+            const channels = [];
+            for (let i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
+
+            let offset = 0;
+            while (pos < length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        // Decodes the chosen audio file and trims it down to maxSeconds, returning a base64 data URL
+        async function trimAudioToBase64(file, maxSeconds) {
+            const arrayBuffer = await file.arrayBuffer();
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const tempCtx = new AudioCtx();
+            const decoded = await tempCtx.decodeAudioData(arrayBuffer);
+
+            const sampleRate = 22050; // downsampled to keep file size small
+            const duration = Math.min(decoded.duration, maxSeconds);
+            const frameCount = Math.max(1, Math.floor(duration * sampleRate));
+
+            const offlineCtx = new OfflineAudioContext(1, frameCount, sampleRate);
+            const source = offlineCtx.createBufferSource();
+            source.buffer = decoded;
+            source.connect(offlineCtx.destination);
+            source.start(0, 0, duration);
+
+            const rendered = await offlineCtx.startRendering();
+            tempCtx.close();
+
+            const wavBlob = audioBufferToWavBlob(rendered);
+            return await blobToBase64(wavBlob);
+        }
+
+        function renderSongPreview() {
+            const container = document.getElementById('songPreviewContainer');
+            container.innerHTML = "";
+            if (!selectedSongBase64) return;
+            const chip = document.createElement('div');
+            chip.className = 'song-preview-chip';
+            chip.innerHTML = `<span>🎵</span><audio controls src="${selectedSongBase64}"></audio><span class="song-remove-btn" onclick="removeSelectedSong()" title="Remove song">✕</span>`;
+            container.appendChild(chip);
+        }
+
+        window.handleSongSelect = async (inputField) => {
+            const file = inputField.files[0];
+            if (!file) return;
+
+            const label = document.querySelector('label[for="songSelector"]');
+            const originalLabelText = label.innerText;
+            label.innerText = "⏳ Processing song...";
+
+            try {
+                selectedSongBase64 = await trimAudioToBase64(file, 30); // Posts: max 30 seconds
+                renderSongPreview();
+            } catch (err) {
+                console.error("Song processing failed:", err);
+                alert("Could not process this audio file. Please try a different song.");
+            } finally {
+                label.innerText = originalLabelText;
+                inputField.value = "";
+            }
+        };
+
+        // Lets user deselect (remove) the attached song before posting
+        window.removeSelectedSong = () => {
+            selectedSongBase64 = null;
+            document.getElementById('songSelector').value = "";
+            renderSongPreview();
+        };
+        // --- END SONG ATTACHMENT FEATURE ---
 
         // Custom Safe Carousel Navigation Routine Engine
         window.shiftCarousel = (postID, steps) => {
@@ -1523,6 +1691,12 @@
                     
                     const postRedTick = p.hasRedTick ? redTickSVG : '';
 
+                    // NEW: Song player for posts that have an attached song
+                    let songHtml = '';
+                    if (p.song) {
+                        songHtml = `<div class="post-song-player"><span>🎵</span><audio controls src="${p.song}"></audio></div>`;
+                    }
+
                     // 4:3 Carousel Generator System Injection (With Long Press Toggle System)
                     let imagesHtml = "";
                     if (p.images && p.images.length > 0) {
@@ -1574,6 +1748,7 @@
                         </div>
                         <p style="margin: 0; line-height:1.5;">${formatPostText(p.text)}</p>
                         ${imagesHtml}
+                        ${songHtml}
                         ${linksHtml}
                         <div class="action-bar">
                             <span class="action-btn" onclick="starIt('${p.id}', ${isStarred})" style="color:${isStarred?'var(--star)':''}">
@@ -1655,8 +1830,8 @@
 
         window.doPost = async () => {
             const originalInputText = document.getElementById('postInput').value;
-            // Prevent execution if both text content and media bundles are completely absent
-            if(!originalInputText.trim() && selectedBase64Images.length === 0) return;
+            // Prevent execution if text content, photos, and song are all completely absent
+            if(!originalInputText.trim() && selectedBase64Images.length === 0 && !selectedSongBase64) return;
 
             const detectedLinks = extractLinks(originalInputText);
 
@@ -1692,6 +1867,7 @@
                 text: cleanedText, 
                 links: detectedLinks,
                 images: selectedBase64Images, // Inserted safe payload images array
+                song: selectedSongBase64 || null, // NEW: trimmed (max 30s) song attached to the post
                 username: me.username || 'user', 
                 pic: me.pic || defaultAvtr, 
                 uid: auth.currentUser.uid, 
@@ -1722,6 +1898,9 @@
             document.getElementById('photoSelector').value = "";
             document.getElementById('previewContainer').innerHTML = "";
             selectedBase64Images = [];
+            document.getElementById('songSelector').value = "";
+            document.getElementById('songPreviewContainer').innerHTML = "";
+            selectedSongBase64 = null;
             setPostModal(false);
         };
 
@@ -1825,6 +2004,9 @@
                 document.getElementById('previewContainer').innerHTML = "";
                 document.getElementById('post-suggestions').style.display = 'none';
                 selectedBase64Images = [];
+                document.getElementById('songSelector').value = "";
+                document.getElementById('songPreviewContainer').innerHTML = "";
+                selectedSongBase64 = null;
                 updateWordCount();
             }
         };
