@@ -633,19 +633,54 @@
 
         let activeSessionUser = null;
 
+        /* ================= NEW: OFFLINE WORKS REGARDLESS OF LOGIN STATE =================
+           Purana onAuthStateChanged flow (niche) bilkul waisa hi hai jab user online hai aur
+           login + profile fetch dono successful hote hain — us case me kuchh nahi badla,
+           "Access Denied" wala purana security-check bhi online case ke liye waisa hi hai.
+           Yeh sirf ek naya OFFLINE-ONLY fallback add karta hai: agar net hi nahi hai (chahe
+           user index.html me login ho ya na ho — auth/profile check offline fail ho sakta
+           hai), to seedha error dikha kar redirect karne ki jagah, pehle se cache ho chuka
+           stories + profile data (localStorage) dikha diya jata hai, jaisa WhatsApp offline
+           chats dikhata hai. Agar bilkul bhi cached data na mile, tabhi purana "please login"
+           wala behavior chalega — matlab purana method/feature kahin se hataya nahi gaya. */
+        const STATUS_USER_CACHE_KEY = 'thejaya_status_user_cache';
+
+        function cacheActiveUserProfile(profile) {
+            try { localStorage.setItem(STATUS_USER_CACHE_KEY, JSON.stringify(profile)); } catch (e) {}
+        }
+
+        function tryOfflineGuestFallback() {
+            const cachedStoriesRaw = localStorage.getItem('thejaya_stories_db_live');
+            const cachedProfileRaw = localStorage.getItem(STATUS_USER_CACHE_KEY);
+            if (!cachedStoriesRaw && !cachedProfileRaw) return false; // kuchh bhi cached nahi — purana behavior chalne do
+
+            activeSessionUser = cachedProfileRaw ? JSON.parse(cachedProfileRaw) : null;
+            initializeStatusEngine(true);
+            return true;
+        }
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
                     const userSnap = await getDoc(doc(db, "users", user.uid));
                     if (userSnap.exists()) {
                         activeSessionUser = userSnap.data();
+                        cacheActiveUserProfile(activeSessionUser); // NEW: agli baar offline fallback ke liye save
                         initializeStatusEngine();
+                    } else if (!navigator.onLine && tryOfflineGuestFallback()) {
+                        // NEW: offline hone ki wajah se profile fetch nahi ho paya — cached data se dikha diya
                     } else {
                         throwAuthError();
                     }
                 } catch (e) {
-                    throwAuthError();
+                    if (!navigator.onLine && tryOfflineGuestFallback()) {
+                        // NEW: offline hone ki wajah se profile fetch fail hua — cached data se dikha diya
+                    } else {
+                        throwAuthError();
+                    }
                 }
+            } else if (!navigator.onLine && tryOfflineGuestFallback()) {
+                // NEW: offline hai aur login-state confirm nahi ho paya — cached data se dikha diya
             } else {
                 throwAuthError();
             }
@@ -670,18 +705,40 @@
             else { window.location.href = "index.html"; }
         }
 
-        function initializeStatusEngine() {
-            document.getElementById('user-avatar').src = activeSessionUser.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            document.getElementById('welcome-username').innerText = "@" + activeSessionUser.username;
-            
-            if (activeSessionUser.hasRedTick || activeSessionUser.redTick || activeSessionUser.verified || activeSessionUser.role === 'admin') {
-                document.getElementById('welcome-username-container').innerHTML += `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+        function initializeStatusEngine(isOfflineFallback) {
+            // NEW: agar offline-fallback me cached profile bhi nahi mila (bilkul guest view),
+            // to purana crash hone ki jagah ek generic placeholder dikhao. Jab activeSessionUser
+            // maujood hai (normal login case, purana behavior), yeh block bilkul waisa hi chalta hai.
+            if (activeSessionUser) {
+                document.getElementById('user-avatar').src = activeSessionUser.pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                document.getElementById('welcome-username').innerText = "@" + activeSessionUser.username;
+
+                if (activeSessionUser.hasRedTick || activeSessionUser.redTick || activeSessionUser.verified || activeSessionUser.role === 'admin') {
+                    document.getElementById('welcome-username-container').innerHTML += `<svg viewBox="0 0 24 24" class="red-tick-svg" title="Verified"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+                }
+            } else {
+                document.getElementById('user-avatar').src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                document.getElementById('welcome-username').innerText = "@guest (offline)";
             }
 
             window.currentUserProfile = activeSessionUser;
             window.globalStories = JSON.parse(localStorage.getItem('thejaya_stories_db_live') || '[]');
             window.renderStoriesTray();
-            window.setupRealtimeStories(); 
+
+            if (isOfflineFallback) {
+                // NEW: abhi net nahi hai, isliye live Firestore listener nahi lagaya — sirf
+                // cached stories dikhayi gayi hain. renderStatusConnectionBadge() (purana,
+                // niche wale classic <script> me already defined) offline badge dikha dega.
+                // Net wapas aate hi engine ko wapas normal (live) mode me le aao — purana
+                // online flow bilkul waisa hi chalega, kuchh hataya nahi gaya.
+                if (typeof window.renderStatusConnectionBadge === 'function') window.renderStatusConnectionBadge();
+                window.addEventListener('online', function onBackOnline() {
+                    window.removeEventListener('online', onBackOnline);
+                    window.location.reload();
+                });
+            } else {
+                window.setupRealtimeStories();
+            }
         }
     </script>
 
@@ -769,7 +826,39 @@
         window.addEventListener('online', renderStatusConnectionBadge);
         document.addEventListener('DOMContentLoaded', renderStatusConnectionBadge);
 
+        /* ================= NEW: FIREBASE-INDEPENDENT OFFLINE SAFETY NET =================
+           Purana upar wala Firebase <script type="module"> (auth + live-sync) aur uska
+           offline/guest fallback bilkul waisa hi hai, kuchh chheda nahi gaya. Yeh sirf ek
+           alag, standalone safety-net hai: agar device pura offline hai to kabhi-kabhi
+           us module ka CDN se Firebase import hi fail ho sakta hai, jiski wajah se upar
+           wala pura auth flow (aur uska offline fallback) kabhi chalta hi nahi, aur stories
+           tray khaali reh jaati. Thodi der (module ko load/init hone ka mauka dene ke liye)
+           wait karne ke baad, agar abhi tak koi profile set hi nahi hua (module flow chal
+           nahi paya), to seedha localStorage se cached stories + profile load karke offline
+           view dikha diya jata hai — bina Firebase par depend kiye.*/
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                if (window.currentUserProfile !== undefined) return; // module flow already chal chuka (login ya guest fallback dono)
+                const cachedStoriesRaw = localStorage.getItem('thejaya_stories_db_live');
+                const cachedProfileRaw = localStorage.getItem('thejaya_status_user_cache');
+                if (!cachedStoriesRaw && !cachedProfileRaw) return; // kuchh bhi cached nahi mila — kuchh nahi kiya ja sakta
+
+                const cachedProfile = cachedProfileRaw ? JSON.parse(cachedProfileRaw) : null;
+                window.currentUserProfile = cachedProfile;
+                document.getElementById('user-avatar').src = (cachedProfile && cachedProfile.pic) || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                document.getElementById('welcome-username').innerText = cachedProfile ? ("@" + cachedProfile.username) : "@guest (offline)";
+                window.globalStories = JSON.parse(cachedStoriesRaw || '[]');
+                if (typeof window.renderStoriesTray === 'function') window.renderStoriesTray();
+                renderStatusConnectionBadge();
+            }, 1500);
+        });
+
         function toggleUploadUI() {
+            // NEW: offline/guest mode me (koi logged-in profile cached nahi mila) naya status
+            // upload nahi ho sakta (upload karne ke liye pehchaan chahiye) — is case me pehle
+            // hi bata diya jata hai. Jab user logged in hai (purana normal case), yeh check
+            // skip ho jata hai aur niche wala purana toggle-logic bilkul waisa hi chalta hai.
+            if (!window.currentUserProfile) { alert("📴 You're viewing cached statuses offline. Please log in with internet to post a new status."); return; }
             const ui = document.getElementById('upload-ui-container');
             ui.style.display = ui.style.display === 'block' ? 'none' : 'block';
         }
