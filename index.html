@@ -967,7 +967,7 @@
             <svg viewBox="0 0 24 24" style="width:24px; height:24px;"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </a>
 
-        <a href="status.html" class="bits-btn" title="status">Status</a>
+        <a href="status.html" id="status-btn" class="bits-btn" title="status">Status</a>
         <div id="fab-btn" class="fab" onclick="requireLogin(() => setPostModal(true))">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
@@ -1129,6 +1129,72 @@
             document.addEventListener('DOMContentLoaded', updateStatus);
         })();
         /* ================= END NEW: OFFLINE MODE ================= */
+
+        /* ================= NEW: STATUS BUTTON — OFFLINE PAR BHI LINK OPEN HOGA =================
+           Sirf naya, standalone code add kiya gaya hai. Status button ka purana
+           <a href="status.html" id="status-btn" class="bits-btn"> bilkul waisa hi hai — jab
+           internet ON hai, click bilkul normal tarike se navigate karega (yeh naya JS us waqt
+           kuchh bhi nahi chhedta, na hi event ko rokta hai). Sirf jab user OFFLINE ho, tab yeh
+           status.html ki pehle se (background me) cache ki hui copy khol dega, taaki offline
+           click par bhi Status button ka link open ho jaye. Koi purana feature/method touch
+           nahi kiya gaya hai. */
+        (function () {
+            var STATUS_URL = 'status.html';
+            var STATUS_CACHE_NAME = 'jaya-status-offline-cache';
+
+            // Jab bhi net available ho, status.html ki latest copy silently cache kar lo
+            function cacheStatusPageForOffline() {
+                if (!navigator.onLine || !('caches' in window)) return;
+                fetch(STATUS_URL, { cache: 'no-store' }).then(function (res) {
+                    if (res && res.ok) {
+                        caches.open(STATUS_CACHE_NAME).then(function (cache) {
+                            cache.put(STATUS_URL, res.clone());
+                        });
+                    }
+                }).catch(function () { /* chup chaap ignore - purana behavior par koi asar nahi */ });
+            }
+            document.addEventListener('DOMContentLoaded', cacheStatusPageForOffline);
+            window.addEventListener('online', cacheStatusPageForOffline);
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var statusBtn = document.getElementById('status-btn');
+                if (!statusBtn) return;
+
+                statusBtn.addEventListener('click', function (e) {
+                    // Online hai -> kuchh mat karo, purana <a href="status.html"> waisa hi
+                    // normal tarike se navigate karega.
+                    if (navigator.onLine) return;
+                    // Is browser me Cache API hi nahi hai -> purana default behavior hi rahega.
+                    if (!('caches' in window)) return;
+
+                    e.preventDefault();
+
+                    caches.match(STATUS_URL).then(function (cachedRes) {
+                        if (!cachedRes) {
+                            // Abhi tak status.html cache nahi ho paya (pehli baar hi offline
+                            // gaya) — is case me purana default behavior hi try karo.
+                            window.location.href = STATUS_URL;
+                            return;
+                        }
+                        return cachedRes.text().then(function (html) {
+                            // Cached HTML ke andar ke relative css/js/img links sahi resolve
+                            // hon, isliye asli folder ki taraf point karta hua <base> tag daal do.
+                            var baseHref = window.location.href.replace(/[^/]*$/, '');
+                            if (!/<base[\s>]/i.test(html)) {
+                                html = html.replace(/<head(\s[^>]*)?>/i, function (m) {
+                                    return m + '<base href="' + baseHref + '">';
+                                });
+                            }
+                            var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+                            window.location.href = blobUrl;
+                        });
+                    }).catch(function () {
+                        window.location.href = STATUS_URL; // fallback - purana behavior
+                    });
+                });
+            });
+        })();
+        /* ================= END NEW: STATUS BUTTON OFFLINE FIX ================= */
 
         const googleProvider = new GoogleAuthProvider();
         let me = null;
